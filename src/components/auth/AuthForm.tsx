@@ -14,11 +14,17 @@ import { styles } from "./AuthForm.styles";
 
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit() {
+    if (!isLogin && !fullName) {
+      Alert.alert("Error", "Please enter your full name.");
+      return;
+    }
+
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields.");
       return;
@@ -34,7 +40,7 @@ export default function AuthForm() {
       if (isLogin) {
         await signInEmail(email.trim(), password);
       } else {
-        await signUpEmail(email.trim(), password);
+        await signUpEmail(email.trim(), password, fullName);
       }
     } catch (error: any) {
       Alert.alert(
@@ -57,6 +63,16 @@ export default function AuthForm() {
         <Text style={styles.subtitle}>
           {isLogin ? "Welcome back" : "Create your account"}
         </Text>
+
+        {!isLogin && (
+          <TextInput
+            placeholder="Full Name"
+            autoCapitalize="words"
+            value={fullName}
+            onChangeText={setFullName}
+            style={styles.input}
+          />
+        )}
 
         <TextInput
           placeholder="Email"
