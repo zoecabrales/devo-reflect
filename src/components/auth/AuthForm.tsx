@@ -1,16 +1,16 @@
+import { signInEmail, signUpEmail } from "@/src/services/auth";
 import { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
+  Pressable,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { signInEmail, signUpEmail } from "@/src/services/auth";
+import { styles } from "./AuthForm.styles";
 
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -39,7 +39,7 @@ export default function AuthForm() {
     } catch (error: any) {
       Alert.alert(
         "Authentication Failed",
-        error?.message ?? "Something went wrong."
+        error?.message ?? "Something went wrong.",
       );
     } finally {
       setLoading(false);
@@ -96,41 +96,3 @@ export default function AuthForm() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    justifyContent: "center",
-    gap: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  subtitle: {
-    textAlign: "center",
-    opacity: 0.7,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-  },
-  button: {
-    backgroundColor: "#111",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  toggleText: {
-    textAlign: "center",
-    marginTop: 12,
-  },
-});
-
