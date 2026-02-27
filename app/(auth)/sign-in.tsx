@@ -1,18 +1,5 @@
-import { Text, View, StyleSheet } from "react-native";
+import AuthForm from "@/src/components/auth/AuthForm";
 
 export default function SignIn() {
-  return (
-    <View style={styles.container}>
-      <Text>Sign In</Text>
-    </View>
-  );
+  return <AuthForm />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
-
