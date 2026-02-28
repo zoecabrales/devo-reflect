@@ -24,6 +24,19 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
+  passwordInputWrapper: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: 48,
+  },
+  eyeIcon: {
+    position: "absolute",
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+  },
   inputError: {
     borderColor: "#e53e3e",
   },

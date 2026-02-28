@@ -1,14 +1,15 @@
 import { signInEmail, signUpEmail } from "@/src/services/auth";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { styles } from "./AuthForm.styles";
 
@@ -27,6 +28,7 @@ export default function AuthForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({
     fullName: "",
     email: "",
@@ -160,13 +162,29 @@ export default function AuthForm() {
           {!!errors.password && (
             <Text style={styles.errorText}>{errors.password}</Text>
           )}
-          <TextInput
-            placeholder="Password"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            style={[styles.input, !!errors.password && styles.inputError]}
-          />
+          <View style={styles.passwordInputWrapper}>
+            <TextInput
+              placeholder="Password"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              style={[
+                styles.input,
+                styles.passwordInput,
+                !!errors.password && styles.inputError,
+              ]}
+            />
+            <Pressable
+              onPress={() => setShowPassword((prev) => !prev)}
+              style={styles.eyeIcon}
+            >
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color="#888"
+              />
+            </Pressable>
+          </View>
         </View>
 
         <Pressable onPress={handleSubmit} style={styles.button}>
