@@ -16,10 +16,20 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     opacity: 0.7,
   },
+  fieldWrapper: {
+    gap: 4,
+  },
   input: {
     borderWidth: 1,
     borderRadius: 12,
     padding: 14,
+  },
+  inputError: {
+    borderColor: "#e53e3e",
+  },
+  errorText: {
+    color: "#e53e3e",
+    fontSize: 12,
   },
   button: {
     backgroundColor: "#111",
@@ -36,4 +46,3 @@ export const styles = StyleSheet.create({
     marginTop: 12,
   },
 });
-

@@ -1,8 +1,8 @@
 import { signInEmail, signUpEmail } from "@/src/services/auth";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,28 +12,93 @@ import {
 } from "react-native";
 import { styles } from "./AuthForm.styles";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type FieldErrors = {
+  fullName: string;
+  email: string;
+  password: string;
+};
+
 export default function AuthForm() {
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({
+    fullName: "",
+    email: "",
+    password: "",
+  });
+
+  function clearErrors() {
+    setErrors({ fullName: "", email: "", password: "" });
+  }
+
+  function validate(): boolean {
+    const newErrors: FieldErrors = { fullName: "", email: "", password: "" };
+    let valid = true;
+
+    if (!isLogin && !fullName.trim()) {
+      newErrors.fullName = "Full name is required.";
+      valid = false;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required.";
+      valid = false;
+    } else if (!EMAIL_REGEX.test(email.trim())) {
+      newErrors.email = "Please enter a valid email address.";
+      valid = false;
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required.";
+      valid = false;
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  }
+
+  function handleFirebaseError(code: string) {
+    switch (code) {
+      case "auth/user-not-found":
+      case "auth/invalid-email":
+        setErrors((e) => ({
+          ...e,
+          email: "No account found with this email.",
+        }));
+        break;
+      case "auth/wrong-password":
+      case "auth/invalid-credential":
+        setErrors((e) => ({
+          ...e,
+          password: "Incorrect password. Please try again.",
+        }));
+        break;
+      case "auth/email-already-in-use":
+        setErrors((e) => ({
+          ...e,
+          email: "This email is already registered.",
+        }));
+        break;
+      default:
+        setErrors((e) => ({
+          ...e,
+          password: "Something went wrong. Please try again.",
+        }));
+    }
+  }
 
   async function handleSubmit() {
-    if (!isLogin && !fullName) {
-      Alert.alert("Error", "Please enter your full name.");
-      return;
-    }
-
-    if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields.");
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters.");
-      return;
-    }
+    clearErrors();
+    if (!validate()) return;
 
     try {
       setLoading(true);
@@ -42,11 +107,9 @@ export default function AuthForm() {
       } else {
         await signUpEmail(email.trim(), password, fullName);
       }
+      router.replace("/(tabs)/home");
     } catch (error: any) {
-      Alert.alert(
-        "Authentication Failed",
-        error?.message ?? "Something went wrong.",
-      );
+      handleFirebaseError(error?.code ?? "");
     } finally {
       setLoading(false);
     }
@@ -65,31 +128,46 @@ export default function AuthForm() {
         </Text>
 
         {!isLogin && (
-          <TextInput
-            placeholder="Full Name"
-            autoCapitalize="words"
-            value={fullName}
-            onChangeText={setFullName}
-            style={styles.input}
-          />
+          <View style={styles.fieldWrapper}>
+            {!!errors.fullName && (
+              <Text style={styles.errorText}>{errors.fullName}</Text>
+            )}
+            <TextInput
+              placeholder="Full Name"
+              autoCapitalize="words"
+              value={fullName}
+              onChangeText={setFullName}
+              style={[styles.input, !!errors.fullName && styles.inputError]}
+            />
+          </View>
         )}
 
-        <TextInput
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-        />
+        <View style={styles.fieldWrapper}>
+          {!!errors.email && (
+            <Text style={styles.errorText}>{errors.email}</Text>
+          )}
+          <TextInput
+            placeholder="Email"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            style={[styles.input, !!errors.email && styles.inputError]}
+          />
+        </View>
 
-        <TextInput
-          placeholder="Password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          style={styles.input}
-        />
+        <View style={styles.fieldWrapper}>
+          {!!errors.password && (
+            <Text style={styles.errorText}>{errors.password}</Text>
+          )}
+          <TextInput
+            placeholder="Password"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            style={[styles.input, !!errors.password && styles.inputError]}
+          />
+        </View>
 
         <Pressable onPress={handleSubmit} style={styles.button}>
           {loading ? (
@@ -101,7 +179,12 @@ export default function AuthForm() {
           )}
         </Pressable>
 
-        <Pressable onPress={() => setIsLogin(!isLogin)}>
+        <Pressable
+          onPress={() => {
+            setIsLogin(!isLogin);
+            clearErrors();
+          }}
+        >
           <Text style={styles.toggleText}>
             {isLogin
               ? "Don't have an account? Sign Up"

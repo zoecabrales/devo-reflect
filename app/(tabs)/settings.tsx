@@ -1,18 +1,25 @@
-import { Text, View, StyleSheet } from "react-native";
+import { signOutUser } from "@/src/services/auth";
+import { useRouter } from "expo-router";
+import { Alert, Pressable, Text, View } from "react-native";
+import { styles } from "./settings.styles";
 
 export default function Settings() {
+  const router = useRouter();
+
+  async function handleSignOut() {
+    try {
+      await signOutUser();
+      router.replace("/(auth)/sign-in");
+    } catch (error: any) {
+      Alert.alert("Error", error?.message ?? "Could not sign out.");
+    }
+  }
+
   return (
     <View style={styles.container}>
-      <Text>Settings</Text>
+      <Pressable onPress={handleSignOut} style={styles.button}>
+        <Text style={styles.buttonText}>Sign Out</Text>
+      </Pressable>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
-
