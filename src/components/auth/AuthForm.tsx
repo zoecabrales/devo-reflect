@@ -1,7 +1,7 @@
 import { signInEmail, signUpEmail } from "@/src/services/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -23,6 +23,7 @@ type FieldErrors = {
 
 export default function AuthForm() {
   const router = useRouter();
+  const emailRef = useRef<import("react-native").TextInput>(null);
   const [isLogin, setIsLogin] = useState(true);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -150,6 +151,7 @@ export default function AuthForm() {
             <Text style={styles.errorText}>{errors.email}</Text>
           )}
           <TextInput
+            ref={emailRef}
             placeholder="Email"
             placeholderTextColor="#999"
             autoCapitalize="none"
@@ -203,7 +205,12 @@ export default function AuthForm() {
         <Pressable
           onPress={() => {
             setIsLogin(!isLogin);
+            setFullName("");
+            setEmail("");
+            setPassword("");
+            setShowPassword(false);
             clearErrors();
+            setTimeout(() => emailRef.current?.focus(), 50);
           }}
         >
           <Text style={styles.toggleText}>
