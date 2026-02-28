@@ -136,6 +136,7 @@ export default function AuthForm() {
             )}
             <TextInput
               placeholder="Full Name"
+              placeholderTextColor="#999"
               autoCapitalize="words"
               value={fullName}
               onChangeText={setFullName}
@@ -150,6 +151,7 @@ export default function AuthForm() {
           )}
           <TextInput
             placeholder="Email"
+            placeholderTextColor="#999"
             autoCapitalize="none"
             keyboardType="email-address"
             value={email}
@@ -165,6 +167,7 @@ export default function AuthForm() {
           <View style={styles.passwordInputWrapper}>
             <TextInput
               placeholder="Password"
+              placeholderTextColor="#999"
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={setPassword}
