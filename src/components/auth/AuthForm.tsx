@@ -3,13 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { styles } from "./AuthForm.styles";
 
@@ -72,13 +72,13 @@ export default function AuthForm() {
     switch (code) {
       case "auth/user-not-found":
       case "auth/invalid-email":
+      case "auth/invalid-credential":
         setErrors((e) => ({
           ...e,
-          email: "No account found with this email.",
+          email: "Email not registered or password is incorrect.",
         }));
         break;
       case "auth/wrong-password":
-      case "auth/invalid-credential":
         setErrors((e) => ({
           ...e,
           password: "Incorrect password. Please try again.",
