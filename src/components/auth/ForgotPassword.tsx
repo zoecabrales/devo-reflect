@@ -2,13 +2,13 @@ import { sendPasswordReset } from "@/src/services/auth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { styles } from "./ForgotPassword.styles";
 
@@ -44,6 +44,8 @@ export default function ForgotPassword() {
       const code = error?.code ?? "";
       if (code === "auth/user-not-found" || code === "auth/invalid-email") {
         setEmailError("No account found with this email address.");
+      } else if (code === "auth/network-request-failed") {
+        setEmailError("Network error. Please check your connection.");
       } else {
         setEmailError("Something went wrong. Please try again.");
       }
@@ -66,9 +68,14 @@ export default function ForgotPassword() {
               We sent a password reset link to{"\n"}
               <Text style={styles.successEmail}>{email}</Text>
               {"\n\n"}Follow the link in the email to set a new password. Check
-              your spam folder if you don't see it.
+              your spam folder if you don't see it.{"\n\n"}The link expires in 1
+              hour. If it does, just request a new one.
             </Text>
-            <Pressable onPress={() => router.replace("/(auth)/sign-in")}>
+            <Pressable
+              onPress={() => router.replace("/(auth)/sign-in")}
+              accessibilityRole="button"
+              accessibilityLabel="Back to login"
+            >
               <Text style={styles.backLink}>Back to Login</Text>
             </Pressable>
           </View>
@@ -92,15 +99,15 @@ export default function ForgotPassword() {
         </Text>
 
         <View style={styles.fieldWrapper}>
-          {!!emailError && (
-            <Text style={styles.errorText}>{emailError}</Text>
-          )}
+          {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
           <TextInput
             placeholder="Email"
             placeholderTextColor="#999"
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
             value={email}
             onChangeText={(text) => {
               setEmail(text);
@@ -110,7 +117,13 @@ export default function ForgotPassword() {
           />
         </View>
 
-        <Pressable onPress={handleSubmit} style={styles.button} disabled={loading}>
+        <Pressable
+          onPress={handleSubmit}
+          style={styles.button}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel="Send reset link"
+        >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -118,11 +131,14 @@ export default function ForgotPassword() {
           )}
         </Pressable>
 
-        <Pressable onPress={() => router.back()}>
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Back to login"
+        >
           <Text style={styles.backLink}>Back to Login</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-

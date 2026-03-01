@@ -1,16 +1,11 @@
 import {
-  reloadAndCheckVerified,
-  resendVerificationEmail,
+    reloadAndCheckVerified,
+    resendVerificationEmail,
 } from "@/src/services/auth";
+import { auth } from "@/src/services/firebase";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
-import { auth } from "@/src/services/firebase";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { styles } from "./VerifyEmail.styles";
 
 const RESEND_COOLDOWN = 30;
@@ -40,7 +35,9 @@ export default function VerifyEmail() {
       if (verified) {
         router.replace("/(tabs)/home");
       } else {
-        setError("Your email hasn't been verified yet. Please check your inbox.");
+        setError(
+          "Your email hasn't been verified yet. Please check your inbox.",
+        );
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -71,13 +68,23 @@ export default function VerifyEmail() {
       <Text style={styles.subtitle}>
         We sent a verification link to{"\n"}
         <Text style={styles.email}>{email}</Text>
-        {"\n\n"}Tap the link in the email, then come back and press the button below.
+        {"\n\n"}Tap the link in the email, then come back and press the button
+        below.{"\n\n"}If the link has expired, use Resend Email below to get a
+        new one.
       </Text>
 
       {!!error && <Text style={styles.errorText}>{error}</Text>}
-      {!!successMessage && <Text style={styles.successText}>{successMessage}</Text>}
+      {!!successMessage && (
+        <Text style={styles.successText}>{successMessage}</Text>
+      )}
 
-      <Pressable onPress={handleCheckVerified} style={styles.button} disabled={checkingVerification}>
+      <Pressable
+        onPress={handleCheckVerified}
+        style={styles.button}
+        disabled={checkingVerification}
+        accessibilityRole="button"
+        accessibilityLabel="I've verified my email"
+      >
         {checkingVerification ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -87,13 +94,27 @@ export default function VerifyEmail() {
 
       <Pressable
         onPress={handleResend}
-        style={[styles.resendButton, cooldown > 0 && styles.resendButtonDisabled]}
+        style={[
+          styles.resendButton,
+          cooldown > 0 && styles.resendButtonDisabled,
+        ]}
         disabled={resending || cooldown > 0}
+        accessibilityRole="button"
+        accessibilityLabel={
+          cooldown > 0
+            ? `Resend email, available in ${cooldown} seconds`
+            : "Resend email"
+        }
       >
         {resending ? (
           <ActivityIndicator color="#111" />
         ) : (
-          <Text style={[styles.resendButtonText, cooldown > 0 && styles.resendButtonTextDisabled]}>
+          <Text
+            style={[
+              styles.resendButtonText,
+              cooldown > 0 && styles.resendButtonTextDisabled,
+            ]}
+          >
             {cooldown > 0 ? `Resend Email (${cooldown}s)` : "Resend Email"}
           </Text>
         )}
@@ -101,4 +122,3 @@ export default function VerifyEmail() {
     </View>
   );
 }
-

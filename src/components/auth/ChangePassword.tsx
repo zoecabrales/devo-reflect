@@ -1,7 +1,7 @@
-import { changePassword } from "@/src/services/auth";
+import { changePassword, signOutUser } from "@/src/services/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -27,6 +27,8 @@ const emptyErrors = (): FieldErrors => ({
 
 export default function ChangePassword() {
   const router = useRouter();
+  const newPasswordRef = useRef<import("react-native").TextInput>(null);
+  const confirmPasswordRef = useRef<import("react-native").TextInput>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -91,6 +93,14 @@ export default function ChangePassword() {
           ...e,
           newPassword: "Password is too weak. Please choose a stronger one.",
         }));
+      } else if (code === "auth/network-request-failed") {
+        setErrors((e) => ({
+          ...e,
+          currentPassword: "Network error. Please check your connection.",
+        }));
+      } else if (code === "auth/requires-recent-login") {
+        await signOutUser();
+        router.replace("/(auth)/sign-in");
       } else {
         setErrors((e) => ({
           ...e,
@@ -115,7 +125,11 @@ export default function ChangePassword() {
             <Text style={styles.successText}>
               Your password has been changed successfully.
             </Text>
-            <Pressable onPress={() => router.back()}>
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Back to settings"
+            >
               <Text style={styles.backLink}>Back to Settings</Text>
             </Pressable>
           </View>
@@ -147,6 +161,8 @@ export default function ChangePassword() {
               placeholderTextColor="#999"
               secureTextEntry={!showCurrent}
               autoComplete="current-password"
+              returnKeyType="next"
+              onSubmitEditing={() => newPasswordRef.current?.focus()}
               value={currentPassword}
               onChangeText={setCurrentPassword}
               style={[
@@ -158,6 +174,10 @@ export default function ChangePassword() {
             <Pressable
               onPress={() => setShowCurrent((p) => !p)}
               style={styles.eyeIcon}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showCurrent ? "Hide current password" : "Show current password"
+              }
             >
               <Ionicons
                 name={showCurrent ? "eye-off-outline" : "eye-outline"}
@@ -175,10 +195,13 @@ export default function ChangePassword() {
           )}
           <View style={styles.passwordInputWrapper}>
             <TextInput
+              ref={newPasswordRef}
               placeholder="New Password"
               placeholderTextColor="#999"
               secureTextEntry={!showNew}
               autoComplete="new-password"
+              returnKeyType="next"
+              onSubmitEditing={() => confirmPasswordRef.current?.focus()}
               value={newPassword}
               onChangeText={setNewPassword}
               style={[
@@ -190,6 +213,10 @@ export default function ChangePassword() {
             <Pressable
               onPress={() => setShowNew((p) => !p)}
               style={styles.eyeIcon}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showNew ? "Hide new password" : "Show new password"
+              }
             >
               <Ionicons
                 name={showNew ? "eye-off-outline" : "eye-outline"}
@@ -207,10 +234,13 @@ export default function ChangePassword() {
           )}
           <View style={styles.passwordInputWrapper}>
             <TextInput
+              ref={confirmPasswordRef}
               placeholder="Confirm New Password"
               placeholderTextColor="#999"
               secureTextEntry={!showConfirm}
               autoComplete="new-password"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               style={[
@@ -222,6 +252,10 @@ export default function ChangePassword() {
             <Pressable
               onPress={() => setShowConfirm((p) => !p)}
               style={styles.eyeIcon}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showConfirm ? "Hide confirm password" : "Show confirm password"
+              }
             >
               <Ionicons
                 name={showConfirm ? "eye-off-outline" : "eye-outline"}
@@ -236,6 +270,8 @@ export default function ChangePassword() {
           onPress={handleSubmit}
           style={styles.button}
           disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel="Update password"
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -244,7 +280,11 @@ export default function ChangePassword() {
           )}
         </Pressable>
 
-        <Pressable onPress={() => router.back()}>
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel"
+        >
           <Text style={styles.backLink}>Cancel</Text>
         </Pressable>
       </ScrollView>

@@ -3,13 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { styles } from "./AuthForm.styles";
 
@@ -24,7 +24,10 @@ type FieldErrors = {
 
 export default function AuthForm() {
   const router = useRouter();
+  const fullNameRef = useRef<import("react-native").TextInput>(null);
   const emailRef = useRef<import("react-native").TextInput>(null);
+  const passwordRef = useRef<import("react-native").TextInput>(null);
+  const confirmPasswordRef = useRef<import("react-native").TextInput>(null);
   const [isLogin, setIsLogin] = useState(true);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -117,6 +120,12 @@ export default function AuthForm() {
             "Too many failed attempts. Please wait a moment and try again.",
         }));
         break;
+      case "auth/network-request-failed":
+        setErrors((e) => ({
+          ...e,
+          password: "Network error. Please check your connection.",
+        }));
+        break;
       default:
         setErrors((e) => ({
           ...e,
@@ -168,10 +177,13 @@ export default function AuthForm() {
               <Text style={styles.errorText}>{errors.fullName}</Text>
             )}
             <TextInput
+              ref={fullNameRef}
               placeholder="Full Name"
               placeholderTextColor="#999"
               autoCapitalize="words"
               autoComplete="name"
+              returnKeyType="next"
+              onSubmitEditing={() => emailRef.current?.focus()}
               value={fullName}
               onChangeText={setFullName}
               style={[styles.input, !!errors.fullName && styles.inputError]}
@@ -190,6 +202,8 @@ export default function AuthForm() {
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
             value={email}
             onChangeText={setEmail}
             style={[styles.input, !!errors.email && styles.inputError]}
@@ -202,10 +216,17 @@ export default function AuthForm() {
           )}
           <View style={styles.passwordInputWrapper}>
             <TextInput
+              ref={passwordRef}
               placeholder="Password"
               placeholderTextColor="#999"
               secureTextEntry={!showPassword}
               autoComplete={isLogin ? "current-password" : "new-password"}
+              returnKeyType={isLogin ? "done" : "next"}
+              onSubmitEditing={
+                isLogin
+                  ? handleSubmit
+                  : () => confirmPasswordRef.current?.focus()
+              }
               value={password}
               onChangeText={setPassword}
               style={[
@@ -217,6 +238,10 @@ export default function AuthForm() {
             <Pressable
               onPress={() => setShowPassword((prev) => !prev)}
               style={styles.eyeIcon}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showPassword ? "Hide password" : "Show password"
+              }
             >
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
@@ -228,7 +253,11 @@ export default function AuthForm() {
         </View>
 
         {isLogin && (
-          <Pressable onPress={() => router.push("/(auth)/forgot-password")}>
+          <Pressable
+            onPress={() => router.push("/(auth)/forgot-password")}
+            accessibilityRole="button"
+            accessibilityLabel="Forgot password"
+          >
             <Text style={styles.forgotText}>Forgot Password?</Text>
           </Pressable>
         )}
@@ -240,10 +269,13 @@ export default function AuthForm() {
             )}
             <View style={styles.passwordInputWrapper}>
               <TextInput
+                ref={confirmPasswordRef}
                 placeholder="Confirm Password"
                 placeholderTextColor="#999"
                 secureTextEntry={!showConfirmPassword}
                 autoComplete="new-password"
+                returnKeyType="done"
+                onSubmitEditing={handleSubmit}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 style={[
@@ -255,6 +287,12 @@ export default function AuthForm() {
               <Pressable
                 onPress={() => setShowConfirmPassword((prev) => !prev)}
                 style={styles.eyeIcon}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  showConfirmPassword
+                    ? "Hide confirm password"
+                    : "Show confirm password"
+                }
               >
                 <Ionicons
                   name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
@@ -266,7 +304,12 @@ export default function AuthForm() {
           </View>
         )}
 
-        <Pressable onPress={handleSubmit} style={styles.button}>
+        <Pressable
+          onPress={handleSubmit}
+          style={styles.button}
+          accessibilityRole="button"
+          accessibilityLabel={isLogin ? "Login" : "Sign Up"}
+        >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -288,6 +331,8 @@ export default function AuthForm() {
             clearErrors();
             setTimeout(() => emailRef.current?.focus(), 50);
           }}
+          accessibilityRole="button"
+          accessibilityLabel={isLogin ? "Switch to Sign Up" : "Switch to Login"}
         >
           <Text style={styles.toggleText}>
             {isLogin

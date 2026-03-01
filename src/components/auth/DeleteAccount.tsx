@@ -1,15 +1,15 @@
-import { deleteAccount } from "@/src/services/auth";
+import { deleteAccount, signOutUser } from "@/src/services/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { styles } from "./DeleteAccount.styles";
 
@@ -46,8 +46,13 @@ export default function DeleteAccount() {
         setPasswordError("Incorrect password. Please try again.");
       } else if (code === "auth/too-many-requests") {
         setPasswordError(
-          "Too many failed attempts. Please wait a moment and try again."
+          "Too many failed attempts. Please wait a moment and try again.",
         );
+      } else if (code === "auth/network-request-failed") {
+        setPasswordError("Network error. Please check your connection.");
+      } else if (code === "auth/requires-recent-login") {
+        await signOutUser();
+        router.replace("/(auth)/sign-in");
       } else {
         setPasswordError("Something went wrong. Please try again.");
       }
@@ -96,6 +101,10 @@ export default function DeleteAccount() {
             <Pressable
               onPress={() => setShowPassword((p) => !p)}
               style={styles.eyeIcon}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showPassword ? "Hide password" : "Show password"
+              }
             >
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
@@ -110,6 +119,8 @@ export default function DeleteAccount() {
           onPress={handleDelete}
           style={styles.deleteButton}
           disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel="Delete my account"
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -118,11 +129,14 @@ export default function DeleteAccount() {
           )}
         </Pressable>
 
-        <Pressable onPress={() => router.back()}>
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel"
+        >
           <Text style={styles.cancelLink}>Cancel</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
