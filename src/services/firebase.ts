@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApps, initializeApp } from "firebase/app";
 import { getAuth, initializeAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 // @ts-ignore — Metro resolves @firebase/auth to its RN build (dist/rn) at runtime;
 // TypeScript uses the browser types which don't expose this export.
 import { getReactNativePersistence } from "@firebase/auth";
@@ -25,5 +26,7 @@ export const auth = isFirstInit
       persistence: getReactNativePersistence(AsyncStorage),
     })
   : getAuth(app);
+
+export const db = getFirestore(app);
 
 export default app;

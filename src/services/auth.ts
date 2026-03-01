@@ -13,6 +13,7 @@ import {
     updateProfile,
 } from "firebase/auth";
 import { auth } from "./firebase";
+import { createUserProfile } from "./firestore";
 
 const LAST_ACTIVE_KEY = "@last_active_at";
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
@@ -42,8 +43,13 @@ export async function signUpEmail(
     email,
     password,
   );
-  await updateProfile(userCredential.user, { displayName: fullName.trim() });
-  await sendEmailVerification(userCredential.user);
+  const { user } = userCredential;
+  const trimmedName = fullName.trim();
+
+  await updateProfile(user, { displayName: trimmedName });
+  await createUserProfile(user.uid, user.email!, trimmedName);
+  await sendEmailVerification(user);
+
   return userCredential;
 }
 
