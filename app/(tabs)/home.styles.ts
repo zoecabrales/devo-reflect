@@ -28,34 +28,34 @@ export const styles = StyleSheet.create({
 
   // ── Verse Card ───────────────────────────────────────────
   card: {
-    borderRadius: 16,
-    padding: 24,
-    gap: 16,
+    borderRadius: 14,
+    padding: 16,
+    gap: 10,
     borderWidth: 1,
   },
   cardLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
     letterSpacing: 2.5,
     opacity: 0.45,
     textTransform: "uppercase",
   },
   verseReference: {
-    fontSize: 17,
+    fontSize: 14,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.5,
   },
   verseText: {
-    fontSize: 18,
-    lineHeight: 30,
+    fontSize: 15,
+    lineHeight: 24,
     fontStyle: "italic",
-    letterSpacing: 0.2,
+    letterSpacing: 0.15,
   },
   cardFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 4,
+    marginTop: 2,
   },
   versionBadge: {
     paddingHorizontal: 12,
@@ -72,9 +72,9 @@ export const styles = StyleSheet.create({
 
   // ── Loading Skeleton ─────────────────────────────────────
   loadingCard: {
-    borderRadius: 16,
-    padding: 24,
-    gap: 14,
+    borderRadius: 14,
+    padding: 16,
+    gap: 10,
     borderWidth: 1,
   },
   skeletonShort: {
@@ -110,33 +110,77 @@ export const styles = StyleSheet.create({
 
   // ── Browse Bible Card ────────────────────────────────────
   browseCard: {
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 12,
+    padding: 14,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 12,
   },
   browseIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   browseTextWrap: {
     flex: 1,
-    gap: 3,
+    gap: 2,
   },
   browseTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
   },
   browseSubtitle: {
-    fontSize: 13,
+    fontSize: 11,
     opacity: 0.55,
     letterSpacing: 0.2,
+  },
+
+  // ── Collection Cards ─────────────────────────────────────
+  collectionSectionLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 2.5,
+    opacity: 0.45,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  collectionScroll: {
+    marginHorizontal: -24, // bleed to screen edges
+  },
+  collectionScrollContent: {
+    paddingHorizontal: 24,
+    gap: 10,
+  },
+  collectionCard: {
+    width: 96,
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    gap: 7,
+    alignItems: "flex-start",
+  },
+  collectionIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  collectionLabel: {
+    fontSize: 10,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.3,
+    lineHeight: 13,
+  },
+  collectionSubtitle: {
+    fontSize: 9,
+    opacity: 0.5,
+    letterSpacing: 0.1,
+    lineHeight: 12,
   },
 
   // ── Error State ──────────────────────────────────────────

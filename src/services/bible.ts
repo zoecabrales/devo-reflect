@@ -198,16 +198,134 @@ const CURATED_VERSES: {
   { book: "mark", bookLabel: "Mark", chapter: 10, verse: 27 },
 ];
 
+// ── Bible Collections ───────────────────────────────────────────────────────
+
+export interface BibleCollection {
+  id: string;
+  label: string;
+  subtitle: string;
+  icon: string; // Ionicons glyph name
+  bookIds: string[];
+}
+
+export const BIBLE_COLLECTIONS: BibleCollection[] = [
+  {
+    id: "pentateuch",
+    label: "Pentateuch",
+    subtitle: "The Law · 5 books",
+    icon: "library-outline",
+    bookIds: ["genesis", "exodus", "leviticus", "numbers", "deuteronomy"],
+  },
+  {
+    id: "historical",
+    label: "Historical Books",
+    subtitle: "Israel's story · 12 books",
+    icon: "time-outline",
+    bookIds: [
+      "joshua",
+      "judges",
+      "ruth",
+      "1samuel",
+      "2samuel",
+      "1kings",
+      "2kings",
+      "1chronicles",
+      "2chronicles",
+      "ezra",
+      "nehemiah",
+      "esther",
+    ],
+  },
+  {
+    id: "wisdom",
+    label: "Wisdom & Poetry",
+    subtitle: "Psalms, Proverbs & more · 5 books",
+    icon: "star-outline",
+    bookIds: ["job", "psalms", "proverbs", "ecclesiastes", "song-of-solomon"],
+  },
+  {
+    id: "prophets",
+    label: "The Prophets",
+    subtitle: "Major & Minor · 17 books",
+    icon: "megaphone-outline",
+    bookIds: [
+      "isaiah",
+      "jeremiah",
+      "lamentations",
+      "ezekiel",
+      "daniel",
+      "hosea",
+      "joel",
+      "amos",
+      "obadiah",
+      "jonah",
+      "micah",
+      "nahum",
+      "habakkuk",
+      "zephaniah",
+      "haggai",
+      "zechariah",
+      "malachi",
+    ],
+  },
+  {
+    id: "gospels",
+    label: "The Gospels",
+    subtitle: "Life of Jesus · 4 books",
+    icon: "heart-outline",
+    bookIds: ["matthew", "mark", "luke", "john"],
+  },
+  {
+    id: "epistles",
+    label: "The Epistles",
+    subtitle: "Letters · 21 books",
+    icon: "mail-outline",
+    bookIds: [
+      "acts",
+      "romans",
+      "1corinthians",
+      "2corinthians",
+      "galatians",
+      "ephesians",
+      "philippians",
+      "colossians",
+      "1thessalonians",
+      "2thessalonians",
+      "1timothy",
+      "2timothy",
+      "titus",
+      "philemon",
+      "hebrews",
+      "james",
+      "1peter",
+      "2peter",
+      "1john",
+      "2john",
+      "3john",
+      "jude",
+    ],
+  },
+  {
+    id: "revelation",
+    label: "Revelation",
+    subtitle: "The Apocalypse · 1 book",
+    icon: "flash-outline",
+    bookIds: ["revelation"],
+  },
+];
+
 /**
- * Returns a deterministic verse index based on the current day of the year.
- * All users see the same verse on the same calendar day.
+ * Returns a deterministic-but-unpredictable verse index based on today's date.
+ * The same date always produces the same index; a new calendar day produces a
+ * different one — so the verse changes once every 24 hours.
  */
 export function getDailyVerseIndex(): number {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  const diff = now.getTime() - start.getTime();
-  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
-  return dayOfYear % CURATED_VERSES.length;
+  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  let hash = 0;
+  for (let i = 0; i < today.length; i++) {
+    hash = (hash * 31 + today.charCodeAt(i)) >>> 0; // unsigned 32-bit int
+  }
+  return hash % CURATED_VERSES.length;
 }
 
 /**

@@ -1,5 +1,9 @@
 import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
-import { BibleVerse, fetchDailyVerse } from "@/src/services/bible";
+import {
+  BIBLE_COLLECTIONS,
+  BibleVerse,
+  fetchDailyVerse,
+} from "@/src/services/bible";
 import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -113,6 +117,88 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
   );
 }
 
+function CollectionCards({ theme }: { theme: Theme }) {
+  const router = useRouter();
+  return (
+    <View>
+      <Text style={[styles.collectionSectionLabel, { color: theme.text }]}>
+        Browse by section
+      </Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.collectionScroll}
+        contentContainerStyle={styles.collectionScrollContent}
+      >
+        {BIBLE_COLLECTIONS.map((col) => (
+          <TouchableOpacity
+            key={col.id}
+            style={[
+              styles.collectionCard,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+            onPress={() =>
+              router.push(`/(tabs)/bible-browser?collectionId=${col.id}`)
+            }
+            activeOpacity={0.75}
+          >
+            <View
+              style={[
+                styles.collectionIconWrap,
+                { backgroundColor: theme.primary },
+              ]}
+            >
+              <Ionicons
+                name={col.icon as any}
+                size={13}
+                color={theme.primaryText}
+              />
+            </View>
+            <Text style={[styles.collectionLabel, { color: theme.text }]}>
+              {col.label}
+            </Text>
+            <Text
+              style={[
+                styles.collectionSubtitle,
+                { color: theme.textSecondary },
+              ]}
+            >
+              {col.subtitle}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+function HebrewDictionaryCard({ theme }: { theme: Theme }) {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      style={[
+        styles.browseCard,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+      onPress={() => router.push("/(tabs)/hebrew-dictionary")}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.browseIconWrap, { backgroundColor: theme.primary }]}>
+        <Ionicons name="language-outline" size={18} color={theme.primaryText} />
+      </View>
+      <View style={styles.browseTextWrap}>
+        <Text style={[styles.browseTitle, { color: theme.text }]}>
+          Hebrew Dictionary
+        </Text>
+        <Text style={[styles.browseSubtitle, { color: theme.textSecondary }]}>
+          Brown-Driver-Briggs · OT Hebrew
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+    </TouchableOpacity>
+  );
+}
+
 function BrowseBibleCard({ theme }: { theme: Theme }) {
   const router = useRouter();
   return (
@@ -125,11 +211,11 @@ function BrowseBibleCard({ theme }: { theme: Theme }) {
       activeOpacity={0.8}
     >
       <View style={[styles.browseIconWrap, { backgroundColor: theme.primary }]}>
-        <Ionicons name="book-outline" size={22} color={theme.primaryText} />
+        <Ionicons name="book-outline" size={18} color={theme.primaryText} />
       </View>
       <View style={styles.browseTextWrap}>
         <Text style={[styles.browseTitle, { color: theme.text }]}>
-          Browse the Bible
+          Read the Word
         </Text>
         <Text style={[styles.browseSubtitle, { color: theme.textSecondary }]}>
           66 books · ASV
@@ -195,8 +281,14 @@ export default function Home() {
           <VerseCard verse={verse} theme={theme} />
         ) : null}
 
+        {/* Collection Cards */}
+        <CollectionCards theme={theme} />
+
         {/* Browse Bible */}
         <BrowseBibleCard theme={theme} />
+
+        {/* Hebrew Dictionary */}
+        <HebrewDictionaryCard theme={theme} />
       </ScrollView>
     </View>
   );
