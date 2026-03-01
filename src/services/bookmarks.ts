@@ -41,28 +41,29 @@ export async function removeBookmark(id: string): Promise<void> {
   await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(filtered));
 }
 
-// ── Underlines ────────────────────────────────────────────────────────────────
+// ── Highlights ────────────────────────────────────────────────────────────────
 
-const UNDERLINES_KEY = "@underlined_verses";
+const HIGHLIGHTS_KEY = "@highlighted_verses";
 
-export async function loadUnderlines(): Promise<Set<string>> {
-  const raw = await AsyncStorage.getItem(UNDERLINES_KEY);
-  if (!raw) return new Set();
+/** Returns a map of verseKey → hex color string */
+export async function loadHighlights(): Promise<Map<string, string>> {
+  const raw = await AsyncStorage.getItem(HIGHLIGHTS_KEY);
+  if (!raw) return new Map();
   try {
-    return new Set(JSON.parse(raw) as string[]);
+    return new Map(JSON.parse(raw) as [string, string][]);
   } catch {
-    return new Set();
+    return new Map();
   }
 }
 
-export async function toggleUnderline(id: string): Promise<Set<string>> {
-  const current = await loadUnderlines();
-  if (current.has(id)) {
-    current.delete(id);
-  } else {
-    current.add(id);
-  }
-  await AsyncStorage.setItem(UNDERLINES_KEY, JSON.stringify([...current]));
-  return current;
+export async function saveHighlight(id: string, color: string): Promise<void> {
+  const current = await loadHighlights();
+  current.set(id, color);
+  await AsyncStorage.setItem(HIGHLIGHTS_KEY, JSON.stringify([...current]));
 }
 
+export async function removeHighlight(id: string): Promise<void> {
+  const current = await loadHighlights();
+  current.delete(id);
+  await AsyncStorage.setItem(HIGHLIGHTS_KEY, JSON.stringify([...current]));
+}

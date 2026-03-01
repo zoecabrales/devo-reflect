@@ -104,14 +104,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="bookmarks" options={{ title: "Bookmarks" }} />
       <Tabs.Screen name="settings" options={{ title: "Settings" }} />
       {/* Hidden screens — navigable but not shown in the tab bar */}
-      <Tabs.Screen
-        name="bible-browser"
-        options={{ href: null, tabBarStyle: { display: "none" } }}
-      />
-      <Tabs.Screen
-        name="concordance"
-        options={{ href: null, tabBarStyle: { display: "none" } }}
-      />
+      <Tabs.Screen name="bible-browser" options={{ href: null }} />
+      <Tabs.Screen name="concordance" options={{ href: null }} />
     </Tabs>
   );
 }

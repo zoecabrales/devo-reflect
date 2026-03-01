@@ -180,10 +180,6 @@ export const styles = StyleSheet.create({
     flex: 1,
     letterSpacing: 0.15,
   },
-  verseTextUnderlined: {
-    textDecorationLine: "underline",
-  },
-
   // ── Bookmark Confirmation Popup ───────────────────────────
   confirmOverlay: {
     flex: 1,
@@ -242,5 +238,82 @@ export const styles = StyleSheet.create({
   retryText: {
     fontWeight: "700",
     fontSize: 14,
+  },
+
+  // ── Highlight / Bookmark drawer ────────────────────────────────────────────
+  drawerOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  drawerSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 36,
+    paddingTop: 12,
+  },
+  drawerHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#888",
+    alignSelf: "center",
+    marginBottom: 16,
+    opacity: 0.4,
+  },
+  drawerTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  drawerLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  swatchRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  swatch: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  swatchActive: {
+    transform: [{ scale: 1.2 }],
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  swatchClear: {
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  drawerBookmarkBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  drawerBookmarkBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
   },
 });

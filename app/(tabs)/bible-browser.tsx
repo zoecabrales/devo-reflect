@@ -12,8 +12,9 @@ import {
 import {
     addBookmark,
     loadBookmarks,
-    loadUnderlines,
-    toggleUnderline,
+    loadHighlights,
+    removeHighlight,
+    saveHighlight,
 } from "@/src/services/bookmarks";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -33,6 +34,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bible-browser.styles";
 
 type Screen = "books" | "chapters" | "verses";
+
+const HIGHLIGHT_COLORS = [
+  "#FFD966", // yellow
+  "#93C47D", // green
+  "#76A9EA", // blue
+  "#E06666", // red
+  "#C27BA0", // purple
+  "#F9CB9C", // orange
+];
 
 export default function BibleBrowser() {
   const router = useRouter();
@@ -63,10 +73,10 @@ export default function BibleBrowser() {
   const [error, setError] = useState(false);
   const [version, setVersion] = useState<BibleVersion>(BIBLE_VERSIONS[0]);
   const [pickerVisible, setPickerVisible] = useState(false);
-  const [underlined, setUnderlined] = useState<Set<string>>(new Set());
+  const [highlights, setHighlights] = useState<Map<string, string>>(new Map());
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const [bookmarkConfirm, setBookmarkConfirm] = useState<string | null>(null);
-  const lastTapRef = useRef<{ verse: number; time: number } | null>(null);
+  const [drawerVerse, setDrawerVerse] = useState<ChapterVerse | null>(null);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Deep-link: auto-open a saved chapter when bookId+chapter params are present
@@ -104,13 +114,13 @@ export default function BibleBrowser() {
     setError(false);
     setVerses([]);
     try {
-      const [data, underlines, savedBookmarks] = await Promise.all([
+      const [data, savedHighlights, savedBookmarks] = await Promise.all([
         fetchChapter(b.id, ch, (ver ?? version).id),
-        loadUnderlines(),
+        loadHighlights(),
         loadBookmarks(),
       ]);
       setVerses(data);
-      setUnderlined(underlines);
+      setHighlights(savedHighlights);
       setBookmarked(new Set(savedBookmarks.map((bm) => bm.id)));
       // Persist reading position so Home can show "Resume Reading"
       await saveReadingPosition({
@@ -125,43 +135,51 @@ export default function BibleBrowser() {
     }
   }
 
-  /**
-   * Single tap  → toggle underline on the verse.
-   * Double tap  → add verse to bookmarks (within 300 ms of previous tap).
-   */
-  async function handleVerseTap(v: ChapterVerse) {
-    const now = Date.now();
-    const last = lastTapRef.current;
-    const key = verseKey(book!.id, chapter!, v.verse);
+  /** Single tap → open the highlight / bookmark drawer */
+  function handleVerseTap(v: ChapterVerse) {
+    setDrawerVerse(v);
+  }
 
-    if (last && last.verse === v.verse && now - last.time < 300) {
-      // ── Double tap: bookmark ──────────────────────────────────────────────
-      lastTapRef.current = null;
-      await addBookmark({
-        id: key,
-        bookId: book!.id,
-        bookLabel: book!.label,
-        chapter: chapter!,
-        verse: v.verse,
-        text: v.text,
-        version: version.label,
-        createdAt: now,
-      });
-      setBookmarked((prev) => new Set([...prev, key]));
-      // Show confirmation popup and auto-dismiss after 2 s
-      const label = `${book!.label} ${chapter}:${v.verse}`;
-      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
-      setBookmarkConfirm(label);
-      confirmTimerRef.current = setTimeout(
-        () => setBookmarkConfirm(null),
-        2000,
-      );
-    } else {
-      // ── Single tap: underline toggle ──────────────────────────────────────
-      lastTapRef.current = { verse: v.verse, time: now };
-      const updated = await toggleUnderline(key);
-      setUnderlined(new Set(updated));
-    }
+  async function handleHighlight(color: string) {
+    if (!drawerVerse || !book) return;
+    const key = verseKey(book.id, chapter!, drawerVerse.verse);
+    await saveHighlight(key, color);
+    setHighlights((prev) => new Map([...prev, [key, color]]));
+    setDrawerVerse(null);
+  }
+
+  async function handleClearHighlight() {
+    if (!drawerVerse || !book) return;
+    const key = verseKey(book.id, chapter!, drawerVerse.verse);
+    await removeHighlight(key);
+    setHighlights((prev) => {
+      const next = new Map(prev);
+      next.delete(key);
+      return next;
+    });
+    setDrawerVerse(null);
+  }
+
+  async function handleDrawerBookmark() {
+    if (!drawerVerse || !book) return;
+    const now = Date.now();
+    const key = verseKey(book.id, chapter!, drawerVerse.verse);
+    await addBookmark({
+      id: key,
+      bookId: book.id,
+      bookLabel: book.label,
+      chapter: chapter!,
+      verse: drawerVerse.verse,
+      text: drawerVerse.text,
+      version: version.label,
+      createdAt: now,
+    });
+    setBookmarked((prev) => new Set([...prev, key]));
+    setDrawerVerse(null);
+    const label = `${book.label} ${chapter}:${drawerVerse.verse}`;
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    setBookmarkConfirm(label);
+    confirmTimerRef.current = setTimeout(() => setBookmarkConfirm(null), 2000);
   }
 
   const headerTitle =
@@ -299,6 +317,93 @@ export default function BibleBrowser() {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* Highlight / Bookmark drawer */}
+      <Modal
+        visible={drawerVerse !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDrawerVerse(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setDrawerVerse(null)}>
+          <View style={styles.drawerOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.drawerSheet,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <View style={styles.drawerHandle} />
+                <Text style={[styles.drawerTitle, { color: theme.text }]}>
+                  {drawerVerse
+                    ? `${book?.label ?? ""} ${chapter}:${drawerVerse.verse}`
+                    : ""}
+                </Text>
+
+                {/* Color swatches */}
+                <Text
+                  style={[styles.drawerLabel, { color: theme.textSecondary }]}
+                >
+                  Highlight
+                </Text>
+                <View style={styles.swatchRow}>
+                  {HIGHLIGHT_COLORS.map((c) => {
+                    const activeKey = drawerVerse
+                      ? verseKey(book!.id, chapter!, drawerVerse.verse)
+                      : null;
+                    const isActive = activeKey
+                      ? highlights.get(activeKey) === c
+                      : false;
+                    return (
+                      <TouchableOpacity
+                        key={c}
+                        style={[
+                          styles.swatch,
+                          { backgroundColor: c },
+                          isActive && styles.swatchActive,
+                        ]}
+                        onPress={() => handleHighlight(c)}
+                        activeOpacity={0.8}
+                      />
+                    );
+                  })}
+                  <TouchableOpacity
+                    style={[
+                      styles.swatch,
+                      styles.swatchClear,
+                      { borderColor: theme.border },
+                    ]}
+                    onPress={handleClearHighlight}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="close"
+                      size={14}
+                      color={theme.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Bookmark button */}
+                <TouchableOpacity
+                  style={[
+                    styles.drawerBookmarkBtn,
+                    { backgroundColor: theme.primary },
+                  ]}
+                  onPress={handleDrawerBookmark}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="bookmark-outline" size={18} color="#fff" />
+                  <Text style={styles.drawerBookmarkBtnText}>
+                    Add to Bookmarks
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Bookmark confirmation popup */}
       <Modal
         visible={bookmarkConfirm !== null}
@@ -418,12 +523,17 @@ export default function BibleBrowser() {
           <ScrollView contentContainerStyle={styles.versesList}>
             {verses.map((v) => {
               const key = verseKey(book!.id, chapter!, v.verse);
-              const isUnderlined = underlined.has(key);
+              const highlightColor = highlights.get(key);
               const isBookmarked = bookmarked.has(key);
               return (
                 <TouchableOpacity
                   key={v.verse}
-                  style={styles.verseRow}
+                  style={[
+                    styles.verseRow,
+                    highlightColor
+                      ? { backgroundColor: highlightColor + "55" }
+                      : null,
+                  ]}
                   onPress={() => handleVerseTap(v)}
                   activeOpacity={0.75}
                 >
@@ -440,13 +550,7 @@ export default function BibleBrowser() {
                       />
                     )}
                   </View>
-                  <Text
-                    style={[
-                      styles.verseText,
-                      { color: theme.text },
-                      isUnderlined && styles.verseTextUnderlined,
-                    ]}
-                  >
+                  <Text style={[styles.verseText, { color: theme.text }]}>
                     {v.text}
                   </Text>
                 </TouchableOpacity>
