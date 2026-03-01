@@ -8,13 +8,14 @@ export const styles = StyleSheet.create({
     gap: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 32,
+    fontFamily: "Oswald_700Bold",
     textAlign: "center",
   },
   subtitle: {
     textAlign: "center",
     opacity: 0.7,
+    marginBottom: 24,
   },
   fieldWrapper: {
     gap: 4,
@@ -51,6 +52,7 @@ export const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
+    marginTop: 24,
   },
   buttonText: {
     color: "#fff",
