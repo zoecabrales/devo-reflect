@@ -3,13 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { styles } from "./AuthForm.styles";
 
@@ -143,11 +143,12 @@ export default function AuthForm() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={styles.container}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>Devo Reflect</Text>
 
         <Text style={styles.subtitle}>
@@ -163,6 +164,7 @@ export default function AuthForm() {
               placeholder="Full Name"
               placeholderTextColor="#999"
               autoCapitalize="words"
+              autoComplete="name"
               value={fullName}
               onChangeText={setFullName}
               style={[styles.input, !!errors.fullName && styles.inputError]}
@@ -180,6 +182,7 @@ export default function AuthForm() {
             placeholderTextColor="#999"
             autoCapitalize="none"
             keyboardType="email-address"
+            autoComplete="email"
             value={email}
             onChangeText={setEmail}
             style={[styles.input, !!errors.email && styles.inputError]}
@@ -195,6 +198,7 @@ export default function AuthForm() {
               placeholder="Password"
               placeholderTextColor="#999"
               secureTextEntry={!showPassword}
+              autoComplete={isLogin ? "current-password" : "new-password"}
               value={password}
               onChangeText={setPassword}
               style={[
@@ -216,6 +220,12 @@ export default function AuthForm() {
           </View>
         </View>
 
+        {isLogin && (
+          <Pressable onPress={() => router.push("/(auth)/forgot-password")}>
+            <Text style={styles.forgotText}>Forgot Password?</Text>
+          </Pressable>
+        )}
+
         {!isLogin && (
           <View style={styles.fieldWrapper}>
             {!!errors.confirmPassword && (
@@ -226,6 +236,7 @@ export default function AuthForm() {
                 placeholder="Confirm Password"
                 placeholderTextColor="#999"
                 secureTextEntry={!showConfirmPassword}
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 style={[
@@ -277,7 +288,7 @@ export default function AuthForm() {
               : "Already have an account? Login"}
           </Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

@@ -2,6 +2,7 @@ import {
     createUserWithEmailAndPassword,
     reload,
     sendEmailVerification,
+    sendPasswordResetEmail,
     signInWithEmailAndPassword,
     signOut,
     updateProfile,
@@ -42,4 +43,8 @@ export async function reloadAndCheckVerified(): Promise<boolean> {
   if (!user) return false;
   await reload(user);
   return user.emailVerified;
+}
+
+export async function sendPasswordReset(email: string) {
+  await sendPasswordResetEmail(auth, email);
 }

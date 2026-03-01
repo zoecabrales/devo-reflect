@@ -2,7 +2,7 @@ import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 24,
     justifyContent: "center",
     gap: 16,
@@ -22,6 +22,7 @@ export const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
+    borderColor: "#ddd",
     borderRadius: 12,
     padding: 14,
     backgroundColor: "#fff",
@@ -61,5 +62,10 @@ export const styles = StyleSheet.create({
   toggleText: {
     textAlign: "center",
     marginTop: 12,
+  },
+  forgotText: {
+    textAlign: "right",
+    fontSize: 12,
+    color: "#555",
   },
 });
