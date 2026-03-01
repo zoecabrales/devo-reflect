@@ -1,10 +1,13 @@
 import {
+    EmailAuthProvider,
     createUserWithEmailAndPassword,
+    reauthenticateWithCredential,
     reload,
     sendEmailVerification,
     sendPasswordResetEmail,
     signInWithEmailAndPassword,
     signOut,
+    updatePassword,
     updateProfile,
 } from "firebase/auth";
 import { auth } from "./firebase";
@@ -47,4 +50,15 @@ export async function reloadAndCheckVerified(): Promise<boolean> {
 
 export async function sendPasswordReset(email: string) {
   await sendPasswordResetEmail(auth, email);
+}
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+) {
+  const user = auth.currentUser;
+  if (!user || !user.email) throw new Error("No user is currently signed in.");
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await updatePassword(user, newPassword);
 }

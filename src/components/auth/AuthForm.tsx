@@ -110,6 +110,13 @@ export default function AuthForm() {
           email: "This email is already registered.",
         }));
         break;
+      case "auth/too-many-requests":
+        setErrors((e) => ({
+          ...e,
+          password:
+            "Too many failed attempts. Please wait a moment and try again.",
+        }));
+        break;
       default:
         setErrors((e) => ({
           ...e,

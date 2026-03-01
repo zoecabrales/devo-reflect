@@ -17,6 +17,13 @@ export default function Settings() {
 
   return (
     <View style={styles.container}>
+      <Pressable
+        onPress={() => router.push("/(auth)/change-password")}
+        style={styles.outlineButton}
+      >
+        <Text style={styles.outlineButtonText}>Change Password</Text>
+      </Pressable>
+
       <Pressable onPress={handleSignOut} style={styles.button}>
         <Text style={styles.buttonText}>Sign Out</Text>
       </Pressable>
