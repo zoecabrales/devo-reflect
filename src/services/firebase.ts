@@ -1,5 +1,9 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApps, initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, initializeAuth } from "firebase/auth";
+// @ts-ignore — Metro resolves @firebase/auth to its RN build (dist/rn) at runtime;
+// TypeScript uses the browser types which don't expose this export.
+import { getReactNativePersistence } from "@firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -10,9 +14,16 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Prevent re-initializing the app on hot reload
-const app =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+// Capture before initializeApp so we can detect hot reloads
+const isFirstInit = getApps().length === 0;
+const app = isFirstInit ? initializeApp(firebaseConfig) : getApps()[0];
 
-export const auth = getAuth(app);
+// initializeAuth sets AsyncStorage persistence on first launch.
+// On hot reload the Auth instance already exists, so fall back to getAuth.
+export const auth = isFirstInit
+  ? initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    })
+  : getAuth(app);
+
 export default app;

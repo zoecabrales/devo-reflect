@@ -1,13 +1,22 @@
+import {
+    isIdleTimeout,
+    setLastActiveAt,
+    signOutUser,
+} from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
-import { Redirect, Tabs } from "expo-router";
+import { Redirect, Tabs, useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AppState, AppStateStatus } from "react-native";
 
 type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";
 
 export default function TabsLayout() {
   const [authState, setAuthState] = useState<AuthState>("loading");
+  const router = useRouter();
+  const appStateRef = useRef(AppState.currentState);
 
+  // Auth state guard
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -19,6 +28,38 @@ export default function TabsLayout() {
       }
     });
     return unsubscribe;
+  }, []);
+
+  // Idle timeout: save timestamp on background, check on foreground
+  useEffect(() => {
+    // Cold-start check — handle case where app was left for >10 min then killed and reopened
+    isIdleTimeout().then((timedOut) => {
+      if (timedOut) {
+        signOutUser().then(() => router.replace("/(auth)/sign-in"));
+      }
+    });
+
+    const subscription = AppState.addEventListener(
+      "change",
+      async (nextState: AppStateStatus) => {
+        const prev = appStateRef.current;
+        appStateRef.current = nextState;
+
+        if (nextState === "background" || nextState === "inactive") {
+          // Save the moment the user left the app
+          await setLastActiveAt();
+        } else if (nextState === "active" && prev !== "active") {
+          // User returned — check if they were away for more than 10 minutes
+          const timedOut = await isIdleTimeout();
+          if (timedOut) {
+            await signOutUser();
+            router.replace("/(auth)/sign-in");
+          }
+        }
+      },
+    );
+
+    return () => subscription.remove();
   }, []);
 
   if (authState === "loading") return null;

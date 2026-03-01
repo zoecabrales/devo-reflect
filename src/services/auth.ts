@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
     EmailAuthProvider,
     createUserWithEmailAndPassword,
@@ -12,6 +13,24 @@ import {
     updateProfile,
 } from "firebase/auth";
 import { auth } from "./firebase";
+
+const LAST_ACTIVE_KEY = "@last_active_at";
+const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+export async function setLastActiveAt(): Promise<void> {
+  await AsyncStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+}
+
+export async function clearLastActiveAt(): Promise<void> {
+  await AsyncStorage.removeItem(LAST_ACTIVE_KEY);
+}
+
+/** Returns true if the user has been idle for more than 10 minutes. */
+export async function isIdleTimeout(): Promise<boolean> {
+  const raw = await AsyncStorage.getItem(LAST_ACTIVE_KEY);
+  if (!raw) return false; // no timestamp yet — first launch, don't sign out
+  return Date.now() - Number(raw) > IDLE_TIMEOUT_MS;
+}
 
 export async function signUpEmail(
   email: string,
@@ -33,6 +52,7 @@ export async function signInEmail(email: string, password: string) {
 }
 
 export async function signOutUser() {
+  await clearLastActiveAt();
   return signOut(auth);
 }
 
