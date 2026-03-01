@@ -34,4 +34,9 @@ export const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
+  deleteLink: {
+    color: "#c53030",
+    fontSize: 14,
+    marginTop: 8,
+  },
 });

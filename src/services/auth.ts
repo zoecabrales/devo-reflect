@@ -1,6 +1,7 @@
 import {
     EmailAuthProvider,
     createUserWithEmailAndPassword,
+    deleteUser,
     reauthenticateWithCredential,
     reload,
     sendEmailVerification,
@@ -61,4 +62,12 @@ export async function changePassword(
   const credential = EmailAuthProvider.credential(user.email, currentPassword);
   await reauthenticateWithCredential(user, credential);
   await updatePassword(user, newPassword);
+}
+
+export async function deleteAccount(currentPassword: string) {
+  const user = auth.currentUser;
+  if (!user || !user.email) throw new Error("No user is currently signed in.");
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await deleteUser(user);
 }

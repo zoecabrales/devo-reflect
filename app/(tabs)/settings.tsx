@@ -27,6 +27,10 @@ export default function Settings() {
       <Pressable onPress={handleSignOut} style={styles.button}>
         <Text style={styles.buttonText}>Sign Out</Text>
       </Pressable>
+
+      <Pressable onPress={() => router.push("/(auth)/delete-account")}>
+        <Text style={styles.deleteLink}>Delete Account</Text>
+      </Pressable>
     </View>
   );
 }
