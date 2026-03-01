@@ -1,18 +1,171 @@
-import { Text, View, StyleSheet } from "react-native";
+import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
+import { BibleVerse, fetchDailyVerse } from "@/src/services/bible";
+import { auth } from "@/src/services/firebase";
+import { useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    useColorScheme,
+    View,
+} from "react-native";
+import { styles } from "./home.styles";
 
-export default function Home() {
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function getFormattedDate(): string {
+  return new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────────
+
+function LoadingSkeleton({ theme }: { theme: Theme }) {
   return (
-    <View style={styles.container}>
-      <Text>Home</Text>
+    <View
+      style={[
+        styles.loadingCard,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+    >
+      <View style={[styles.skeletonShort, { backgroundColor: theme.text }]} />
+      <View style={[styles.skeletonMedium, { backgroundColor: theme.text }]} />
+      <View style={[styles.skeletonLong, { backgroundColor: theme.text }]} />
+      <View style={[styles.skeletonLongAlt, { backgroundColor: theme.text }]} />
+      <View
+        style={[styles.skeletonLongAlt2, { backgroundColor: theme.text }]}
+      />
+      <ActivityIndicator
+        size="small"
+        color={theme.textSecondary}
+        style={{ marginTop: 4 }}
+      />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
+function ErrorCard({ theme, onRetry }: { theme: Theme; onRetry: () => void }) {
+  return (
+    <View
+      style={[
+        styles.errorCard,
+        { backgroundColor: theme.surface, borderColor: theme.borderError },
+      ]}
+    >
+      <Text style={[styles.errorText, { color: theme.text }]}>
+        Could not load today's verse.{"\n"}Check your connection and try again.
+      </Text>
+      <TouchableOpacity
+        onPress={onRetry}
+        style={[styles.retryButton, { backgroundColor: theme.primary }]}
+        activeOpacity={0.8}
+      >
+        <Text style={[styles.retryText, { color: theme.primaryText }]}>
+          Try Again
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 
+function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
+  const reference = `${verse.bookLabel} ${verse.chapter}:${verse.verse}`;
+  return (
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+    >
+      <Text style={[styles.cardLabel, { color: theme.text }]}>
+        Verse of the Day
+      </Text>
+      <Text style={[styles.verseReference, { color: theme.text }]}>
+        {reference}
+      </Text>
+      <Text style={[styles.verseText, { color: theme.text }]}>
+        "{verse.text}"
+      </Text>
+      <View style={styles.cardFooter}>
+        <View style={[styles.versionBadge, { borderColor: theme.border }]}>
+          <Text
+            style={[styles.versionBadgeText, { color: theme.textSecondary }]}
+          >
+            {verse.version}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ── Screen ─────────────────────────────────────────────────────────────────
+
+export default function Home() {
+  const colorScheme = useColorScheme();
+  const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
+
+  const [verse, setVerse] = useState<BibleVerse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const user = auth.currentUser;
+  const displayName = user?.displayName?.split(" ")[0] ?? "Friend";
+
+  async function loadVerse() {
+    setLoading(true);
+    setError(false);
+    try {
+      const data = await fetchDailyVerse();
+      setVerse(data);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadVerse();
+  }, []);
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Greeting header */}
+        <View style={styles.header}>
+          <Text style={[styles.greeting, { color: theme.text }]}>
+            {getGreeting()}, {displayName}
+          </Text>
+          <Text style={[styles.dateText, { color: theme.textSecondary }]}>
+            {getFormattedDate()}
+          </Text>
+        </View>
+
+        {/* Verse of the Day */}
+        {loading ? (
+          <LoadingSkeleton theme={theme} />
+        ) : error ? (
+          <ErrorCard theme={theme} onRetry={loadVerse} />
+        ) : verse ? (
+          <VerseCard verse={verse} theme={theme} />
+        ) : null}
+      </ScrollView>
+    </View>
+  );
+}
