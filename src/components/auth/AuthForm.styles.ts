@@ -62,4 +62,22 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 12,
   },
+  strengthList: {
+    gap: 6,
+    paddingLeft: 2,
+  },
+  strengthItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  strengthLabel: {
+    fontSize: 12,
+  },
+  strengthLabelMet: {
+    color: "#2f855a",
+  },
+  strengthLabelUnmet: {
+    color: "#aaa",
+  },
 });

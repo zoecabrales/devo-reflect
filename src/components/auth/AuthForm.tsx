@@ -15,10 +15,21 @@ import { styles } from "./AuthForm.styles";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const PASSWORD_RULES = [
+  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
+  { label: "One uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
+  { label: "One number", test: (p: string) => /[0-9]/.test(p) },
+  {
+    label: "One special character",
+    test: (p: string) => /[^A-Za-z0-9]/.test(p),
+  },
+];
+
 type FieldErrors = {
   fullName: string;
   email: string;
   password: string;
+  confirmPassword: string;
 };
 
 export default function AuthForm() {
@@ -28,20 +39,28 @@ export default function AuthForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({
     fullName: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
   function clearErrors() {
-    setErrors({ fullName: "", email: "", password: "" });
+    setErrors({ fullName: "", email: "", password: "", confirmPassword: "" });
   }
 
   function validate(): boolean {
-    const newErrors: FieldErrors = { fullName: "", email: "", password: "" };
+    const newErrors: FieldErrors = {
+      fullName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    };
     let valid = true;
 
     if (!isLogin && !fullName.trim()) {
@@ -60,9 +79,25 @@ export default function AuthForm() {
     if (!password) {
       newErrors.password = "Password is required.";
       valid = false;
+    } else if (!isLogin) {
+      const failedRule = PASSWORD_RULES.find((r) => !r.test(password));
+      if (failedRule) {
+        newErrors.password = "Password does not meet all requirements.";
+        valid = false;
+      }
     } else if (password.length < 6) {
       newErrors.password = "Password must be at least 6 characters.";
       valid = false;
+    }
+
+    if (!isLogin) {
+      if (!confirmPassword) {
+        newErrors.confirmPassword = "Please confirm your password.";
+        valid = false;
+      } else if (confirmPassword !== password) {
+        newErrors.confirmPassword = "Passwords do not match.";
+        valid = false;
+      }
     }
 
     setErrors(newErrors);
@@ -197,6 +232,63 @@ export default function AuthForm() {
           </View>
         </View>
 
+        {!isLogin && password.length > 0 && (
+          <View style={styles.strengthList}>
+            {PASSWORD_RULES.map((rule) => {
+              const met = rule.test(password);
+              return (
+                <View key={rule.label} style={styles.strengthItem}>
+                  <Ionicons
+                    name={met ? "checkmark-circle" : "ellipse-outline"}
+                    size={14}
+                    color={met ? "#2f855a" : "#aaa"}
+                  />
+                  <Text
+                    style={[
+                      styles.strengthLabel,
+                      met ? styles.strengthLabelMet : styles.strengthLabelUnmet,
+                    ]}
+                  >
+                    {rule.label}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {!isLogin && (
+          <View style={styles.fieldWrapper}>
+            {!!errors.confirmPassword && (
+              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            )}
+            <View style={styles.passwordInputWrapper}>
+              <TextInput
+                placeholder="Confirm Password"
+                placeholderTextColor="#999"
+                secureTextEntry={!showConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                style={[
+                  styles.input,
+                  styles.passwordInput,
+                  !!errors.confirmPassword && styles.inputError,
+                ]}
+              />
+              <Pressable
+                onPress={() => setShowConfirmPassword((prev) => !prev)}
+                style={styles.eyeIcon}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                  size={22}
+                  color="#888"
+                />
+              </Pressable>
+            </View>
+          </View>
+        )}
+
         <Pressable onPress={handleSubmit} style={styles.button}>
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -213,7 +305,9 @@ export default function AuthForm() {
             setFullName("");
             setEmail("");
             setPassword("");
+            setConfirmPassword("");
             setShowPassword(false);
+            setShowConfirmPassword(false);
             clearErrors();
             setTimeout(() => emailRef.current?.focus(), 50);
           }}

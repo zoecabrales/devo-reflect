@@ -1,6 +1,32 @@
-import { Tabs } from "expo-router";
+import { auth } from "@/src/services/firebase";
+import { Redirect, Tabs } from "expo-router";
+import { onAuthStateChanged } from "firebase/auth";
+import { useEffect, useState } from "react";
+
+type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";
 
 export default function TabsLayout() {
+  const [authState, setAuthState] = useState<AuthState>("loading");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setAuthState("unauthenticated");
+      } else if (!user.emailVerified) {
+        setAuthState("unverified");
+      } else {
+        setAuthState("authenticated");
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  if (authState === "loading") return null;
+  if (authState === "unauthenticated")
+    return <Redirect href="/(auth)/sign-in" />;
+  if (authState === "unverified")
+    return <Redirect href="/(auth)/verify-email" />;
+
   return (
     <Tabs>
       <Tabs.Screen name="home" options={{ title: "Home" }} />
@@ -11,4 +37,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
