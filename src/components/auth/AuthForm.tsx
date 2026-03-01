@@ -106,11 +106,16 @@ export default function AuthForm() {
     try {
       setLoading(true);
       if (isLogin) {
-        await signInEmail(email.trim(), password);
+        const result = await signInEmail(email.trim(), password);
+        if (!result.user.emailVerified) {
+          router.replace("/(auth)/verify-email");
+        } else {
+          router.replace("/(tabs)/home");
+        }
       } else {
         await signUpEmail(email.trim(), password, fullName);
+        router.replace("/(auth)/verify-email");
       }
-      router.replace("/(tabs)/home");
     } catch (error: any) {
       handleFirebaseError(error?.code ?? "");
     } finally {
