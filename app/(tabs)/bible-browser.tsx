@@ -9,9 +9,15 @@ import {
     fetchChapter,
     saveReadingPosition,
 } from "@/src/services/bible";
+import {
+    addBookmark,
+    loadBookmarks,
+    loadUnderlines,
+    toggleUnderline,
+} from "@/src/services/bookmarks";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Modal,
@@ -57,6 +63,11 @@ export default function BibleBrowser() {
   const [error, setError] = useState(false);
   const [version, setVersion] = useState<BibleVersion>(BIBLE_VERSIONS[0]);
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [underlined, setUnderlined] = useState<Set<string>>(new Set());
+  const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+  const [bookmarkConfirm, setBookmarkConfirm] = useState<string | null>(null);
+  const lastTapRef = useRef<{ verse: number; time: number } | null>(null);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Deep-link: auto-open a saved chapter when bookId+chapter params are present
   useEffect(() => {
@@ -80,6 +91,11 @@ export default function BibleBrowser() {
     } else router.back();
   }
 
+  /** Stable key identifying a verse independent of translation. */
+  function verseKey(bookId: string, ch: number, verseNum: number) {
+    return `${bookId}-${ch}-${verseNum}`;
+  }
+
   async function openChapter(b: BibleBook, ch: number, ver?: BibleVersion) {
     setBook(b);
     setChapter(ch);
@@ -88,8 +104,14 @@ export default function BibleBrowser() {
     setError(false);
     setVerses([]);
     try {
-      const data = await fetchChapter(b.id, ch, (ver ?? version).id);
+      const [data, underlines, savedBookmarks] = await Promise.all([
+        fetchChapter(b.id, ch, (ver ?? version).id),
+        loadUnderlines(),
+        loadBookmarks(),
+      ]);
       setVerses(data);
+      setUnderlined(underlines);
+      setBookmarked(new Set(savedBookmarks.map((bm) => bm.id)));
       // Persist reading position so Home can show "Resume Reading"
       await saveReadingPosition({
         bookId: b.id,
@@ -100,6 +122,45 @@ export default function BibleBrowser() {
       setError(true);
     } finally {
       setLoading(false);
+    }
+  }
+
+  /**
+   * Single tap  → toggle underline on the verse.
+   * Double tap  → add verse to bookmarks (within 300 ms of previous tap).
+   */
+  async function handleVerseTap(v: ChapterVerse) {
+    const now = Date.now();
+    const last = lastTapRef.current;
+    const key = verseKey(book!.id, chapter!, v.verse);
+
+    if (last && last.verse === v.verse && now - last.time < 300) {
+      // ── Double tap: bookmark ──────────────────────────────────────────────
+      lastTapRef.current = null;
+      await addBookmark({
+        id: key,
+        bookId: book!.id,
+        bookLabel: book!.label,
+        chapter: chapter!,
+        verse: v.verse,
+        text: v.text,
+        version: version.label,
+        createdAt: now,
+      });
+      setBookmarked((prev) => new Set([...prev, key]));
+      // Show confirmation popup and auto-dismiss after 2 s
+      const label = `${book!.label} ${chapter}:${v.verse}`;
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      setBookmarkConfirm(label);
+      confirmTimerRef.current = setTimeout(
+        () => setBookmarkConfirm(null),
+        2000,
+      );
+    } else {
+      // ── Single tap: underline toggle ──────────────────────────────────────
+      lastTapRef.current = { verse: v.verse, time: now };
+      const updated = await toggleUnderline(key);
+      setUnderlined(new Set(updated));
     }
   }
 
@@ -238,6 +299,37 @@ export default function BibleBrowser() {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* Bookmark confirmation popup */}
+      <Modal
+        visible={bookmarkConfirm !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setBookmarkConfirm(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setBookmarkConfirm(null)}>
+          <View style={styles.confirmOverlay}>
+            <View
+              style={[
+                styles.confirmCard,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}
+            >
+              <Ionicons name="bookmark" size={22} color={theme.primary} />
+              <View style={styles.confirmTextWrap}>
+                <Text style={[styles.confirmTitle, { color: theme.text }]}>
+                  Verse Bookmarked
+                </Text>
+                <Text
+                  style={[styles.confirmRef, { color: theme.textSecondary }]}
+                >
+                  {bookmarkConfirm} saved to Bookmarks
+                </Text>
+              </View>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Books */}
       {screen === "books" && (
         <SectionList
@@ -324,16 +416,42 @@ export default function BibleBrowser() {
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.versesList}>
-            {verses.map((v) => (
-              <View key={v.verse} style={styles.verseRow}>
-                <Text style={[styles.verseNum, { color: theme.text }]}>
-                  {v.verse}
-                </Text>
-                <Text style={[styles.verseText, { color: theme.text }]}>
-                  {v.text}
-                </Text>
-              </View>
-            ))}
+            {verses.map((v) => {
+              const key = verseKey(book!.id, chapter!, v.verse);
+              const isUnderlined = underlined.has(key);
+              const isBookmarked = bookmarked.has(key);
+              return (
+                <TouchableOpacity
+                  key={v.verse}
+                  style={styles.verseRow}
+                  onPress={() => handleVerseTap(v)}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.verseNumCol}>
+                    <Text style={[styles.verseNum, { color: theme.text }]}>
+                      {v.verse}
+                    </Text>
+                    {isBookmarked && (
+                      <Ionicons
+                        name="bookmark"
+                        size={9}
+                        color={theme.primary}
+                        style={styles.verseBookmarkIcon}
+                      />
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.verseText,
+                      { color: theme.text },
+                      isUnderlined && styles.verseTextUnderlined,
+                    ]}
+                  >
+                    {v.text}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         ))}
     </SafeAreaView>

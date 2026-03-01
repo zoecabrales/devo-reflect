@@ -159,19 +159,65 @@ export const styles = StyleSheet.create({
     gap: 12,
     alignItems: "flex-start",
   },
+  verseNumCol: {
+    alignItems: "center",
+    minWidth: 24,
+    gap: 3,
+    paddingTop: 3,
+  },
   verseNum: {
     fontSize: 12,
     fontWeight: "700",
-    minWidth: 24,
-    paddingTop: 3,
     opacity: 0.4,
     textAlign: "right",
+  },
+  verseBookmarkIcon: {
+    opacity: 0.85,
   },
   verseText: {
     fontSize: 16,
     lineHeight: 26,
     flex: 1,
     letterSpacing: 0.15,
+  },
+  verseTextUnderlined: {
+    textDecorationLine: "underline",
+  },
+
+  // ── Bookmark Confirmation Popup ───────────────────────────
+  confirmOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingBottom: 100,
+  },
+  confirmCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    width: "88%",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  confirmTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  confirmTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  confirmRef: {
+    fontSize: 12,
+    opacity: 0.65,
   },
 
   // ── States ───────────────────────────────────────────────
