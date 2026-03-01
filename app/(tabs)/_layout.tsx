@@ -1,9 +1,10 @@
 import {
-    isIdleTimeout,
-    setLastActiveAt,
-    signOutUser,
+  isIdleTimeout,
+  setLastActiveAt,
+  signOutUser,
 } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
+import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs, useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
@@ -69,12 +70,44 @@ export default function TabsLayout() {
     return <Redirect href="/(auth)/verify-email" />;
 
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons: Record<
+            string,
+            {
+              active: keyof typeof Ionicons.glyphMap;
+              inactive: keyof typeof Ionicons.glyphMap;
+            }
+          > = {
+            home: { active: "home", inactive: "home-outline" },
+            journal: { active: "book", inactive: "book-outline" },
+            prayers: { active: "heart", inactive: "heart-outline" },
+            bookmarks: { active: "bookmark", inactive: "bookmark-outline" },
+            settings: { active: "settings", inactive: "settings-outline" },
+          };
+          const icon = icons[route.name];
+          return (
+            <Ionicons
+              name={focused ? icon.active : icon.inactive}
+              size={size}
+              color={color}
+            />
+          );
+        },
+      })}
+    >
       <Tabs.Screen name="home" options={{ title: "Home" }} />
       <Tabs.Screen name="journal" options={{ title: "Journal" }} />
       <Tabs.Screen name="prayers" options={{ title: "Prayers" }} />
       <Tabs.Screen name="bookmarks" options={{ title: "Bookmarks" }} />
       <Tabs.Screen name="settings" options={{ title: "Settings" }} />
+      {/* Hidden screen — navigable but not shown in the tab bar */}
+      <Tabs.Screen
+        name="bible-browser"
+        options={{ href: null, tabBarStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

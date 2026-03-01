@@ -108,6 +108,37 @@ export const styles = StyleSheet.create({
     opacity: 0.12,
   },
 
+  // ── Browse Bible Card ────────────────────────────────────
+  browseCard: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  browseIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  browseTextWrap: {
+    flex: 1,
+    gap: 3,
+  },
+  browseTitle: {
+    fontSize: 16,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.4,
+  },
+  browseSubtitle: {
+    fontSize: 13,
+    opacity: 0.55,
+    letterSpacing: 0.2,
+  },
+
   // ── Error State ──────────────────────────────────────────
   errorCard: {
     borderRadius: 16,
@@ -134,4 +165,3 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
-

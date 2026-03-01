@@ -1,14 +1,16 @@
 import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
 import { BibleVerse, fetchDailyVerse } from "@/src/services/bible";
 import { auth } from "@/src/services/firebase";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
 import { styles } from "./home.styles";
 
@@ -111,6 +113,33 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
   );
 }
 
+function BrowseBibleCard({ theme }: { theme: Theme }) {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      style={[
+        styles.browseCard,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+      onPress={() => router.push("/(tabs)/bible-browser")}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.browseIconWrap, { backgroundColor: theme.primary }]}>
+        <Ionicons name="book-outline" size={22} color={theme.primaryText} />
+      </View>
+      <View style={styles.browseTextWrap}>
+        <Text style={[styles.browseTitle, { color: theme.text }]}>
+          Browse the Bible
+        </Text>
+        <Text style={[styles.browseSubtitle, { color: theme.textSecondary }]}>
+          66 books · ASV
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+    </TouchableOpacity>
+  );
+}
+
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -165,6 +194,9 @@ export default function Home() {
         ) : verse ? (
           <VerseCard verse={verse} theme={theme} />
         ) : null}
+
+        {/* Browse Bible */}
+        <BrowseBibleCard theme={theme} />
       </ScrollView>
     </View>
   );
