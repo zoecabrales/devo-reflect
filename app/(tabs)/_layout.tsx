@@ -1,7 +1,7 @@
 import {
-  isIdleTimeout,
-  setLastActiveAt,
-  signOutUser,
+    isIdleTimeout,
+    setLastActiveAt,
+    signOutUser,
 } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
@@ -109,7 +109,7 @@ export default function TabsLayout() {
         options={{ href: null, tabBarStyle: { display: "none" } }}
       />
       <Tabs.Screen
-        name="hebrew-dictionary"
+        name="concordance"
         options={{ href: null, tabBarStyle: { display: "none" } }}
       />
     </Tabs>

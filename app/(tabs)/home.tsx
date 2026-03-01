@@ -174,7 +174,7 @@ function CollectionCards({ theme }: { theme: Theme }) {
   );
 }
 
-function HebrewDictionaryCard({ theme }: { theme: Theme }) {
+function ConcordanceCard({ theme }: { theme: Theme }) {
   const router = useRouter();
   return (
     <TouchableOpacity
@@ -182,18 +182,18 @@ function HebrewDictionaryCard({ theme }: { theme: Theme }) {
         styles.browseCard,
         { backgroundColor: theme.surface, borderColor: theme.border },
       ]}
-      onPress={() => router.push("/(tabs)/hebrew-dictionary")}
+      onPress={() => router.push("/(tabs)/concordance")}
       activeOpacity={0.8}
     >
       <View style={[styles.browseIconWrap, { backgroundColor: theme.primary }]}>
-        <Ionicons name="language-outline" size={18} color={theme.primaryText} />
+        <Ionicons name="search-outline" size={18} color={theme.primaryText} />
       </View>
       <View style={styles.browseTextWrap}>
         <Text style={[styles.browseTitle, { color: theme.text }]}>
-          Hebrew Dictionary
+          Biblical Concordance
         </Text>
         <Text style={[styles.browseSubtitle, { color: theme.textSecondary }]}>
-          Brown-Driver-Briggs · OT Hebrew
+          Search every verse · ASV
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
@@ -343,8 +343,8 @@ export default function Home() {
         {/* Browse Bible */}
         <BrowseBibleCard theme={theme} />
 
-        {/* Hebrew Dictionary */}
-        <HebrewDictionaryCard theme={theme} />
+        {/* Biblical Concordance */}
+        <ConcordanceCard theme={theme} />
       </ScrollView>
     </View>
   );

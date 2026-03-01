@@ -28,6 +28,30 @@ export async function loadReadingPosition(): Promise<ReadingPosition | null> {
 
 export const BIBLE_VERSION = "en-asv";
 
+// ── Bible Versions ───────────────────────────────────────────────────────────
+
+export interface BibleVersion {
+  id: string; // CDN path segment, e.g. "en-asv"
+  label: string; // short name shown in the picker, e.g. "ASV"
+  description: string; // full name shown beneath the label
+}
+
+export const BIBLE_VERSIONS: BibleVersion[] = [
+  {
+    id: "en-asv",
+    label: "ASV",
+    description: "American Standard Version (1901)",
+  },
+  { id: "en-kjv", label: "KJV", description: "King James Version (1611)" },
+  { id: "en-web", label: "WEB", description: "World English Bible" },
+  { id: "en-bbe", label: "BBE", description: "Bible in Basic English (1949)" },
+  {
+    id: "en-ylt",
+    label: "YLT",
+    description: "Young's Literal Translation (1898)",
+  },
+];
+
 // ── Bible Book Catalogue ────────────────────────────────────────────────────
 
 export interface BibleBook {
@@ -137,6 +161,7 @@ export interface ChapterVerse {
 export async function fetchChapter(
   bookId: string,
   chapter: number,
+  version: string = BIBLE_VERSION,
 ): Promise<ChapterVerse[]> {
   const BATCH = 30;
   const all: ChapterVerse[] = [];
@@ -146,7 +171,7 @@ export async function fetchChapter(
     const batch = await Promise.all(
       Array.from({ length: BATCH }, async (_, i) => {
         const v = offset + i + 1;
-        const url = `${BASE_URL}/${BIBLE_VERSION}/books/${bookId}/chapters/${chapter}/verses/${v}.json`;
+        const url = `${BASE_URL}/${version}/books/${bookId}/chapters/${chapter}/verses/${v}.json`;
         try {
           const r = await fetch(url);
           if (!r.ok) return null;

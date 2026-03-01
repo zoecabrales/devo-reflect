@@ -61,96 +61,53 @@ export const styles = StyleSheet.create({
     opacity: 0.45,
     textTransform: "uppercase",
     marginHorizontal: 20,
-    marginBottom: 6,
+    marginBottom: 10,
   },
 
-  // ── Entry Row ────────────────────────────────────────────
-  entryRow: {
+  // ── Suggested Terms ──────────────────────────────────────
+  suggestedWrap: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    gap: 12,
+    flexWrap: "wrap",
+    paddingHorizontal: 16,
+    gap: 8,
   },
-  entryLeft: {
-    flex: 1,
-  },
-  entryLexeme: {
-    fontSize: 20,
-    lineHeight: 26,
-  },
-  entryTranslit: {
-    fontSize: 12,
-    opacity: 0.55,
-    marginTop: 1,
-  },
-  entryRight: {
-    flex: 2,
-  },
-  entryStrongs: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
-    opacity: 0.4,
-    textTransform: "uppercase",
-    marginBottom: 3,
-  },
-  entryShortDef: {
-    fontSize: 13,
-    lineHeight: 19,
-  },
-
-  // ── Detail View ──────────────────────────────────────────
-  detailScroll: {
-    flex: 1,
-  },
-  detailContent: {
-    padding: 24,
-    gap: 16,
-  },
-  detailLexeme: {
-    fontSize: 48,
-    lineHeight: 58,
-    textAlign: "center",
-  },
-  detailTranslit: {
-    fontSize: 15,
-    textAlign: "center",
-    opacity: 0.55,
-  },
-  detailPronunciation: {
-    fontSize: 13,
-    textAlign: "center",
-    opacity: 0.4,
-    fontStyle: "italic",
-  },
-  detailStrongsChip: {
-    alignSelf: "center",
+  suggestedChip: {
     paddingHorizontal: 14,
-    paddingVertical: 5,
+    paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
   },
-  detailStrongsText: {
+  suggestedChipText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+
+  // ── Result Row ───────────────────────────────────────────
+  resultRow: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    gap: 4,
+  },
+  resultRef: {
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 1.5,
+    letterSpacing: 0.8,
+    opacity: 0.5,
     textTransform: "uppercase",
   },
-  detailDivider: {
-    height: 1,
-    opacity: 0.12,
-  },
-  detailShortDef: {
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 24,
-  },
-  detailDefinition: {
+  resultText: {
     fontSize: 14,
-    lineHeight: 24,
-    opacity: 0.75,
+    lineHeight: 21,
+  },
+
+  // ── Result count ─────────────────────────────────────────
+  resultCount: {
+    fontSize: 11,
+    opacity: 0.45,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    fontStyle: "italic",
   },
 
   // ── States ───────────────────────────────────────────────
@@ -177,3 +134,4 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+

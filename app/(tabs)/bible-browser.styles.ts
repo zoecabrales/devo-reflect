@@ -22,16 +22,81 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
   },
+  headerCenter: {
+    flex: 1,
+  },
   headerTitle: {
     fontSize: 17,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
-    flex: 1,
   },
   headerSubtitle: {
     fontSize: 11,
     opacity: 0.5,
     letterSpacing: 0.3,
+  },
+
+  // ── Version Pill ─────────────────────────────────────────
+  versionPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  versionPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
+
+  // ── Version Picker Modal ──────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 16,
+    opacity: 0.25,
+  },
+  modalTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    opacity: 0.4,
+    marginHorizontal: 20,
+    marginBottom: 8,
+  },
+  versionOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 14,
+  },
+  versionOptionLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    minWidth: 44,
+  },
+  versionOptionDesc: {
+    fontSize: 13,
+    flex: 1,
+    opacity: 0.55,
   },
 
   // ── Section Header ───────────────────────────────────────

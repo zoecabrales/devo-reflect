@@ -1,23 +1,27 @@
 import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
 import {
-  BIBLE_BOOKS,
-  BIBLE_COLLECTIONS,
-  BibleBook,
-  ChapterVerse,
-  fetchChapter,
-  saveReadingPosition,
+    BIBLE_BOOKS,
+    BIBLE_COLLECTIONS,
+    BIBLE_VERSIONS,
+    BibleBook,
+    BibleVersion,
+    ChapterVerse,
+    fetchChapter,
+    saveReadingPosition,
 } from "@/src/services/bible";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  SectionList,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    Modal,
+    ScrollView,
+    SectionList,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bible-browser.styles";
@@ -51,6 +55,8 @@ export default function BibleBrowser() {
   const [verses, setVerses] = useState<ChapterVerse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [version, setVersion] = useState<BibleVersion>(BIBLE_VERSIONS[0]);
+  const [pickerVisible, setPickerVisible] = useState(false);
 
   // Deep-link: auto-open a saved chapter when bookId+chapter params are present
   useEffect(() => {
@@ -74,7 +80,7 @@ export default function BibleBrowser() {
     } else router.back();
   }
 
-  async function openChapter(b: BibleBook, ch: number) {
+  async function openChapter(b: BibleBook, ch: number, ver?: BibleVersion) {
     setBook(b);
     setChapter(ch);
     setScreen("verses");
@@ -82,7 +88,7 @@ export default function BibleBrowser() {
     setError(false);
     setVerses([]);
     try {
-      const data = await fetchChapter(b.id, ch);
+      const data = await fetchChapter(b.id, ch, (ver ?? version).id);
       setVerses(data);
       // Persist reading position so Home can show "Resume Reading"
       await saveReadingPosition({
@@ -108,7 +114,7 @@ export default function BibleBrowser() {
     screen === "books"
       ? activeCollection
         ? activeCollection.subtitle
-        : "ASV · 66 Books"
+        : `${version.label} · 66 Books`
       : null;
 
   const sections = [
@@ -136,7 +142,7 @@ export default function BibleBrowser() {
         >
           <Ionicons name="chevron-back" size={20} color={theme.text} />
         </TouchableOpacity>
-        <View>
+        <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
             {headerTitle}
           </Text>
@@ -148,7 +154,89 @@ export default function BibleBrowser() {
             </Text>
           )}
         </View>
+        <TouchableOpacity
+          style={[
+            styles.versionPill,
+            { borderColor: theme.border, backgroundColor: theme.surface },
+          ]}
+          onPress={() => setPickerVisible(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.versionPillText, { color: theme.text }]}>
+            {version.label}
+          </Text>
+          <Ionicons name="chevron-down" size={11} color={theme.textSecondary} />
+        </TouchableOpacity>
       </View>
+
+      {/* Version Picker Modal */}
+      <Modal
+        visible={pickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPickerVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setPickerVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[styles.modalSheet, { backgroundColor: theme.surface }]}
+              >
+                <View
+                  style={[styles.modalHandle, { backgroundColor: theme.text }]}
+                />
+                <Text style={[styles.modalTitle, { color: theme.text }]}>
+                  Bible Version
+                </Text>
+                {BIBLE_VERSIONS.map((v) => {
+                  const active = v.id === version.id;
+                  return (
+                    <TouchableOpacity
+                      key={v.id}
+                      style={styles.versionOption}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setPickerVisible(false);
+                        setVersion(v);
+                        // Re-fetch current chapter in the new version
+                        if (screen === "verses" && book && chapter) {
+                          openChapter(book, chapter, v);
+                        }
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.versionOptionLabel,
+                          {
+                            color: active ? theme.primary : theme.text,
+                          },
+                        ]}
+                      >
+                        {v.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.versionOptionDesc,
+                          { color: theme.textSecondary },
+                        ]}
+                      >
+                        {v.description}
+                      </Text>
+                      {active && (
+                        <Ionicons
+                          name="checkmark"
+                          size={16}
+                          color={theme.primary}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* Books */}
       {screen === "books" && (
