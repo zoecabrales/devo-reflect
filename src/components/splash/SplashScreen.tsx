@@ -2,7 +2,7 @@ import { auth } from "@/src/services/firebase";
 import { useRouter } from "expo-router";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { useEffect, useRef } from "react";
-import { Animated, Text } from "react-native";
+import { Animated, Image, Text } from "react-native";
 import { styles } from "./SplashScreen.styles";
 
 export default function SplashScreen() {
@@ -46,6 +46,11 @@ export default function SplashScreen() {
 
   return (
     <Animated.View style={[styles.container, { opacity }]}>
+      <Image
+        source={require("@/assets/images/bibleicon.png")}
+        style={styles.icon}
+        resizeMode="contain"
+      />
       <Text style={styles.title}>Devo Reflect</Text>
     </Animated.View>
   );

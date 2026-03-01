@@ -59,9 +59,17 @@ export const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
   },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 12,
+  },
   toggleText: {
     textAlign: "center",
-    marginTop: 12,
+  },
+  toggleLink: {
+    fontWeight: "700",
   },
   forgotText: {
     textAlign: "right",

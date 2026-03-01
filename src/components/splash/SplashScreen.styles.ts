@@ -6,6 +6,11 @@ export const styles = StyleSheet.create({
     backgroundColor: "#000000",
     justifyContent: "center",
     alignItems: "center",
+    gap: 16,
+  },
+  icon: {
+    width: 120,
+    height: 120,
   },
   title: {
     fontFamily: "Oswald_700Bold",
@@ -14,4 +19,3 @@ export const styles = StyleSheet.create({
     letterSpacing: 2,
   },
 });
-

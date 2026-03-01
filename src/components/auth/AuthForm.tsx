@@ -319,27 +319,32 @@ export default function AuthForm() {
           )}
         </Pressable>
 
-        <Pressable
-          onPress={() => {
-            setIsLogin(!isLogin);
-            setFullName("");
-            setEmail("");
-            setPassword("");
-            setConfirmPassword("");
-            setShowPassword(false);
-            setShowConfirmPassword(false);
-            clearErrors();
-            setTimeout(() => emailRef.current?.focus(), 50);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={isLogin ? "Switch to Sign Up" : "Switch to Login"}
-        >
+        <View style={styles.toggleRow}>
           <Text style={styles.toggleText}>
-            {isLogin
-              ? "Don't have an account? Sign Up"
-              : "Already have an account? Login"}
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
           </Text>
-        </Pressable>
+          <Pressable
+            onPress={() => {
+              setIsLogin(!isLogin);
+              setFullName("");
+              setEmail("");
+              setPassword("");
+              setConfirmPassword("");
+              setShowPassword(false);
+              setShowConfirmPassword(false);
+              clearErrors();
+              setTimeout(() => emailRef.current?.focus(), 50);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isLogin ? "Switch to Sign Up" : "Switch to Login"
+            }
+          >
+            <Text style={styles.toggleLink}>
+              {isLogin ? "Sign Up" : "Login"}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
