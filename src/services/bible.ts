@@ -1,4 +1,30 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const BASE_URL = "https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles";
+
+// ── Reading Position ─────────────────────────────────────────────────────────
+
+export interface ReadingPosition {
+  bookId: string;
+  bookLabel: string;
+  chapter: number;
+}
+
+const READING_POSITION_KEY = "@reading_position";
+
+export async function saveReadingPosition(pos: ReadingPosition): Promise<void> {
+  await AsyncStorage.setItem(READING_POSITION_KEY, JSON.stringify(pos));
+}
+
+export async function loadReadingPosition(): Promise<ReadingPosition | null> {
+  const raw = await AsyncStorage.getItem(READING_POSITION_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as ReadingPosition;
+  } catch {
+    return null;
+  }
+}
 
 export const BIBLE_VERSION = "en-asv";
 

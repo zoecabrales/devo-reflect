@@ -5,13 +5,13 @@ import {
   BibleBook,
   ChapterVerse,
   fetchChapter,
+  saveReadingPosition,
 } from "@/src/services/bible";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  SafeAreaView,
   ScrollView,
   SectionList,
   Text,
@@ -19,13 +19,22 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bible-browser.styles";
 
 type Screen = "books" | "chapters" | "verses";
 
 export default function BibleBrowser() {
   const router = useRouter();
-  const { collectionId } = useLocalSearchParams<{ collectionId?: string }>();
+  const {
+    collectionId,
+    bookId,
+    chapter: chapterParam,
+  } = useLocalSearchParams<{
+    collectionId?: string;
+    bookId?: string;
+    chapter?: string;
+  }>();
   const colorScheme = useColorScheme();
   const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
 
@@ -42,6 +51,18 @@ export default function BibleBrowser() {
   const [verses, setVerses] = useState<ChapterVerse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+
+  // Deep-link: auto-open a saved chapter when bookId+chapter params are present
+  useEffect(() => {
+    if (bookId && chapterParam) {
+      const found = BIBLE_BOOKS.find((b) => b.id === bookId);
+      const ch = parseInt(chapterParam, 10);
+      if (found && !isNaN(ch)) {
+        openChapter(found, ch);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function goBack() {
     if (screen === "verses") {
@@ -63,6 +84,12 @@ export default function BibleBrowser() {
     try {
       const data = await fetchChapter(b.id, ch);
       setVerses(data);
+      // Persist reading position so Home can show "Resume Reading"
+      await saveReadingPosition({
+        bookId: b.id,
+        bookLabel: b.label,
+        chapter: ch,
+      });
     } catch {
       setError(true);
     } finally {
@@ -97,6 +124,7 @@ export default function BibleBrowser() {
 
   return (
     <SafeAreaView
+      edges={["top", "bottom"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       {/* Header */}

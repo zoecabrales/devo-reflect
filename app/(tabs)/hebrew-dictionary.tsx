@@ -1,26 +1,26 @@
 import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
 import {
-    FEATURED_HEBREW_WORDS,
-    FeaturedWord,
-    fetchHebrewEntry,
-    HebrewEntry,
-    searchHebrew,
-    stripHtml,
+  FEATURED_HEBREW_WORDS,
+  FeaturedWord,
+  fetchHebrewEntry,
+  HebrewEntry,
+  searchHebrew,
+  stripHtml,
 } from "@/src/services/hebrew";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  FlatList,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./hebrew-dictionary.styles";
 
 type Screen = "list" | "detail";
@@ -105,6 +105,7 @@ export default function HebrewDictionary() {
 
   return (
     <SafeAreaView
+      edges={["top", "bottom"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       {/* Header */}

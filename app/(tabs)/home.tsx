@@ -1,20 +1,22 @@
 import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
 import {
-  BIBLE_COLLECTIONS,
-  BibleVerse,
-  fetchDailyVerse,
+    BIBLE_COLLECTIONS,
+    BibleVerse,
+    fetchDailyVerse,
+    loadReadingPosition,
+    ReadingPosition,
 } from "@/src/services/bible";
 import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from "react-native";
 import { styles } from "./home.styles";
 
@@ -199,6 +201,46 @@ function HebrewDictionaryCard({ theme }: { theme: Theme }) {
   );
 }
 
+function ResumeReadingCard({
+  position,
+  theme,
+}: {
+  position: ReadingPosition;
+  theme: Theme;
+}) {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      style={[
+        styles.resumeCard,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+      onPress={() =>
+        router.push(
+          `/(tabs)/bible-browser?bookId=${position.bookId}&chapter=${position.chapter}`,
+        )
+      }
+      activeOpacity={0.8}
+    >
+      <View style={[styles.resumeIconWrap, { backgroundColor: theme.primary }]}>
+        <Ionicons name="bookmark-outline" size={18} color={theme.primaryText} />
+      </View>
+      <View style={styles.resumeTextWrap}>
+        <Text style={[styles.resumeLabel, { color: theme.textSecondary }]}>
+          Resume Reading
+        </Text>
+        <Text style={[styles.resumeTitle, { color: theme.text }]}>
+          {position.bookLabel} {position.chapter}
+        </Text>
+        <Text style={[styles.resumeSubtitle, { color: theme.textSecondary }]}>
+          Continue where you left off
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+    </TouchableOpacity>
+  );
+}
+
 function BrowseBibleCard({ theme }: { theme: Theme }) {
   const router = useRouter();
   return (
@@ -235,6 +277,8 @@ export default function Home() {
   const [verse, setVerse] = useState<BibleVerse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [readingPosition, setReadingPosition] =
+    useState<ReadingPosition | null>(null);
 
   const user = auth.currentUser;
   const displayName = user?.displayName?.split(" ")[0] ?? "Friend";
@@ -255,6 +299,13 @@ export default function Home() {
   useEffect(() => {
     loadVerse();
   }, []);
+
+  // Refresh reading position every time the Home tab comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadReadingPosition().then(setReadingPosition);
+    }, []),
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -283,6 +334,11 @@ export default function Home() {
 
         {/* Collection Cards */}
         <CollectionCards theme={theme} />
+
+        {/* Resume Reading — only shown after the user has opened a chapter */}
+        {readingPosition && (
+          <ResumeReadingCard position={readingPosition} theme={theme} />
+        )}
 
         {/* Browse Bible */}
         <BrowseBibleCard theme={theme} />

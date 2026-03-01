@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 56,
+    paddingTop: 12,
     paddingBottom: 16,
     gap: 14,
   },
@@ -26,12 +26,12 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.5,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     opacity: 0.5,
     marginTop: 1,
   },
@@ -177,4 +177,3 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-

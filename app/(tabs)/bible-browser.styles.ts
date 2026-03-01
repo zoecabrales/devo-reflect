@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 56,
+    paddingTop: 12,
     paddingBottom: 16,
     gap: 12,
   },
@@ -23,13 +23,13 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 17,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
     flex: 1,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: 11,
     opacity: 0.5,
     letterSpacing: 0.3,
   },
@@ -67,7 +67,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: 16,
-    paddingBottom: 32,
+    paddingBottom: 48,
     gap: 10,
   },
   chapterBtn: {
@@ -86,7 +86,7 @@ export const styles = StyleSheet.create({
   // ── Verses ───────────────────────────────────────────────
   versesList: {
     paddingHorizontal: 20,
-    paddingBottom: 32,
+    paddingBottom: 48,
     gap: 20,
   },
   verseRow: {
@@ -133,4 +133,3 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-

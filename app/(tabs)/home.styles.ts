@@ -208,4 +208,43 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     letterSpacing: 0.3,
   },
+
+  // ── Resume Reading Card ────────────────────────────────────
+  resumeCard: {
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  resumeIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resumeTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  resumeLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 2,
+    opacity: 0.45,
+    textTransform: "uppercase",
+    marginBottom: 1,
+  },
+  resumeTitle: {
+    fontSize: 13,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.4,
+  },
+  resumeSubtitle: {
+    fontSize: 11,
+    opacity: 0.55,
+    letterSpacing: 0.2,
+  },
 });
