@@ -1,3 +1,4 @@
+import { TAB_ACTIVE_COLOR } from "@/src/constants/theme";
 import {
     isIdleTimeout,
     setLastActiveAt,
@@ -5,17 +6,22 @@ import {
 } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
-import { Redirect, Tabs, useRouter } from "expo-router";
+import { Redirect, Tabs, usePathname, useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Text } from "react-native";
 
 type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";
 
 export default function TabsLayout() {
   const [authState, setAuthState] = useState<AuthState>("loading");
   const router = useRouter();
+  const pathname = usePathname();
   const appStateRef = useRef(AppState.currentState);
+
+  // Treat Home as the active tab when on a hidden screen launched from it
+  const homeIsEffectivelyFocused =
+    pathname.includes("bible-browser") || pathname.includes("concordance");
 
   // Auth state guard
   useEffect(() => {
@@ -73,6 +79,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarActiveTintColor: TAB_ACTIVE_COLOR,
         tabBarIcon: ({ focused, color, size }) => {
           const icons: Record<
             string,
@@ -88,12 +95,31 @@ export default function TabsLayout() {
             settings: { active: "settings", inactive: "settings-outline" },
           };
           const icon = icons[route.name];
+          // Keep Home highlighted when the user is inside a hidden screen
+          const isFocused =
+            focused || (route.name === "home" && homeIsEffectivelyFocused);
+          const iconColor = isFocused ? TAB_ACTIVE_COLOR : color;
           return (
             <Ionicons
-              name={focused ? icon.active : icon.inactive}
+              name={isFocused ? icon.active : icon.inactive}
               size={size}
-              color={color}
+              color={iconColor}
             />
+          );
+        },
+        tabBarLabel: ({ focused, color, children }) => {
+          const isLabelFocused =
+            focused || (route.name === "home" && homeIsEffectivelyFocused);
+          return (
+            <Text
+              style={{
+                color: isLabelFocused ? TAB_ACTIVE_COLOR : color,
+                fontSize: 10,
+                marginBottom: 2,
+              }}
+            >
+              {children}
+            </Text>
           );
         },
       })}

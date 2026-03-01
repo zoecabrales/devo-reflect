@@ -1,20 +1,20 @@
 import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
 import {
-  ConcordanceResult,
-  searchConcordance,
-  SUGGESTED_TERMS,
+    ConcordanceResult,
+    searchConcordance,
+    SUGGESTED_TERMS,
 } from "@/src/services/concordance";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./concordance.styles";
@@ -68,7 +68,7 @@ export default function Concordance() {
 
   return (
     <SafeAreaView
-      edges={["top", "bottom"]}
+      edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       {/* Header */}
@@ -109,7 +109,11 @@ export default function Concordance() {
         />
         {query.length > 0 && (
           <TouchableOpacity onPress={() => handleQueryChange("")}>
-            <Ionicons name="close-circle" size={16} color={theme.textSecondary} />
+            <Ionicons
+              name="close-circle"
+              size={16}
+              color={theme.textSecondary}
+            />
           </TouchableOpacity>
         )}
       </View>
@@ -145,8 +149,10 @@ export default function Concordance() {
           data={visibleResults}
           keyExtractor={(item) => String(item.pk)}
           keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.resultList}
           onEndReached={() => {
-            if (hasMore) setVisibleCount((p) => Math.min(p + PAGE_SIZE, results.length));
+            if (hasMore)
+              setVisibleCount((p) => Math.min(p + PAGE_SIZE, results.length));
           }}
           onEndReachedThreshold={0.2}
           ListHeaderComponent={
@@ -194,9 +200,7 @@ export default function Concordance() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[styles.suggestedChipText, { color: theme.text }]}
-                >
+                <Text style={[styles.suggestedChipText, { color: theme.text }]}>
                   {term}
                 </Text>
               </TouchableOpacity>
@@ -207,4 +211,3 @@ export default function Concordance() {
     </SafeAreaView>
   );
 }
-

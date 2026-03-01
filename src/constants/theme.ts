@@ -1,3 +1,6 @@
+/** Sky-blue accent used for the active bottom-tab icon and label. */
+export const TAB_ACTIVE_COLOR = "#38BDF8";
+
 export type Theme = {
   background: string;
   surface: string;
@@ -36,4 +39,3 @@ export const darkTheme: Theme = {
   primary: "#ffffff",
   primaryText: "#111111",
 };
-

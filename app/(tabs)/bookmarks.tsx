@@ -36,7 +36,7 @@ export default function Bookmarks() {
 
   return (
     <SafeAreaView
-      edges={["top", "bottom"]}
+      edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       {/* Header */}
