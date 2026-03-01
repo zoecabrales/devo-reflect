@@ -15,16 +15,6 @@ import { styles } from "./AuthForm.styles";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const PASSWORD_RULES = [
-  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
-  { label: "One uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
-  { label: "One number", test: (p: string) => /[0-9]/.test(p) },
-  {
-    label: "One special character",
-    test: (p: string) => /[^A-Za-z0-9]/.test(p),
-  },
-];
-
 type FieldErrors = {
   fullName: string;
   email: string;
@@ -79,12 +69,6 @@ export default function AuthForm() {
     if (!password) {
       newErrors.password = "Password is required.";
       valid = false;
-    } else if (!isLogin) {
-      const failedRule = PASSWORD_RULES.find((r) => !r.test(password));
-      if (failedRule) {
-        newErrors.password = "Password does not meet all requirements.";
-        valid = false;
-      }
     } else if (password.length < 6) {
       newErrors.password = "Password must be at least 6 characters.";
       valid = false;
@@ -231,31 +215,6 @@ export default function AuthForm() {
             </Pressable>
           </View>
         </View>
-
-        {!isLogin && password.length > 0 && (
-          <View style={styles.strengthList}>
-            {PASSWORD_RULES.map((rule) => {
-              const met = rule.test(password);
-              return (
-                <View key={rule.label} style={styles.strengthItem}>
-                  <Ionicons
-                    name={met ? "checkmark-circle" : "ellipse-outline"}
-                    size={14}
-                    color={met ? "#2f855a" : "#aaa"}
-                  />
-                  <Text
-                    style={[
-                      styles.strengthLabel,
-                      met ? styles.strengthLabelMet : styles.strengthLabelUnmet,
-                    ]}
-                  >
-                    {rule.label}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
 
         {!isLogin && (
           <View style={styles.fieldWrapper}>
