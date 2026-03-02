@@ -26,12 +26,20 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // ── Verse Card ───────────────────────────────────────────
+  // ── Verse Card (Hero) ────────────────────────────────────
   card: {
-    borderRadius: 14,
-    padding: 16,
-    gap: 10,
+    borderRadius: 16,
+    padding: 20,
+    gap: 12,
     borderWidth: 1,
+    borderLeftWidth: 4,
+    // iOS shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
+    // Android shadow
+    elevation: 4,
   },
   cardLabel: {
     fontSize: 9,
@@ -41,15 +49,15 @@ export const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   verseReference: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.5,
   },
   verseText: {
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 27,
     fontStyle: "italic",
-    letterSpacing: 0.15,
+    letterSpacing: 0.2,
   },
   cardFooter: {
     flexDirection: "row",
@@ -117,7 +125,17 @@ export const styles = StyleSheet.create({
     opacity: 0.12,
   },
 
-  // ── Browse Bible Card ────────────────────────────────────
+  // ── Quick Access Label ───────────────────────────────────
+  quickAccessLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 2.5,
+    opacity: 0.45,
+    textTransform: "uppercase",
+    marginBottom: -12,
+  },
+
+  // ── Browse / Utility Cards ───────────────────────────────
   browseCard: {
     borderRadius: 12,
     padding: 14,
@@ -125,6 +143,11 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   browseIconWrap: {
     width: 38,
@@ -136,6 +159,14 @@ export const styles = StyleSheet.create({
   browseTextWrap: {
     flex: 1,
     gap: 2,
+  },
+  browseLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 2,
+    opacity: 0.45,
+    textTransform: "uppercase",
+    marginBottom: 1,
   },
   browseTitle: {
     fontSize: 13,
@@ -226,6 +257,11 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   resumeIconWrap: {
     width: 38,

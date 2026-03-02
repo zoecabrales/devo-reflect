@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 26,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
   },
@@ -44,16 +44,16 @@ export const styles = StyleSheet.create({
     gap: 6,
   },
   rowRef: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.5,
     textTransform: "uppercase",
-    opacity: 0.5,
   },
   rowText: {
     fontSize: 15,
     lineHeight: 22,
     letterSpacing: 0.1,
+    opacity: 0.72,
   },
   rowVersion: {
     fontSize: 10,

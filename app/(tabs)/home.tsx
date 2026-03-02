@@ -107,7 +107,11 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
     <TouchableOpacity
       style={[
         styles.card,
-        { backgroundColor: theme.surface, borderColor: theme.border },
+        {
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+          borderLeftColor: theme.primary,
+        },
       ]}
       onPress={() =>
         router.push(
@@ -404,18 +408,15 @@ export default function Home() {
         {/* Collection Cards */}
         <CollectionCards theme={theme} />
 
-        {/* Browse Bible */}
+        {/* Quick Access */}
+        <Text style={[styles.quickAccessLabel, { color: theme.text }]}>
+          Quick Access
+        </Text>
         <BrowseBibleCard theme={theme} />
-
-        {/* Resume Reading — only shown after the user has opened a chapter */}
         {readingPosition && (
           <ResumeReadingCard position={readingPosition} theme={theme} />
         )}
-
-        {/* Bookmark Badge */}
         <BookmarkBadgeCard count={bookmarkCount} theme={theme} />
-
-        {/* Biblical Concordance */}
         <ConcordanceCard theme={theme} />
       </ScrollView>
     </View>

@@ -252,7 +252,13 @@ export default function Prayers() {
               <View
                 style={[
                   styles.row,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                    ...(isAnswered
+                      ? { borderLeftColor: "#4CAF50", borderLeftWidth: 3 }
+                      : {}),
+                  },
                 ]}
               >
                 {/* Answered toggle */}

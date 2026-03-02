@@ -91,7 +91,7 @@ export default function Bookmarks() {
               activeOpacity={0.75}
             >
               <View style={styles.rowBody}>
-                <Text style={[styles.rowRef, { color: theme.text }]}>
+                <Text style={[styles.rowRef, { color: theme.primary }]}>
                   {item.bookLabel} {item.chapter}:{item.verse}
                 </Text>
                 <Text style={[styles.rowText, { color: theme.text }]}>

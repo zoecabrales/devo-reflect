@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 26,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
   },
