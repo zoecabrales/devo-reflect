@@ -284,6 +284,7 @@ export default function Home() {
   const colorScheme = useColorScheme();
   const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
 
+  const [greeting, setGreeting] = useState(getGreeting);
   const [verse, setVerse] = useState<BibleVerse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -292,6 +293,12 @@ export default function Home() {
 
   const user = auth.currentUser;
   const displayName = user?.displayName?.split(" ")[0] ?? "Friend";
+
+  // Re-evaluate greeting every minute so it stays accurate while app is open
+  useEffect(() => {
+    const id = setInterval(() => setGreeting(getGreeting()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   async function loadVerse() {
     setLoading(true);
@@ -306,13 +313,10 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    loadVerse();
-  }, []);
-
-  // Refresh reading position every time the Home tab comes into focus
+  // Refresh both the verse and reading position every time Home comes into focus
   useFocusEffect(
     useCallback(() => {
+      loadVerse();
       loadReadingPosition().then(setReadingPosition);
     }, []),
   );
@@ -326,7 +330,7 @@ export default function Home() {
         {/* Greeting header */}
         <View style={styles.header}>
           <Text style={[styles.greeting, { color: theme.text }]}>
-            {getGreeting()}, {displayName}
+            {greeting}, {displayName}
           </Text>
           <Text style={[styles.dateText, { color: theme.textSecondary }]}>
             {getFormattedDate()}

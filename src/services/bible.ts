@@ -365,13 +365,27 @@ export const BIBLE_COLLECTIONS: BibleCollection[] = [
   },
 ];
 
+const PHT = "Asia/Manila";
+const DAILY_VERSE_KEY = "@daily_verse";
+
+interface CachedDailyVerse {
+  date: string; // "YYYY-MM-DD" in PHT
+  verse: BibleVerse;
+}
+
+/** Returns today's date string in PHT timezone (e.g. "2026-03-02"). */
+function getPHTDateString(): string {
+  // en-CA locale formats as YYYY-MM-DD — exactly what we need for the hash key
+  return new Intl.DateTimeFormat("en-CA", { timeZone: PHT }).format(new Date());
+}
+
 /**
- * Returns a deterministic-but-unpredictable verse index based on today's date.
+ * Returns a deterministic-but-unpredictable verse index based on today's PHT date.
  * The same date always produces the same index; a new calendar day produces a
- * different one — so the verse changes once every 24 hours.
+ * different one — so the verse changes once every 24 hours (midnight PHT).
  */
 export function getDailyVerseIndex(): number {
-  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const today = getPHTDateString();
   let hash = 0;
   for (let i = 0; i < today.length; i++) {
     hash = (hash * 31 + today.charCodeAt(i)) >>> 0; // unsigned 32-bit int
@@ -380,9 +394,24 @@ export function getDailyVerseIndex(): number {
 }
 
 /**
- * Fetches the Verse of the Day from the Bible API CDN.
+ * Returns the Verse of the Day, using an AsyncStorage cache keyed by today's
+ * PHT date. The network is only hit once per calendar day (PHT midnight).
  */
 export async function fetchDailyVerse(): Promise<BibleVerse> {
+  const today = getPHTDateString();
+
+  // Return cached verse if it belongs to today
+  try {
+    const raw = await AsyncStorage.getItem(DAILY_VERSE_KEY);
+    if (raw) {
+      const cached: CachedDailyVerse = JSON.parse(raw);
+      if (cached.date === today) return cached.verse;
+    }
+  } catch {
+    // Cache unreadable — fall through to fetch
+  }
+
+  // Fetch from CDN
   const ref = CURATED_VERSES[getDailyVerseIndex()];
   const url = `${BASE_URL}/${BIBLE_VERSION}/books/${ref.book}/chapters/${ref.chapter}/verses/${ref.verse}.json`;
 
@@ -392,10 +421,17 @@ export async function fetchDailyVerse(): Promise<BibleVerse> {
   }
 
   const data: ApiVerseResponse = await response.json();
+  const verse: BibleVerse = { ...ref, text: data.text, version: "ASV" };
 
-  return {
-    ...ref,
-    text: data.text,
-    version: "ASV",
-  };
+  // Persist for the rest of today
+  try {
+    await AsyncStorage.setItem(
+      DAILY_VERSE_KEY,
+      JSON.stringify({ date: today, verse } satisfies CachedDailyVerse),
+    );
+  } catch {
+    // Cache write failure is non-fatal
+  }
+
+  return verse;
 }
