@@ -9,9 +9,32 @@ import { signOutUser } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+    Alert,
+    Linking,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./settings.styles";
+
+const SUPPORT_EMAIL = "jirehzoe@gmail.com";
+
+async function openMailTo(subject: string) {
+  const url = `mailto:${SUPPORT_EMAIL}?subject=${subject}`;
+  const supported = await Linking.canOpenURL(url);
+  if (supported) {
+    await Linking.openURL(url);
+  } else {
+    Alert.alert(
+      "No Mail App Found",
+      `Please email us directly at:\n\n${SUPPORT_EMAIL}`,
+      [{ text: "OK" }],
+    );
+  }
+}
 
 function SettingRow({
   icon,
@@ -217,6 +240,39 @@ export default function Settings() {
               })}
             </View>
           </View>
+        </View>
+
+        {/* Feedback section */}
+        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+          Feedback
+        </Text>
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+          ]}
+        >
+          <SettingRow
+            icon="mail-outline"
+            label="Send Feedback"
+            onPress={() => openMailTo("App%20Feedback")}
+            theme={theme}
+          />
+          {/* <SettingRow
+            icon="star-outline"
+            label="Rate the App"
+            onPress={() =>
+              Linking.openURL("https://apps.apple.com/app/idYOUR_APP_ID")
+            }
+            theme={theme}
+          /> */}
+          <SettingRow
+            icon="bug-outline"
+            label="Report a Bug"
+            onPress={() => openMailTo("Bug%20Report")}
+            theme={theme}
+            hideDivider
+          />
         </View>
 
         {/* Account section */}
