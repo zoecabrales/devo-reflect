@@ -106,11 +106,13 @@ export default function BibleBrowser() {
     bookId,
     chapter: chapterParam,
     verse: verseParam,
+    highlight: highlightParam,
   } = useLocalSearchParams<{
     collectionId?: string;
     bookId?: string;
     chapter?: string;
     verse?: string;
+    highlight?: string;
   }>();
   const colorScheme = useColorScheme();
   const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
@@ -141,17 +143,23 @@ export default function BibleBrowser() {
   const scrollViewRef = useRef<ScrollView>(null);
   const verseOffsets = useRef<Map<number, number>>(new Map());
 
-  // Deep-link: auto-open a saved chapter when bookId+chapter params are present
+  // Deep-link: auto-open a saved chapter when bookId+chapter params are present.
+  // Depends on the params so it re-fires whenever the user navigates here from
+  // Bookmarks (or any other screen) with a new set of params.
   useEffect(() => {
     if (bookId && chapterParam) {
       const found = BIBLE_BOOKS.find((b) => b.id === bookId);
       const ch = parseInt(chapterParam, 10);
       if (found && !isNaN(ch)) {
-        openChapter(found, ch);
+        const targetVerse =
+          highlightParam === "true" && verseParam
+            ? parseInt(verseParam, 10)
+            : undefined;
+        openChapter(found, ch, undefined, targetVerse);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [bookId, chapterParam, verseParam, highlightParam]);
 
   function goBack() {
     if (screen === "verses") {
@@ -170,7 +178,12 @@ export default function BibleBrowser() {
     return `${bookId}-${ch}-${verseNum}`;
   }
 
-  async function openChapter(b: BibleBook, ch: number, ver?: BibleVersion) {
+  async function openChapter(
+    b: BibleBook,
+    ch: number,
+    ver?: BibleVersion,
+    autoHighlightVerse?: number,
+  ) {
     setBook(b);
     setChapter(ch);
     setScreen("verses");
@@ -186,7 +199,19 @@ export default function BibleBrowser() {
         loadBookmarks(),
       ]);
       setVerses(data);
-      setHighlights(savedHighlights);
+
+      // Auto-highlight the target verse if it has no existing highlight
+      let finalHighlights = savedHighlights;
+      if (autoHighlightVerse) {
+        const key = verseKey(b.id, ch, autoHighlightVerse);
+        if (!savedHighlights.has(key)) {
+          await saveHighlight(key, HIGHLIGHT_COLORS[0]);
+          finalHighlights = new Map(savedHighlights);
+          finalHighlights.set(key, HIGHLIGHT_COLORS[0]);
+        }
+      }
+
+      setHighlights(finalHighlights);
       setBookmarked(new Set(savedBookmarks.map((bm) => bm.id)));
       // Persist reading position so Home can show "Resume Reading"
       await saveReadingPosition({

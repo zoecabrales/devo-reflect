@@ -5,7 +5,7 @@ import {
     removeBookmark,
 } from "@/src/services/bookmarks";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
     FlatList,
@@ -17,9 +17,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bookmarks.styles";
 
+const JOSHUA_1_8 = {
+  ref: "Joshua 1:8",
+  text: "This book of the law shall not depart out of thy mouth, but thou shalt meditate thereon day and night, that thou mayest observe to do according to all that is written therein: for then thou shalt make thy way prosperous, and then thou shalt have good success.",
+};
+
 export default function Bookmarks() {
   const colorScheme = useColorScheme();
   const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
+  const router = useRouter();
   const [bookmarks, setBookmarks] = useState<BookmarkedVerse[]>([]);
 
   // Reload every time the tab comes into focus
@@ -47,23 +53,28 @@ export default function Bookmarks() {
         <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
           {bookmarks.length > 0
             ? `${bookmarks.length} saved verse${bookmarks.length === 1 ? "" : "s"}`
-            : "Double-tap any verse to save it"}
+            : "Highlight any verse to bookmark it"}
         </Text>
       </View>
 
       {bookmarks.length === 0 ? (
         <View style={styles.empty}>
-          <Ionicons
-            name="bookmark-outline"
-            size={40}
-            color={theme.textSecondary}
-          />
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>
-            No bookmarks yet
+          <Text style={[styles.emptyPrompt, { color: theme.textSecondary }]}>
+            No bookmarks yet. Meditate on His Word:
           </Text>
-          <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-            Double-tap any verse while reading to save it here.
-          </Text>
+          <View
+            style={[
+              styles.verseCard,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            <Text style={[styles.verseRef, { color: theme.textSecondary }]}>
+              {JOSHUA_1_8.ref}
+            </Text>
+            <Text style={[styles.verseText, { color: theme.text }]}>
+              {JOSHUA_1_8.text}
+            </Text>
+          </View>
         </View>
       ) : (
         <FlatList
@@ -71,7 +82,7 @@ export default function Bookmarks() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <View
+            <TouchableOpacity
               style={[
                 styles.row,
                 {
@@ -79,6 +90,12 @@ export default function Bookmarks() {
                   borderColor: theme.border,
                 },
               ]}
+              onPress={() =>
+                router.push(
+                  `/(tabs)/bible-browser?bookId=${item.bookId}&chapter=${item.chapter}&verse=${item.verse}&highlight=true`,
+                )
+              }
+              activeOpacity={0.75}
             >
               <View style={styles.rowBody}>
                 <Text style={[styles.rowRef, { color: theme.text }]}>
@@ -90,7 +107,11 @@ export default function Bookmarks() {
                 <Text
                   style={[styles.rowVersion, { color: theme.textSecondary }]}
                 >
-                  {item.version}
+                  {item.version} · Saved{" "}
+                  {new Date(item.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </Text>
               </View>
               <TouchableOpacity
@@ -104,7 +125,7 @@ export default function Bookmarks() {
                   color={theme.textSecondary}
                 />
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}

@@ -73,20 +73,35 @@ export const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
-    padding: 40,
+    gap: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
-  emptyTitle: {
-    fontSize: 17,
-    fontFamily: "Oswald_700Bold",
-    letterSpacing: 0.4,
+  emptyPrompt: {
+    fontSize: 13,
     textAlign: "center",
+    lineHeight: 20,
+    opacity: 0.6,
+    letterSpacing: 0.2,
   },
-  emptySubtitle: {
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 22,
+  verseCard: {
+    width: "100%",
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  verseRef: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 2,
+    textTransform: "uppercase",
     opacity: 0.5,
   },
+  verseText: {
+    fontSize: 15,
+    lineHeight: 23,
+    fontStyle: "italic",
+    letterSpacing: 0.1,
+  },
 });
-
