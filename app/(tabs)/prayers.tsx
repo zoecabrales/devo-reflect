@@ -1,4 +1,4 @@
-import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
+import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
 import {
     addPrayer,
@@ -19,7 +19,6 @@ import {
     TextInput,
     TouchableOpacity,
     TouchableWithoutFeedback,
-    useColorScheme,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -57,8 +56,7 @@ const LORDS_PRAYER: { verse: number; text: string }[] = [
 ];
 
 export default function Prayers() {
-  const colorScheme = useColorScheme();
-  const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
+  const { theme } = useAppTheme();
 
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);

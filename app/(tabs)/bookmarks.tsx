@@ -1,4 +1,4 @@
-import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
+import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BookmarkedVerse,
     loadBookmarks,
@@ -7,13 +7,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-    FlatList,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
-} from "react-native";
+import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bookmarks.styles";
 
@@ -23,8 +17,7 @@ const JOSHUA_1_8 = {
 };
 
 export default function Bookmarks() {
-  const colorScheme = useColorScheme();
-  const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
+  const { theme } = useAppTheme();
   const router = useRouter();
   const [bookmarks, setBookmarks] = useState<BookmarkedVerse[]>([]);
 

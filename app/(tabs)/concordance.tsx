@@ -1,4 +1,4 @@
-import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
+import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     ConcordanceResult,
     searchConcordance,
@@ -13,7 +13,6 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    useColorScheme,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,8 +22,7 @@ const PAGE_SIZE = 10;
 
 export default function Concordance() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
+  const { theme } = useAppTheme();
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ConcordanceResult[]>([]);

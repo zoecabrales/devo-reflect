@@ -1,4 +1,5 @@
-import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
+import { Theme } from "@/src/constants/theme";
+import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BIBLE_COLLECTIONS,
     BibleVerse,
@@ -17,7 +18,6 @@ import {
     ScrollView,
     Text,
     TouchableOpacity,
-    useColorScheme,
     View,
 } from "react-native";
 import { styles } from "./home.styles";
@@ -325,8 +325,7 @@ function BrowseBibleCard({ theme }: { theme: Theme }) {
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const colorScheme = useColorScheme();
-  const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
+  const { theme } = useAppTheme();
 
   const [greeting, setGreeting] = useState(getGreeting);
   const [verse, setVerse] = useState<BibleVerse | null>(null);

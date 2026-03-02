@@ -1,4 +1,4 @@
-import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
+import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BIBLE_BOOKS,
     BIBLE_COLLECTIONS,
@@ -29,7 +29,6 @@ import {
     TextInput,
     TouchableOpacity,
     TouchableWithoutFeedback,
-    useColorScheme,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -114,8 +113,7 @@ export default function BibleBrowser() {
     verse?: string;
     highlight?: string;
   }>();
-  const colorScheme = useColorScheme();
-  const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
+  const { theme } = useAppTheme();
 
   const activeCollection = collectionId
     ? (BIBLE_COLLECTIONS.find((c) => c.id === collectionId) ?? null)
