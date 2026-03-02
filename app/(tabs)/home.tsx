@@ -22,8 +22,17 @@ import { styles } from "./home.styles";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+const PHT = "Asia/Manila";
+
 function getGreeting(): string {
-  const hour = new Date().getHours();
+  const hour = parseInt(
+    new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: PHT,
+    }).format(new Date()),
+    10,
+  );
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
@@ -35,6 +44,7 @@ function getFormattedDate(): string {
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: PHT,
   });
 }
 

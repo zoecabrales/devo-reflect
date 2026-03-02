@@ -53,34 +53,7 @@ export const styles = StyleSheet.create({
   },
 
   // ── Version Picker Modal ──────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  modalSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 12,
-    paddingBottom: 32,
-  },
-  modalHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 16,
-    opacity: 0.25,
-  },
-  modalTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    opacity: 0.4,
-    marginHorizontal: 20,
-    marginBottom: 8,
-  },
+  // (reuses drawerOverlay / drawerSheet / drawerHandle / drawerTitle styles)
   versionOption: {
     flexDirection: "row",
     alignItems: "center",
@@ -131,6 +104,7 @@ export const styles = StyleSheet.create({
   chapterGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingBottom: 48,
     gap: 10,
@@ -244,7 +218,6 @@ export const styles = StyleSheet.create({
   drawerOverlay: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.45)",
   },
   drawerSheet: {
     borderTopLeftRadius: 20,
@@ -297,12 +270,7 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
-  swatchClear: {
-    backgroundColor: "transparent",
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+
   drawerBookmarkBtn: {
     flexDirection: "row",
     alignItems: "center",

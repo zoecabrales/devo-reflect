@@ -1,34 +1,34 @@
 import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
 import {
-    BIBLE_BOOKS,
-    BIBLE_COLLECTIONS,
-    BIBLE_VERSIONS,
-    BibleBook,
-    BibleVersion,
-    ChapterVerse,
-    fetchChapter,
-    saveReadingPosition,
+  BIBLE_BOOKS,
+  BIBLE_COLLECTIONS,
+  BIBLE_VERSIONS,
+  BibleBook,
+  BibleVersion,
+  ChapterVerse,
+  fetchChapter,
+  saveReadingPosition,
 } from "@/src/services/bible";
 import {
-    addBookmark,
-    loadBookmarks,
-    loadHighlights,
-    removeHighlight,
-    saveHighlight,
+  addBookmark,
+  loadBookmarks,
+  loadHighlights,
+  removeHighlight,
+  saveHighlight,
 } from "@/src/services/bookmarks";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    SectionList,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  SectionList,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  useColorScheme,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bible-browser.styles";
@@ -42,6 +42,8 @@ const HIGHLIGHT_COLORS = [
   "#E06666", // red
   "#C27BA0", // purple
   "#F9CB9C", // orange
+  "#A0C4FF", // sky blue
+  "#B5EAD7", // mint
 ];
 
 export default function BibleBrowser() {
@@ -143,21 +145,18 @@ export default function BibleBrowser() {
   async function handleHighlight(color: string) {
     if (!drawerVerse || !book) return;
     const key = verseKey(book.id, chapter!, drawerVerse.verse);
-    await saveHighlight(key, color);
-    setHighlights((prev) => new Map([...prev, [key, color]]));
-    setDrawerVerse(null);
-  }
-
-  async function handleClearHighlight() {
-    if (!drawerVerse || !book) return;
-    const key = verseKey(book.id, chapter!, drawerVerse.verse);
-    await removeHighlight(key);
-    setHighlights((prev) => {
-      const next = new Map(prev);
-      next.delete(key);
-      return next;
-    });
-    setDrawerVerse(null);
+    if (highlights.get(key) === color) {
+      // Tapping the active color again removes the highlight
+      await removeHighlight(key);
+      setHighlights((prev) => {
+        const next = new Map(prev);
+        next.delete(key);
+        return next;
+      });
+    } else {
+      await saveHighlight(key, color);
+      setHighlights((prev) => new Map([...prev, [key, color]]));
+    }
   }
 
   async function handleDrawerBookmark() {
@@ -256,15 +255,16 @@ export default function BibleBrowser() {
         onRequestClose={() => setPickerVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setPickerVisible(false)}>
-          <View style={styles.modalOverlay}>
+          <View style={styles.drawerOverlay}>
             <TouchableWithoutFeedback>
               <View
-                style={[styles.modalSheet, { backgroundColor: theme.surface }]}
+                style={[
+                  styles.drawerSheet,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
               >
-                <View
-                  style={[styles.modalHandle, { backgroundColor: theme.text }]}
-                />
-                <Text style={[styles.modalTitle, { color: theme.text }]}>
+                <View style={styles.drawerHandle} />
+                <Text style={[styles.drawerTitle, { color: theme.text }]}>
                   Bible Version
                 </Text>
                 {BIBLE_VERSIONS.map((v) => {
@@ -367,21 +367,6 @@ export default function BibleBrowser() {
                       />
                     );
                   })}
-                  <TouchableOpacity
-                    style={[
-                      styles.swatch,
-                      styles.swatchClear,
-                      { borderColor: theme.border },
-                    ]}
-                    onPress={handleClearHighlight}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={14}
-                      color={theme.textSecondary}
-                    />
-                  </TouchableOpacity>
                 </View>
 
                 {/* Bookmark button */}
@@ -528,12 +513,7 @@ export default function BibleBrowser() {
               return (
                 <TouchableOpacity
                   key={v.verse}
-                  style={[
-                    styles.verseRow,
-                    highlightColor
-                      ? { backgroundColor: highlightColor + "55" }
-                      : null,
-                  ]}
+                  style={styles.verseRow}
                   onPress={() => handleVerseTap(v)}
                   activeOpacity={0.75}
                 >
@@ -551,7 +531,13 @@ export default function BibleBrowser() {
                     )}
                   </View>
                   <Text style={[styles.verseText, { color: theme.text }]}>
-                    {v.text}
+                    {highlightColor ? (
+                      <Text style={{ backgroundColor: highlightColor + "99" }}>
+                        {v.text}
+                      </Text>
+                    ) : (
+                      v.text
+                    )}
                   </Text>
                 </TouchableOpacity>
               );
