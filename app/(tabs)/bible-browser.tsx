@@ -24,7 +24,9 @@ import {
     Modal,
     ScrollView,
     SectionList,
+    Share,
     Text,
+    TextInput,
     TouchableOpacity,
     TouchableWithoutFeedback,
     useColorScheme,
@@ -45,6 +47,57 @@ const HIGHLIGHT_COLORS = [
   "#A0C4FF", // sky blue
   "#B5EAD7", // mint
 ];
+
+function HighlightedVerseText({
+  text,
+  query,
+  bookmarkColor,
+  textStyle,
+}: {
+  text: string;
+  query: string;
+  bookmarkColor?: string;
+  textStyle: object;
+}) {
+  const trimmed = query.trim();
+  const bookmarkBg = bookmarkColor
+    ? { backgroundColor: bookmarkColor + "99" }
+    : {};
+
+  if (!trimmed) {
+    return (
+      <Text style={textStyle}>
+        {bookmarkColor ? <Text style={bookmarkBg}>{text}</Text> : text}
+      </Text>
+    );
+  }
+
+  // Split text into alternating [non-match, match, non-match, …] segments
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+
+  return (
+    <Text style={textStyle}>
+      {parts.map((part, i) =>
+        part.toLowerCase() === trimmed.toLowerCase() ? (
+          <Text
+            key={i}
+            style={[
+              bookmarkBg,
+              { backgroundColor: "#FFD966CC", fontWeight: "700" },
+            ]}
+          >
+            {part}
+          </Text>
+        ) : (
+          <Text key={i} style={bookmarkBg}>
+            {part}
+          </Text>
+        ),
+      )}
+    </Text>
+  );
+}
 
 export default function BibleBrowser() {
   const router = useRouter();
@@ -81,6 +134,9 @@ export default function BibleBrowser() {
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const [bookmarkConfirm, setBookmarkConfirm] = useState<string | null>(null);
   const [drawerVerse, setDrawerVerse] = useState<ChapterVerse | null>(null);
+  const [shareVerse, setShareVerse] = useState<ChapterVerse | null>(null);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const verseOffsets = useRef<Map<number, number>>(new Map());
@@ -101,6 +157,8 @@ export default function BibleBrowser() {
     if (screen === "verses") {
       setScreen("chapters");
       setVerses([]);
+      setSearchVisible(false);
+      setSearchQuery("");
     } else if (screen === "chapters") {
       setScreen("books");
       setBook(null);
@@ -119,6 +177,8 @@ export default function BibleBrowser() {
     setLoading(true);
     setError(false);
     setVerses([]);
+    setSearchVisible(false);
+    setSearchQuery("");
     try {
       const [data, savedHighlights, savedBookmarks] = await Promise.all([
         fetchChapter(b.id, ch, (ver ?? version).id),
@@ -144,6 +204,18 @@ export default function BibleBrowser() {
   /** Single tap → open the highlight / bookmark drawer */
   function handleVerseTap(v: ChapterVerse) {
     setDrawerVerse(v);
+  }
+
+  /** Long press → open the share modal */
+  function handleVerseLongPress(v: ChapterVerse) {
+    setShareVerse(v);
+  }
+
+  async function handleShare() {
+    if (!shareVerse || !book) return;
+    const ref = `${book.label} ${chapter}:${shareVerse.verse} (${version.label})`;
+    await Share.share({ message: `"${shareVerse.text}"\n\n— ${ref}` });
+    setShareVerse(null);
   }
 
   async function handleHighlight(color: string) {
@@ -236,6 +308,19 @@ export default function BibleBrowser() {
             </Text>
           )}
         </View>
+        {screen === "verses" && (
+          <TouchableOpacity
+            style={[styles.searchIconBtn, { borderColor: theme.border }]}
+            onPress={() => setSearchVisible((v) => !v)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={searchVisible ? "close" : "search"}
+              size={18}
+              color={theme.text}
+            />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[
             styles.versionPill,
@@ -250,6 +335,40 @@ export default function BibleBrowser() {
           <Ionicons name="chevron-down" size={11} color={theme.textSecondary} />
         </TouchableOpacity>
       </View>
+
+      {/* Search Bar */}
+      {screen === "verses" && searchVisible && (
+        <View
+          style={[
+            styles.searchBar,
+            { borderColor: theme.border, backgroundColor: theme.surface },
+          ]}
+        >
+          <Ionicons name="search" size={15} color={theme.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: theme.text }]}
+            placeholder="Search in chapter…"
+            placeholderTextColor={theme.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoFocus
+            returnKeyType="search"
+            clearButtonMode="never"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery("")}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="close-circle"
+                size={16}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Version Picker Modal */}
       <Modal
@@ -315,6 +434,60 @@ export default function BibleBrowser() {
                     </TouchableOpacity>
                   );
                 })}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Share modal */}
+      <Modal
+        visible={shareVerse !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShareVerse(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShareVerse(null)}>
+          <View style={styles.drawerOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.drawerSheet,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <View style={styles.drawerHandle} />
+                <Text style={[styles.drawerTitle, { color: theme.text }]}>
+                  {shareVerse
+                    ? `${book?.label ?? ""} ${chapter}:${shareVerse.verse}`
+                    : ""}
+                </Text>
+
+                {/* Verse preview */}
+                {shareVerse && (
+                  <Text
+                    style={[
+                      styles.shareVersePreview,
+                      { color: theme.textSecondary },
+                    ]}
+                    numberOfLines={4}
+                  >
+                    "{shareVerse.text}"
+                  </Text>
+                )}
+
+                {/* Share button */}
+                <TouchableOpacity
+                  style={[
+                    styles.drawerBookmarkBtn,
+                    { backgroundColor: theme.primary },
+                  ]}
+                  onPress={handleShare}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="share-outline" size={18} color="#fff" />
+                  <Text style={styles.drawerBookmarkBtnText}>Share Verse</Text>
+                </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -522,6 +695,8 @@ export default function BibleBrowser() {
                   key={v.verse}
                   style={styles.verseRow}
                   onPress={() => handleVerseTap(v)}
+                  onLongPress={() => handleVerseLongPress(v)}
+                  delayLongPress={400}
                   activeOpacity={0.75}
                   onLayout={(e) => {
                     const y = e.nativeEvent.layout.y;
@@ -546,15 +721,12 @@ export default function BibleBrowser() {
                       />
                     )}
                   </View>
-                  <Text style={[styles.verseText, { color: theme.text }]}>
-                    {highlightColor ? (
-                      <Text style={{ backgroundColor: highlightColor + "99" }}>
-                        {v.text}
-                      </Text>
-                    ) : (
-                      v.text
-                    )}
-                  </Text>
+                  <HighlightedVerseText
+                    text={v.text}
+                    query={searchQuery}
+                    bookmarkColor={highlightColor}
+                    textStyle={[styles.verseText, { color: theme.text }]}
+                  />
                 </TouchableOpacity>
               );
             })}

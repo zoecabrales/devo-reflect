@@ -36,6 +36,32 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
+  // ── Search ───────────────────────────────────────────────
+  searchIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    padding: 0,
+  },
+
   // ── Version Pill ─────────────────────────────────────────
   versionPill: {
     flexDirection: "row",
@@ -283,5 +309,13 @@ export const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 15,
+  },
+  shareVersePreview: {
+    fontSize: 15,
+    fontStyle: "italic",
+    lineHeight: 22,
+    marginBottom: 24,
+    textAlign: "center",
+    opacity: 0.8,
   },
 });
