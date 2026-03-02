@@ -1,6 +1,18 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+    collection,
+    deleteDoc,
+    doc,
+    getDocs,
+    orderBy,
+    query,
+    serverTimestamp,
+    setDoc,
+} from "firebase/firestore";
+import { db } from "./firebase";
 
-// ── Bookmarks ─────────────────────────────────────────────────────────────────
+// ── Bookmarks (Firestore) ─────────────────────────────────────────────────────
+// Firestore path: users/{uid}/bookmarks/{bookmarkId}
 
 export interface BookmarkedVerse {
   id: string; // `${bookId}-${chapter}-${verse}`
@@ -13,32 +25,49 @@ export interface BookmarkedVerse {
   createdAt: number; // Date.now()
 }
 
-const BOOKMARKS_KEY = "@bookmarks";
-
-export async function loadBookmarks(): Promise<BookmarkedVerse[]> {
-  const raw = await AsyncStorage.getItem(BOOKMARKS_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as BookmarkedVerse[];
-  } catch {
-    return [];
-  }
+function bookmarksRef(uid: string) {
+  return collection(db, "users", uid, "bookmarks");
 }
 
-export async function addBookmark(verse: BookmarkedVerse): Promise<void> {
-  const existing = await loadBookmarks();
-  // Replace if same verse already bookmarked (different version is fine to overwrite)
-  const filtered = existing.filter((b) => b.id !== verse.id);
-  await AsyncStorage.setItem(
-    BOOKMARKS_KEY,
-    JSON.stringify([verse, ...filtered]),
-  );
+export async function loadBookmarks(uid: string): Promise<BookmarkedVerse[]> {
+  if (!uid) return [];
+  const q = query(bookmarksRef(uid), orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      bookId: data.bookId as string,
+      bookLabel: data.bookLabel as string,
+      chapter: data.chapter as number,
+      verse: data.verse as number,
+      text: data.text as string,
+      version: data.version as string,
+      createdAt: data.createdAt as number,
+    };
+  });
 }
 
-export async function removeBookmark(id: string): Promise<void> {
-  const existing = await loadBookmarks();
-  const filtered = existing.filter((b) => b.id !== id);
-  await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(filtered));
+export async function addBookmark(
+  uid: string,
+  verse: BookmarkedVerse,
+): Promise<void> {
+  if (!uid) return;
+  await setDoc(doc(bookmarksRef(uid), verse.id), {
+    bookId: verse.bookId,
+    bookLabel: verse.bookLabel,
+    chapter: verse.chapter,
+    verse: verse.verse,
+    text: verse.text,
+    version: verse.version,
+    createdAt: verse.createdAt,
+    createdAtServer: serverTimestamp(),
+  });
+}
+
+export async function removeBookmark(uid: string, id: string): Promise<void> {
+  if (!uid) return;
+  await deleteDoc(doc(bookmarksRef(uid), id));
 }
 
 // ── Highlights ────────────────────────────────────────────────────────────────

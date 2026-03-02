@@ -16,6 +16,7 @@ import {
     removeHighlight,
     saveHighlight,
 } from "@/src/services/bookmarks";
+import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -114,6 +115,7 @@ export default function BibleBrowser() {
     highlight?: string;
   }>();
   const { theme } = useAppTheme();
+  const uid = auth.currentUser?.uid ?? "";
 
   const activeCollection = collectionId
     ? (BIBLE_COLLECTIONS.find((c) => c.id === collectionId) ?? null)
@@ -194,7 +196,7 @@ export default function BibleBrowser() {
       const [data, savedHighlights, savedBookmarks] = await Promise.all([
         fetchChapter(b.id, ch, (ver ?? version).id),
         loadHighlights(),
-        loadBookmarks(),
+        loadBookmarks(uid),
       ]);
       setVerses(data);
 
@@ -262,7 +264,7 @@ export default function BibleBrowser() {
     if (!drawerVerse || !book) return;
     const now = Date.now();
     const key = verseKey(book.id, chapter!, drawerVerse.verse);
-    await addBookmark({
+    await addBookmark(uid, {
       id: key,
       bookId: book.id,
       bookLabel: book.label,

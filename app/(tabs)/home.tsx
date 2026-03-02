@@ -369,7 +369,9 @@ export default function Home() {
     useCallback(() => {
       loadVerse();
       loadReadingPosition().then(setReadingPosition);
-      loadBookmarks().then((bms) => setBookmarkCount(bms.length));
+      loadBookmarks(user?.uid ?? "").then((bms) =>
+        setBookmarkCount(bms.length),
+      );
     }, []),
   );
 

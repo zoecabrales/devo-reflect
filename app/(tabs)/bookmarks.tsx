@@ -4,6 +4,7 @@ import {
     loadBookmarks,
     removeBookmark,
 } from "@/src/services/bookmarks";
+import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -21,15 +22,18 @@ export default function Bookmarks() {
   const router = useRouter();
   const [bookmarks, setBookmarks] = useState<BookmarkedVerse[]>([]);
 
+  const uid = auth.currentUser?.uid ?? "";
+
   // Reload every time the tab comes into focus
   useFocusEffect(
     useCallback(() => {
-      loadBookmarks().then(setBookmarks);
-    }, []),
+      if (!uid) return;
+      loadBookmarks(uid).then(setBookmarks);
+    }, [uid]),
   );
 
   async function handleDelete(id: string) {
-    await removeBookmark(id);
+    await removeBookmark(uid, id);
     setBookmarks((prev) => prev.filter((b) => b.id !== id));
   }
 
