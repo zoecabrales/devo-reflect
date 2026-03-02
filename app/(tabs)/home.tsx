@@ -6,12 +6,14 @@ import {
     loadReadingPosition,
     ReadingPosition,
 } from "@/src/services/bible";
+import { loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    RefreshControl,
     ScrollView,
     Text,
     TouchableOpacity,
@@ -264,6 +266,35 @@ function ResumeReadingCard({
   );
 }
 
+function BookmarkBadgeCard({ count, theme }: { count: number; theme: Theme }) {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      style={[
+        styles.browseCard,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+      onPress={() => router.push("/(tabs)/bookmarks")}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.browseIconWrap, { backgroundColor: theme.primary }]}>
+        <Ionicons name="bookmark" size={18} color="#fff" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.browseLabel, { color: theme.textSecondary }]}>
+          Saved Verses
+        </Text>
+        <Text style={[styles.browseTitle, { color: theme.text }]}>
+          {count === 0
+            ? "No bookmarks yet"
+            : `${count} verse${count === 1 ? "" : "s"} bookmarked`}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+    </TouchableOpacity>
+  );
+}
+
 function BrowseBibleCard({ theme }: { theme: Theme }) {
   const router = useRouter();
   return (
@@ -300,9 +331,11 @@ export default function Home() {
   const [greeting, setGreeting] = useState(getGreeting);
   const [verse, setVerse] = useState<BibleVerse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const [readingPosition, setReadingPosition] =
     useState<ReadingPosition | null>(null);
+  const [bookmarkCount, setBookmarkCount] = useState(0);
 
   const user = auth.currentUser;
   const displayName = user?.displayName?.split(" ")[0] ?? "Friend";
@@ -313,8 +346,9 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  async function loadVerse() {
-    setLoading(true);
+  async function loadVerse(isRefresh = false) {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(false);
     try {
       const data = await fetchDailyVerse();
@@ -323,6 +357,7 @@ export default function Home() {
       setError(true);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
@@ -331,6 +366,7 @@ export default function Home() {
     useCallback(() => {
       loadVerse();
       loadReadingPosition().then(setReadingPosition);
+      loadBookmarks().then((bms) => setBookmarkCount(bms.length));
     }, []),
   );
 
@@ -339,6 +375,13 @@ export default function Home() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadVerse(true)}
+            tintColor={theme.primary}
+          />
+        }
       >
         {/* Greeting header */}
         <View style={styles.header}>
@@ -362,13 +405,16 @@ export default function Home() {
         {/* Collection Cards */}
         <CollectionCards theme={theme} />
 
+        {/* Browse Bible */}
+        <BrowseBibleCard theme={theme} />
+
         {/* Resume Reading — only shown after the user has opened a chapter */}
         {readingPosition && (
           <ResumeReadingCard position={readingPosition} theme={theme} />
         )}
 
-        {/* Browse Bible */}
-        <BrowseBibleCard theme={theme} />
+        {/* Bookmark Badge */}
+        <BookmarkBadgeCard count={bookmarkCount} theme={theme} />
 
         {/* Biblical Concordance */}
         <ConcordanceCard theme={theme} />
