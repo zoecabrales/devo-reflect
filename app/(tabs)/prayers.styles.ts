@@ -103,6 +103,10 @@ export const styles = StyleSheet.create({
     color: "#4CAF50",
     marginTop: 2,
   },
+  editBtn: {
+    padding: 4,
+    marginTop: 2,
+  },
   deleteBtn: {
     padding: 4,
     marginTop: 2,
@@ -161,6 +165,46 @@ export const styles = StyleSheet.create({
     lineHeight: 23,
     fontStyle: "italic",
     letterSpacing: 0.1,
+  },
+
+  // ── Edit Modal ────────────────────────────────────────────
+  editInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    minHeight: 80,
+    maxHeight: 160,
+  },
+  editActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  editCancelBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  editCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+  },
+  editSaveBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  editSaveText: {
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
 
   // ── Delete Modal ─────────────────────────────────────────

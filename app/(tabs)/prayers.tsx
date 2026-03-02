@@ -6,6 +6,7 @@ import {
     loadPrayers,
     PrayerRequest,
     toggleAnswered,
+    updatePrayer,
 } from "@/src/services/prayers";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
@@ -64,6 +65,11 @@ export default function Prayers() {
   const [inputText, setInputText] = useState("");
   const [adding, setAdding] = useState(false);
   const [showVerseModal, setShowVerseModal] = useState(false);
+  const [editingPrayer, setEditingPrayer] = useState<PrayerRequest | null>(
+    null,
+  );
+  const [editText, setEditText] = useState("");
+  const [saving, setSaving] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   const uid = auth.currentUser?.uid ?? "";
@@ -110,6 +116,28 @@ export default function Prayers() {
         p.id === prayer.id ? { ...p, answeredAt: newAnsweredAt } : p,
       ),
     );
+  }
+
+  function openEdit(prayer: PrayerRequest) {
+    setEditText(prayer.text);
+    setEditingPrayer(prayer);
+  }
+
+  async function handleSaveEdit() {
+    const trimmed = editText.trim();
+    if (!trimmed || !editingPrayer || !uid) return;
+    setSaving(true);
+    try {
+      await updatePrayer(uid, editingPrayer.id, trimmed);
+      setPrayers((prev) =>
+        prev.map((p) =>
+          p.id === editingPrayer.id ? { ...p, text: trimmed } : p,
+        ),
+      );
+      setEditingPrayer(null);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -268,6 +296,19 @@ export default function Prayers() {
                   )}
                 </View>
 
+                {/* Edit */}
+                <TouchableOpacity
+                  style={styles.editBtn}
+                  onPress={() => openEdit(item)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="pencil-outline"
+                    size={17}
+                    color={theme.textSecondary}
+                  />
+                </TouchableOpacity>
+
                 {/* Delete */}
                 <TouchableOpacity
                   style={styles.deleteBtn}
@@ -285,6 +326,91 @@ export default function Prayers() {
           }}
         />
       )}
+      {/* Edit prayer modal */}
+      <Modal
+        visible={!!editingPrayer}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditingPrayer(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setEditingPrayer(null)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.modalCard,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <Text style={[styles.modalRef, { color: theme.textSecondary }]}>
+                  Edit Prayer
+                </Text>
+                <TextInput
+                  style={[
+                    styles.editInput,
+                    {
+                      color: theme.text,
+                      borderColor: theme.border,
+                      backgroundColor: theme.background,
+                    },
+                  ]}
+                  value={editText}
+                  onChangeText={setEditText}
+                  multiline
+                  autoFocus
+                  placeholderTextColor={theme.textSecondary}
+                  placeholder="Update your prayer…"
+                />
+                <View style={styles.editActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.editCancelBtn,
+                      { borderColor: theme.border },
+                    ]}
+                    onPress={() => setEditingPrayer(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.editCancelText,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.editSaveBtn,
+                      { backgroundColor: theme.primary },
+                    ]}
+                    onPress={handleSaveEdit}
+                    activeOpacity={0.8}
+                    disabled={saving || !editText.trim()}
+                  >
+                    {saving ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={theme.primaryText}
+                      />
+                    ) : (
+                      <Text
+                        style={[
+                          styles.editSaveText,
+                          { color: theme.primaryText },
+                        ]}
+                      >
+                        Save
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Delete encouragement modal */}
       <Modal
         visible={showVerseModal}

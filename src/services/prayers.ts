@@ -61,10 +61,19 @@ export async function toggleAnswered(
   return answeredAt;
 }
 
+export async function updatePrayer(
+  uid: string,
+  prayerId: string,
+  newText: string,
+): Promise<void> {
+  await updateDoc(doc(db, "users", uid, "prayers", prayerId), {
+    text: newText,
+  });
+}
+
 export async function deletePrayer(
   uid: string,
   prayerId: string,
 ): Promise<void> {
   await deleteDoc(doc(db, "users", uid, "prayers", prayerId));
 }
-
