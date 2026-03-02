@@ -52,22 +52,22 @@ export const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 20,
     paddingBottom: 48,
-    gap: 12,
+    gap: 8,
   },
 
   // ── Prayer Row ───────────────────────────────────────────
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 12,
-    borderRadius: 14,
-    padding: 14,
+    gap: 10,
+    borderRadius: 12,
+    padding: 10,
     borderWidth: 1,
   },
   checkBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
@@ -76,11 +76,11 @@ export const styles = StyleSheet.create({
   },
   rowBody: {
     flex: 1,
-    gap: 4,
+    gap: 3,
   },
   rowText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
     letterSpacing: 0.1,
   },
   rowTextAnswered: {
