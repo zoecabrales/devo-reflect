@@ -1,4 +1,5 @@
 import { TAB_ACTIVE_COLOR } from "@/src/constants/theme";
+import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     isIdleTimeout,
     setLastActiveAt,
@@ -18,6 +19,7 @@ export default function TabsLayout() {
   const router = useRouter();
   const pathname = usePathname();
   const appStateRef = useRef(AppState.currentState);
+  const { theme } = useAppTheme();
 
   // Treat Home as the active tab when on a hidden screen launched from it
   const homeIsEffectivelyFocused =
@@ -80,6 +82,11 @@ export default function TabsLayout() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: TAB_ACTIVE_COLOR,
+        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarStyle: {
+          backgroundColor: theme.surface,
+          borderTopColor: theme.border,
+        },
         tabBarIcon: ({ focused, color, size }) => {
           const icons: Record<
             string,
