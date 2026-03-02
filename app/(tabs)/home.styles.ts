@@ -69,6 +69,15 @@ export const styles = StyleSheet.create({
     letterSpacing: 1.5,
     textTransform: "uppercase",
   },
+  readInContextLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  readInContextText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
 
   // ── Loading Skeleton ─────────────────────────────────────
   loadingCard: {

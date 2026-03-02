@@ -1,34 +1,34 @@
 import { darkTheme, lightTheme, Theme } from "@/src/constants/theme";
 import {
-  BIBLE_BOOKS,
-  BIBLE_COLLECTIONS,
-  BIBLE_VERSIONS,
-  BibleBook,
-  BibleVersion,
-  ChapterVerse,
-  fetchChapter,
-  saveReadingPosition,
+    BIBLE_BOOKS,
+    BIBLE_COLLECTIONS,
+    BIBLE_VERSIONS,
+    BibleBook,
+    BibleVersion,
+    ChapterVerse,
+    fetchChapter,
+    saveReadingPosition,
 } from "@/src/services/bible";
 import {
-  addBookmark,
-  loadBookmarks,
-  loadHighlights,
-  removeHighlight,
-  saveHighlight,
+    addBookmark,
+    loadBookmarks,
+    loadHighlights,
+    removeHighlight,
+    saveHighlight,
 } from "@/src/services/bookmarks";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  SectionList,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    Modal,
+    ScrollView,
+    SectionList,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bible-browser.styles";
@@ -52,10 +52,12 @@ export default function BibleBrowser() {
     collectionId,
     bookId,
     chapter: chapterParam,
+    verse: verseParam,
   } = useLocalSearchParams<{
     collectionId?: string;
     bookId?: string;
     chapter?: string;
+    verse?: string;
   }>();
   const colorScheme = useColorScheme();
   const theme: Theme = colorScheme === "dark" ? darkTheme : lightTheme;
@@ -80,6 +82,8 @@ export default function BibleBrowser() {
   const [bookmarkConfirm, setBookmarkConfirm] = useState<string | null>(null);
   const [drawerVerse, setDrawerVerse] = useState<ChapterVerse | null>(null);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const verseOffsets = useRef<Map<number, number>>(new Map());
 
   // Deep-link: auto-open a saved chapter when bookId+chapter params are present
   useEffect(() => {
@@ -505,7 +509,10 @@ export default function BibleBrowser() {
             </TouchableOpacity>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.versesList}>
+          <ScrollView
+            ref={scrollViewRef}
+            contentContainerStyle={styles.versesList}
+          >
             {verses.map((v) => {
               const key = verseKey(book!.id, chapter!, v.verse);
               const highlightColor = highlights.get(key);
@@ -516,6 +523,15 @@ export default function BibleBrowser() {
                   style={styles.verseRow}
                   onPress={() => handleVerseTap(v)}
                   activeOpacity={0.75}
+                  onLayout={(e) => {
+                    const y = e.nativeEvent.layout.y;
+                    verseOffsets.current.set(v.verse, y);
+                    // If this is the deep-linked target verse, scroll to it now
+                    // that we have its exact position (onLayout fires after paint)
+                    if (verseParam && v.verse === parseInt(verseParam, 10)) {
+                      scrollViewRef.current?.scrollTo({ y, animated: false });
+                    }
+                  }}
                 >
                   <View style={styles.verseNumCol}>
                     <Text style={[styles.verseNum, { color: theme.text }]}>

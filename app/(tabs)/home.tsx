@@ -99,13 +99,20 @@ function ErrorCard({ theme, onRetry }: { theme: Theme; onRetry: () => void }) {
 }
 
 function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
+  const router = useRouter();
   const reference = `${verse.bookLabel} ${verse.chapter}:${verse.verse}`;
   return (
-    <View
+    <TouchableOpacity
       style={[
         styles.card,
         { backgroundColor: theme.surface, borderColor: theme.border },
       ]}
+      onPress={() =>
+        router.push(
+          `/(tabs)/bible-browser?bookId=${verse.book}&chapter=${verse.chapter}&verse=${verse.verse}`,
+        )
+      }
+      activeOpacity={0.8}
     >
       <Text style={[styles.cardLabel, { color: theme.text }]}>
         Verse of the Day
@@ -124,8 +131,14 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
             {verse.version}
           </Text>
         </View>
+        <View style={styles.readInContextLink}>
+          <Text style={[styles.readInContextText, { color: theme.primary }]}>
+            Read in context
+          </Text>
+          <Ionicons name="chevron-forward" size={12} color={theme.primary} />
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
