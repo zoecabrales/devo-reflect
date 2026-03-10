@@ -100,8 +100,12 @@ export default function TabsLayout() {
             prayers: { active: "heart", inactive: "heart-outline" },
             bookmarks: { active: "bookmark", inactive: "bookmark-outline" },
             settings: { active: "settings", inactive: "settings-outline" },
+            // Hidden / auxiliary screens reuse main tab icons
+            "bible-browser": { active: "home", inactive: "home-outline" },
+            concordance: { active: "home", inactive: "home-outline" },
+            "journal-compose": { active: "book", inactive: "book-outline" },
           };
-          const icon = icons[route.name];
+          const icon = icons[route.name] ?? icons.home;
           // Keep Home highlighted when the user is inside a hidden screen
           const isFocused =
             focused || (route.name === "home" && homeIsEffectivelyFocused);
@@ -139,6 +143,7 @@ export default function TabsLayout() {
       {/* Hidden screens — navigable but not shown in the tab bar */}
       <Tabs.Screen name="bible-browser" options={{ href: null }} />
       <Tabs.Screen name="concordance" options={{ href: null }} />
+      <Tabs.Screen name="journal-compose" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -134,6 +134,7 @@ export default function BibleBrowser() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [highlights, setHighlights] = useState<Map<string, string>>(new Map());
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+  const [journaled, setJournaled] = useState<Set<string>>(new Set());
   const [bookmarkConfirm, setBookmarkConfirm] = useState<string | null>(null);
   const [drawerVerse, setDrawerVerse] = useState<ChapterVerse | null>(null);
   const [shareVerse, setShareVerse] = useState<ChapterVerse | null>(null);
@@ -280,6 +281,21 @@ export default function BibleBrowser() {
     if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
     setBookmarkConfirm(label);
     confirmTimerRef.current = setTimeout(() => setBookmarkConfirm(null), 2000);
+  }
+
+  function handleDrawerJournal() {
+    if (!drawerVerse || !book) return;
+    const key = verseKey(book.id, chapter!, drawerVerse.verse);
+    setJournaled((prev) => new Set([...prev, key]));
+    const ref = `${book.label} ${chapter}:${drawerVerse.verse}`;
+    setDrawerVerse(null);
+    router.push({
+      pathname: "/(tabs)/journal-compose",
+      params: {
+        ref,
+        text: drawerVerse.text,
+      },
+    });
   }
 
   const headerTitle =
@@ -585,6 +601,31 @@ export default function BibleBrowser() {
                     Add to Bookmarks
                   </Text>
                 </TouchableOpacity>
+
+                {/* Add to Journal button */}
+                <TouchableOpacity
+                  style={[
+                    styles.drawerBookmarkBtn,
+                    {
+                      marginTop: 10,
+                      backgroundColor: theme.surface,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                  onPress={handleDrawerJournal}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="book-outline" size={18} color={theme.text} />
+                  <Text
+                    style={[
+                      styles.drawerBookmarkBtnText,
+                      { color: theme.text },
+                    ]}
+                  >
+                    Add to Journal
+                  </Text>
+                </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -715,6 +756,7 @@ export default function BibleBrowser() {
               const key = verseKey(book!.id, chapter!, v.verse);
               const highlightColor = highlights.get(key);
               const isBookmarked = bookmarked.has(key);
+              const isJournaled = journaled.has(key);
               return (
                 <TouchableOpacity
                   key={v.verse}
@@ -742,6 +784,14 @@ export default function BibleBrowser() {
                         name="bookmark"
                         size={9}
                         color={theme.primary}
+                        style={styles.verseBookmarkIcon}
+                      />
+                    )}
+                    {isJournaled && (
+                      <Ionicons
+                        name="book"
+                        size={9}
+                        color={theme.textSecondary}
                         style={styles.verseBookmarkIcon}
                       />
                     )}

@@ -120,19 +120,43 @@ export default function Journal() {
                 : "Start your first SOAP entry"}
             </Text>
           </View>
-          {streak > 0 && (
-            <View
+          <View style={styles.headerActions}>
+            {streak > 0 && (
+              <View
+                style={[
+                  styles.streakBadge,
+                  { borderColor: theme.border, backgroundColor: theme.surface },
+                ]}
+              >
+                <Text>🔥</Text>
+                <Text style={[styles.streakText, { color: theme.text }]}>
+                  {streak} day{streak === 1 ? "" : "s"}
+                </Text>
+              </View>
+            )}
+            <TouchableOpacity
               style={[
-                styles.streakBadge,
-                { borderColor: theme.border, backgroundColor: theme.surface },
+                styles.newEntryBtn,
+                {
+                  backgroundColor: theme.primary,
+                },
               ]}
+              onPress={() => router.push("/(tabs)/journal-compose")}
+              activeOpacity={0.85}
             >
-              <Text>🔥</Text>
-              <Text style={[styles.streakText, { color: theme.text }]}>
-                {streak} day{streak === 1 ? "" : "s"}
+              <Ionicons name="add" size={16} color={theme.primaryText} />
+              <Text
+                style={[
+                  styles.newEntryText,
+                  {
+                    color: theme.primaryText,
+                  },
+                ]}
+              >
+                New
               </Text>
-            </View>
-          )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -353,15 +377,6 @@ export default function Journal() {
           }}
         />
       )}
-
-      {/* ── FAB ── */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: theme.primary }]}
-        onPress={() => router.push("/(tabs)/journal-compose")}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={28} color={theme.primaryText} />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }

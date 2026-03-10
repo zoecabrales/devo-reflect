@@ -16,6 +16,11 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   headerTitle: {
     fontSize: 26,
     fontFamily: "Oswald_700Bold",
@@ -44,6 +49,21 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
+  newEntryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  newEntryText: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+
   // ── Month Group Header ───────────────────────────────────
   groupHeader: {
     flexDirection: "row",
@@ -70,7 +90,7 @@ export const styles = StyleSheet.create({
   // ── List ─────────────────────────────────────────────────
   list: {
     paddingHorizontal: 20,
-    paddingBottom: 100, // extra room for FAB
+    paddingBottom: 32,
     gap: 10,
   },
 
