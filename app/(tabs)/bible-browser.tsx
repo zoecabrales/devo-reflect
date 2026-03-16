@@ -1,3 +1,4 @@
+import { ChapterSkeleton } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BIBLE_BOOKS,
@@ -21,7 +22,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
     Modal,
     ScrollView,
     SectionList,
@@ -30,7 +30,7 @@ import {
     TextInput,
     TouchableOpacity,
     TouchableWithoutFeedback,
-    View,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bible-browser.styles";
@@ -726,12 +726,7 @@ export default function BibleBrowser() {
       {/* Verses */}
       {screen === "verses" &&
         (loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color={theme.textSecondary} />
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              Loading chapter…
-            </Text>
-          </View>
+          <ChapterSkeleton />
         ) : error ? (
           <View style={styles.centered}>
             <Text style={[styles.emptyText, { color: theme.text }]}>

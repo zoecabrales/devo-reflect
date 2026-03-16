@@ -1,3 +1,4 @@
+import { ConcordanceSkeleton } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     ConcordanceResult,
@@ -118,9 +119,7 @@ export default function Concordance() {
 
       {/* Content */}
       {searching ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={theme.textSecondary} />
-        </View>
+        <ConcordanceSkeleton />
       ) : searchError ? (
         <View style={styles.centered}>
           <Text style={[styles.emptyText, { color: theme.text }]}>

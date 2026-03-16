@@ -87,44 +87,6 @@ export const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // ── Loading Skeleton ─────────────────────────────────────
-  loadingCard: {
-    borderRadius: 14,
-    padding: 16,
-    gap: 10,
-    borderWidth: 1,
-  },
-  skeletonShort: {
-    height: 12,
-    borderRadius: 6,
-    width: "35%",
-    opacity: 0.12,
-  },
-  skeletonMedium: {
-    height: 16,
-    borderRadius: 8,
-    width: "55%",
-    opacity: 0.12,
-  },
-  skeletonLong: {
-    height: 14,
-    borderRadius: 7,
-    width: "100%",
-    opacity: 0.12,
-  },
-  skeletonLongAlt: {
-    height: 14,
-    borderRadius: 7,
-    width: "85%",
-    opacity: 0.12,
-  },
-  skeletonLongAlt2: {
-    height: 14,
-    borderRadius: 7,
-    width: "90%",
-    opacity: 0.12,
-  },
-
   // ── Quick Access Label ───────────────────────────────────
   quickAccessLabel: {
     fontSize: 9,

@@ -1,16 +1,11 @@
+import { JournalListSkeleton } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
 import { deleteEntry, JournalEntry, loadEntries } from "@/src/services/journal";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-    ActivityIndicator,
-    SectionList,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { SectionList, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./journal.styles";
 
@@ -162,9 +157,7 @@ export default function Journal() {
 
       {/* ── Body ── */}
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={theme.textSecondary} />
-        </View>
+        <JournalListSkeleton />
       ) : entries.length === 0 ? (
         /* ── Empty state ── */
         <View style={styles.empty}>

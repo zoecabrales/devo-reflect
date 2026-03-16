@@ -1,3 +1,4 @@
+import { PrayerListSkeleton } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
 import {
@@ -200,9 +201,7 @@ export default function Prayers() {
       </View>
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={theme.textSecondary} />
-        </View>
+        <PrayerListSkeleton />
       ) : prayers.length === 0 ? (
         <View style={styles.empty}>
           <Text style={[styles.emptyPrompt, { color: theme.textSecondary }]}>

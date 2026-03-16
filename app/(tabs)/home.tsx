@@ -1,3 +1,4 @@
+import { VerseCardSkeleton } from "@/src/components";
 import { Theme } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
@@ -14,7 +15,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
     Modal,
     RefreshControl,
     ScrollView,
@@ -54,30 +54,6 @@ function getFormattedDate(): string {
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
-
-function LoadingSkeleton({ theme }: { theme: Theme }) {
-  return (
-    <View
-      style={[
-        styles.loadingCard,
-        { backgroundColor: theme.surface, borderColor: theme.border },
-      ]}
-    >
-      <View style={[styles.skeletonShort, { backgroundColor: theme.text }]} />
-      <View style={[styles.skeletonMedium, { backgroundColor: theme.text }]} />
-      <View style={[styles.skeletonLong, { backgroundColor: theme.text }]} />
-      <View style={[styles.skeletonLongAlt, { backgroundColor: theme.text }]} />
-      <View
-        style={[styles.skeletonLongAlt2, { backgroundColor: theme.text }]}
-      />
-      <ActivityIndicator
-        size="small"
-        color={theme.textSecondary}
-        style={{ marginTop: 4 }}
-      />
-    </View>
-  );
-}
 
 function ErrorCard({ theme, onRetry }: { theme: Theme; onRetry: () => void }) {
   return (
@@ -508,7 +484,7 @@ export default function Home() {
 
         {/* Verse of the Day */}
         {loading ? (
-          <LoadingSkeleton theme={theme} />
+          <VerseCardSkeleton />
         ) : error ? (
           <ErrorCard theme={theme} onRetry={loadVerse} />
         ) : verse ? (
