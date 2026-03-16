@@ -1,5 +1,6 @@
 import { auth } from "@/src/services/firebase";
 import { useRouter } from "expo-router";
+import * as ExpoSplashScreen from "expo-splash-screen";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { useEffect, useRef } from "react";
 import { Animated, Image, Text } from "react-native";
@@ -10,6 +11,9 @@ export default function SplashScreen() {
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Hide the native splash so the custom animation underneath is visible.
+    ExpoSplashScreen.hideAsync().catch(() => {});
+
     const authStatePromise = new Promise<User | null>((resolve) => {
       const unsubscribe = onAuthStateChanged(auth, (user) => {
         unsubscribe();

@@ -8,6 +8,7 @@ import {
 import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs, usePathname, useRouter } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus, Text } from "react-native";
@@ -31,6 +32,11 @@ export default function TabsLayout() {
   // Auth state guard
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      // Hide the native splash in case navigation state was restored directly
+      // to (tabs) — prevents the dashboard flashing before the auth redirect.
+      // Swallow the error if it was already hidden by SplashScreen.tsx.
+      SplashScreen.hideAsync().catch(() => {});
+
       if (!user) {
         setAuthState("unauthenticated");
       } else if (!user.emailVerified) {
