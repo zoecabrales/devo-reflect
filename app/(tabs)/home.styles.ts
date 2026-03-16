@@ -1,3 +1,4 @@
+import { fs, SCROLL_PADDING_H } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -6,7 +7,7 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    padding: SCROLL_PADDING_H,
     paddingTop: 56,
     gap: 24,
   },
@@ -16,7 +17,7 @@ export const styles = StyleSheet.create({
     gap: 6,
   },
   greeting: {
-    fontSize: 30,
+    fontSize: fs(30),
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.5,
   },
@@ -49,13 +50,13 @@ export const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   verseReference: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.5,
   },
   verseText: {
-    fontSize: 17,
-    lineHeight: 27,
+    fontSize: fs(17),
+    lineHeight: fs(27),
     fontStyle: "italic",
     letterSpacing: 0.2,
   },
@@ -151,10 +152,10 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
   collectionScroll: {
-    marginHorizontal: -24, // bleed to screen edges
+    marginHorizontal: -SCROLL_PADDING_H, // bleed to screen edges
   },
   collectionScrollContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: SCROLL_PADDING_H,
     gap: 10,
   },
   collectionCard: {

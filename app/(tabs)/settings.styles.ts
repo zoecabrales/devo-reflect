@@ -1,3 +1,4 @@
+import { LIST_PADDING_H } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -7,7 +8,7 @@ export const styles = StyleSheet.create({
 
   // ── Header ───────────────────────────────────────────────
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingTop: 12,
     paddingBottom: 16,
   },
@@ -25,7 +26,7 @@ export const styles = StyleSheet.create({
 
   // ── Scroll Content ────────────────────────────────────────
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingBottom: 48,
     gap: 8,
   },

@@ -1,3 +1,4 @@
+import { LIST_PADDING_H } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -9,7 +10,7 @@ export const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingTop: 12,
     paddingBottom: 16,
     gap: 14,
@@ -40,7 +41,7 @@ export const styles = StyleSheet.create({
   searchWrap: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 20,
+    marginHorizontal: LIST_PADDING_H,
     marginBottom: 16,
     borderRadius: 12,
     borderWidth: 1,
@@ -60,7 +61,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 2.5,
     opacity: 0.45,
     textTransform: "uppercase",
-    marginHorizontal: 20,
+    marginHorizontal: LIST_PADDING_H,
     marginBottom: 10,
   },
 
@@ -84,7 +85,7 @@ export const styles = StyleSheet.create({
 
   // ── Result Row ───────────────────────────────────────────
   resultRow: {
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingVertical: 14,
     borderBottomWidth: 1,
     gap: 4,
@@ -105,7 +106,7 @@ export const styles = StyleSheet.create({
   resultCount: {
     fontSize: 11,
     opacity: 0.45,
-    marginHorizontal: 20,
+    marginHorizontal: LIST_PADDING_H,
     marginBottom: 8,
     fontStyle: "italic",
   },

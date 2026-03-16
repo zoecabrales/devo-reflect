@@ -8,6 +8,7 @@ import {
     ScriptureRef,
     updateEntry,
 } from "@/src/services/journal";
+import { LIST_PADDING_H } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -137,7 +138,7 @@ export default function JournalCompose() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          paddingHorizontal: 20,
+          paddingHorizontal: LIST_PADDING_H,
           paddingVertical: 12,
           borderBottomWidth: 1,
           borderBottomColor: theme.border,
@@ -198,7 +199,7 @@ export default function JournalCompose() {
       {!loading && (
         <ScrollView
           contentContainerStyle={{
-            paddingHorizontal: 20,
+            paddingHorizontal: LIST_PADDING_H,
             paddingVertical: 16,
             gap: 16,
           }}

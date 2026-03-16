@@ -1,3 +1,4 @@
+import { fs, LIST_PADDING_H } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -7,7 +8,7 @@ export const styles = StyleSheet.create({
 
   // ── Header ───────────────────────────────────────────────
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingTop: 12,
     paddingBottom: 16,
   },
@@ -22,7 +23,7 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: fs(26),
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
   },
@@ -69,7 +70,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingTop: 16,
     paddingBottom: 8,
   },
@@ -89,7 +90,7 @@ export const styles = StyleSheet.create({
 
   // ── List ─────────────────────────────────────────────────
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingBottom: 32,
     gap: 10,
   },
@@ -174,7 +175,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingBottom: 40,
   },
   emptyPrompt: {
@@ -210,4 +211,3 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
 });
-

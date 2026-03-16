@@ -1,3 +1,4 @@
+import { fs, LIST_PADDING_H, MODAL_MAX_WIDTH } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -7,12 +8,12 @@ export const styles = StyleSheet.create({
 
   // ── Header ───────────────────────────────────────────────
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingTop: 12,
     paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: fs(26),
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
   },
@@ -28,7 +29,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingBottom: 16,
   },
   textInput: {
@@ -50,7 +51,7 @@ export const styles = StyleSheet.create({
 
   // ── List ─────────────────────────────────────────────────
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingBottom: 48,
     gap: 8,
   },
@@ -118,7 +119,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingBottom: 40,
   },
   emptyPrompt: {
@@ -217,6 +218,7 @@ export const styles = StyleSheet.create({
   },
   modalCard: {
     width: "100%",
+    maxWidth: MODAL_MAX_WIDTH,
     borderRadius: 16,
     borderWidth: 1,
     padding: 20,
