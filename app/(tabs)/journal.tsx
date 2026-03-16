@@ -5,7 +5,8 @@ import { deleteEntry, JournalEntry, loadEntries } from "@/src/services/journal";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { SectionList, Text, TouchableOpacity, View } from "react-native";
+// prettier-ignore
+import { Modal, ScrollView, SectionList, Text, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./journal.styles";
 
@@ -74,6 +75,7 @@ export default function Journal() {
   const router = useRouter();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [guideVisible, setGuideVisible] = useState(false);
 
   const uid = auth.currentUser?.uid ?? "";
 
@@ -116,6 +118,17 @@ export default function Journal() {
             </Text>
           </View>
           <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.helpBtn, { borderColor: theme.border }]}
+              onPress={() => setGuideVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="help-outline"
+                size={14}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
             {streak > 0 && (
               <View
                 style={[
@@ -370,6 +383,138 @@ export default function Journal() {
           }}
         />
       )}
+      {/* ── SOAP Guide Modal ── */}
+      <Modal
+        visible={guideVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setGuideVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setGuideVisible(false)}>
+          <View style={styles.guideModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.guideModalSheet,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <View style={styles.guideModalHandle} />
+
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <Text style={[styles.guideModalTitle, { color: theme.text }]}>
+                    The SOAP Method
+                  </Text>
+                  <Text
+                    style={[
+                      styles.guideModalIntro,
+                      { color: theme.textSecondary },
+                    ]}
+                  >
+                    A simple framework for reading Scripture slowly and
+                    responding personally.
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.guideModalDivider,
+                      { backgroundColor: theme.text },
+                    ]}
+                  />
+
+                  {(
+                    [
+                      {
+                        letter: "S",
+                        name: "Scripture",
+                        desc: "Choose a verse or passage to focus on. Write it out rather than just referencing it — the act of writing slows you down.",
+                        prompt: "What verse stood out to me today?",
+                      },
+                      {
+                        letter: "O",
+                        name: "Observation",
+                        desc: "What does the text say? Note context, who is speaking, repeated words. Stay with what's actually in the passage.",
+                        prompt: "What do I notice about this passage?",
+                      },
+                      {
+                        letter: "A",
+                        name: "Application",
+                        desc: "What does this mean for your life today? Be specific — one action, one attitude, one relationship.",
+                        prompt: "How does this apply to my life right now?",
+                      },
+                      {
+                        letter: "P",
+                        name: "Prayer",
+                        desc: "Respond to God based on what you read. It doesn't need to be long — honesty matters more than length.",
+                        prompt: "What do I want to say to God in response?",
+                      },
+                    ] as const
+                  ).map((step) => (
+                    <View key={step.letter} style={styles.guideStep}>
+                      <View
+                        style={[
+                          styles.guideStepBadge,
+                          { backgroundColor: theme.primary },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.guideStepLetter,
+                            { color: theme.primaryText },
+                          ]}
+                        >
+                          {step.letter}
+                        </Text>
+                      </View>
+                      <View style={styles.guideStepBody}>
+                        <Text
+                          style={[styles.guideStepName, { color: theme.text }]}
+                        >
+                          {step.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.guideStepDesc,
+                            { color: theme.textSecondary },
+                          ]}
+                        >
+                          {step.desc}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.guideStepPrompt,
+                            { color: theme.textSecondary },
+                          ]}
+                        >
+                          "{step.prompt}"
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={[
+                      styles.guideModalCTA,
+                      { backgroundColor: theme.primary },
+                    ]}
+                    onPress={() => setGuideVisible(false)}
+                  >
+                    <Text
+                      style={[
+                        styles.guideModalCTAText,
+                        { color: theme.primaryText },
+                      ]}
+                    >
+                      Got it
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
