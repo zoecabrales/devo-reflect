@@ -76,6 +76,7 @@ export default function Journal() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [guideVisible, setGuideVisible] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const uid = auth.currentUser?.uid ?? "";
 
@@ -89,9 +90,11 @@ export default function Journal() {
     }, [uid]),
   );
 
-  async function handleDelete(id: string) {
-    await deleteEntry(uid, id);
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    await deleteEntry(uid, deleteTargetId);
+    setEntries((prev) => prev.filter((e) => e.id !== deleteTargetId));
+    setDeleteTargetId(null);
   }
 
   const streak = calcStreak(entries);
@@ -316,7 +319,7 @@ export default function Journal() {
                   {/* Delete */}
                   <TouchableOpacity
                     style={styles.deleteBtn}
-                    onPress={() => handleDelete(item.id)}
+                    onPress={() => setDeleteTargetId(item.id)}
                     activeOpacity={0.7}
                   >
                     <Ionicons
@@ -383,6 +386,75 @@ export default function Journal() {
           }}
         />
       )}
+      {/* ── Delete Confirmation Modal ── */}
+      <Modal
+        visible={deleteTargetId !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteTargetId(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setDeleteTargetId(null)}>
+          <View style={styles.deleteModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.deleteModalCard,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.deleteModalTitle, { color: theme.text }]}>
+                  Delete Entry
+                </Text>
+                <Text
+                  style={[
+                    styles.deleteModalBody,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  This entry will be permanently removed. This cannot be undone.
+                </Text>
+                <View style={styles.deleteModalActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteModalCancel,
+                      { borderColor: theme.border },
+                    ]}
+                    onPress={() => setDeleteTargetId(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.deleteModalCancelText,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteModalConfirm,
+                      { backgroundColor: "#e53e3e" },
+                    ]}
+                    onPress={confirmDelete}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[styles.deleteModalConfirmText, { color: "#fff" }]}
+                    >
+                      Delete
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* ── SOAP Guide Modal ── */}
       <Modal
         visible={guideVisible}

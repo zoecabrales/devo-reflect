@@ -63,6 +63,7 @@ export default function Prayers() {
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState("");
   const [adding, setAdding] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [showVerseModal, setShowVerseModal] = useState(false);
   const [editingPrayer, setEditingPrayer] = useState<PrayerRequest | null>(
     null,
@@ -139,9 +140,11 @@ export default function Prayers() {
     }
   }
 
-  async function handleDelete(id: string) {
-    await deletePrayer(uid, id);
-    setPrayers((prev) => prev.filter((p) => p.id !== id));
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    await deletePrayer(uid, deleteTargetId);
+    setPrayers((prev) => prev.filter((p) => p.id !== deleteTargetId));
+    setDeleteTargetId(null);
     setShowVerseModal(true);
   }
 
@@ -315,7 +318,7 @@ export default function Prayers() {
                 {/* Delete */}
                 <TouchableOpacity
                   style={styles.deleteBtn}
-                  onPress={() => handleDelete(item.id)}
+                  onPress={() => setDeleteTargetId(item.id)}
                   activeOpacity={0.7}
                 >
                   <Ionicons
@@ -329,6 +332,73 @@ export default function Prayers() {
           }}
         />
       )}
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={deleteTargetId !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteTargetId(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setDeleteTargetId(null)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.modalCard,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <Text style={[styles.deleteModalTitle, { color: theme.text }]}>
+                  Delete Prayer
+                </Text>
+                <Text
+                  style={[
+                    styles.deleteModalBody,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  This prayer request will be permanently removed. This cannot
+                  be undone.
+                </Text>
+                <View style={styles.deleteModalActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteModalCancel,
+                      { borderColor: theme.border },
+                    ]}
+                    onPress={() => setDeleteTargetId(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.deleteModalCancelText,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteModalConfirm,
+                      { backgroundColor: "#e53e3e" },
+                    ]}
+                    onPress={confirmDelete}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[styles.deleteModalConfirmText, { color: "#fff" }]}
+                    >
+                      Delete
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Edit prayer modal */}
       <Modal
         visible={!!editingPrayer}

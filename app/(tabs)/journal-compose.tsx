@@ -45,9 +45,30 @@ export default function JournalCompose() {
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
 
-  // Edit mode — load existing entry and prefill the draft
+  // Runs every time the screen is visited (id changes between new/edit mode).
+  // Always resets the draft first so stale data from a previous session never
+  // bleeds into a new entry. Then loads the existing entry only in edit mode.
   useEffect(() => {
-    if (!id || !uid) return;
+    const empty: JournalEntryDraft = {
+      title: "",
+      scripture: [],
+      observation: "",
+      application: "",
+      prayer: "",
+      tags: [],
+      bookId: null,
+      chapter: null,
+    };
+
+    if (!id || !uid) {
+      // New entry — clear everything and stop loading
+      setDraft(empty);
+      setLoading(false);
+      return;
+    }
+
+    // Edit mode — reset first, then populate from Firestore
+    setDraft(empty);
     setLoading(true);
     loadEntry(uid, id)
       .then((entry) => {
@@ -118,7 +139,7 @@ export default function JournalCompose() {
       } else {
         await addEntry(uid, draft);
       }
-      router.back();
+      router.replace("/(tabs)/journal");
     } catch (err) {
       console.error(err);
       Alert.alert("Unable to save", "Please try again in a moment.");
@@ -145,7 +166,10 @@ export default function JournalCompose() {
           backgroundColor: theme.surface,
         }}
       >
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={() => router.replace("/(tabs)/journal")}
+          activeOpacity={0.7}
+        >
           <Ionicons name="chevron-back" size={22} color={theme.textSecondary} />
         </TouchableOpacity>
         <Text
