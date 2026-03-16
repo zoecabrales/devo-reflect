@@ -8,7 +8,14 @@ import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import {
+    FlatList,
+    Modal,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bookmarks.styles";
 
@@ -21,6 +28,7 @@ export default function Bookmarks() {
   const { theme } = useAppTheme();
   const router = useRouter();
   const [bookmarks, setBookmarks] = useState<BookmarkedVerse[]>([]);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const uid = auth.currentUser?.uid ?? "";
 
@@ -32,9 +40,11 @@ export default function Bookmarks() {
     }, [uid]),
   );
 
-  async function handleDelete(id: string) {
-    await removeBookmark(uid, id);
-    setBookmarks((prev) => prev.filter((b) => b.id !== id));
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    await removeBookmark(uid, deleteTargetId);
+    setBookmarks((prev) => prev.filter((b) => b.id !== deleteTargetId));
+    setDeleteTargetId(null);
   }
 
   return (
@@ -113,7 +123,7 @@ export default function Bookmarks() {
               </View>
               <TouchableOpacity
                 style={styles.deleteBtn}
-                onPress={() => handleDelete(item.id)}
+                onPress={() => setDeleteTargetId(item.id)}
                 activeOpacity={0.7}
               >
                 <Ionicons
@@ -126,6 +136,73 @@ export default function Bookmarks() {
           )}
         />
       )}
+
+      {/* ── Delete Confirmation Modal ── */}
+      <Modal
+        visible={deleteTargetId !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteTargetId(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setDeleteTargetId(null)}>
+          <View style={styles.deleteModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.deleteModalCard,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <Text style={[styles.deleteModalTitle, { color: theme.text }]}>
+                  Delete Bookmark
+                </Text>
+                <Text
+                  style={[
+                    styles.deleteModalBody,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  This bookmark will be permanently removed. This cannot be
+                  undone.
+                </Text>
+                <View style={styles.deleteModalActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteModalCancel,
+                      { borderColor: theme.border },
+                    ]}
+                    onPress={() => setDeleteTargetId(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.deleteModalCancelText,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteModalConfirm,
+                      { backgroundColor: "#e53e3e" },
+                    ]}
+                    onPress={confirmDelete}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[styles.deleteModalConfirmText, { color: "#fff" }]}
+                    >
+                      Delete
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }

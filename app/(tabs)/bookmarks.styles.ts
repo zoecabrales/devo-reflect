@@ -105,4 +105,60 @@ export const styles = StyleSheet.create({
     fontStyle: "italic",
     letterSpacing: 0.1,
   },
+
+  // ── Delete Confirmation Modal ────────────────────────────
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  deleteModalCard: {
+    width: "100%",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    gap: 8,
+  },
+  deleteModalTitle: {
+    fontSize: 16,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.4,
+  },
+  deleteModalBody: {
+    fontSize: 13,
+    lineHeight: 20,
+    opacity: 0.6,
+    letterSpacing: 0.1,
+    marginBottom: 8,
+  },
+  deleteModalActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  deleteModalCancel: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  deleteModalCancelText: {
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.4,
+  },
+  deleteModalConfirm: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  deleteModalConfirmText: {
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.4,
+  },
 });
