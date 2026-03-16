@@ -100,7 +100,8 @@ export default function TabsLayout() {
           > = {
             home: { active: "home", inactive: "home-outline" },
             journal: { active: "book", inactive: "book-outline" },
-            prayers: { active: "heart", inactive: "heart-outline" },
+            // prayers: { active: "heart", inactive: "heart-outline" },
+            "ai-study": { active: "sparkles", inactive: "sparkles-outline" },
             bookmarks: { active: "bookmark", inactive: "bookmark-outline" },
             settings: { active: "settings", inactive: "settings-outline" },
             // Hidden / auxiliary screens reuse main tab icons
@@ -144,7 +145,9 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="home" options={{ title: "Home" }} />
       <Tabs.Screen name="journal" options={{ title: "Journal" }} />
-      <Tabs.Screen name="prayers" options={{ title: "Prayers" }} />
+      {/* <Tabs.Screen name="prayers" options={{ title: "Prayers" }} /> */}
+      <Tabs.Screen name="prayers" options={{ href: null }} />
+      <Tabs.Screen name="ai-study" options={{ title: "AI Study" }} />
       <Tabs.Screen name="bookmarks" options={{ title: "Bookmarks" }} />
       <Tabs.Screen name="settings" options={{ title: "Settings" }} />
       {/* Hidden screens — navigable but not shown in the tab bar */}
