@@ -255,6 +255,7 @@ export interface BibleCollection {
   id: string;
   label: string;
   subtitle: string;
+  description: string;
   icon: string; // Ionicons glyph name
   bookIds: string[];
 }
@@ -264,6 +265,8 @@ export const BIBLE_COLLECTIONS: BibleCollection[] = [
     id: "pentateuch",
     label: "Pentateuch",
     subtitle: "The Law · 5 books",
+    description:
+      "Records the creation of the world, the fall of humanity, God's covenant with Abraham, and the formation of Israel as God's chosen nation, including the Law given through Moses.",
     icon: "library-outline",
     bookIds: ["genesis", "exodus", "leviticus", "numbers", "deuteronomy"],
   },
@@ -271,6 +274,8 @@ export const BIBLE_COLLECTIONS: BibleCollection[] = [
     id: "historical",
     label: "Historical Books",
     subtitle: "Israel's story · 12 books",
+    description:
+      "Recounts Israel's history in the Promised Land — conquest, judges, kings, exile, and restoration — showing God's faithfulness and Israel's repeated cycles of obedience and disobedience.",
     icon: "time-outline",
     bookIds: [
       "joshua",
@@ -291,6 +296,8 @@ export const BIBLE_COLLECTIONS: BibleCollection[] = [
     id: "wisdom",
     label: "Wisdom & Poetry",
     subtitle: "Psalms, Proverbs & more · 5 books",
+    description:
+      "Contains poetic reflections on life, suffering, wisdom, worship, and human relationships, teaching how to fear God and live righteously in everyday life.",
     icon: "star-outline",
     bookIds: ["job", "psalms", "proverbs", "ecclesiastes", "song-of-solomon"],
   },
@@ -298,6 +305,8 @@ export const BIBLE_COLLECTIONS: BibleCollection[] = [
     id: "prophets",
     label: "The Prophets",
     subtitle: "Major & Minor · 17 books",
+    description:
+      "God's messengers call Israel to repentance, warn of judgment for sin, and give hope through promises of restoration and the coming Messiah.",
     icon: "megaphone-outline",
     bookIds: [
       "isaiah",
@@ -323,6 +332,8 @@ export const BIBLE_COLLECTIONS: BibleCollection[] = [
     id: "gospels",
     label: "The Gospels",
     subtitle: "Life of Jesus · 4 books",
+    description:
+      "Records the life, teachings, miracles, death, and resurrection of Jesus Christ, revealing Him as the promised Messiah and Savior of the world.",
     icon: "heart-outline",
     bookIds: ["matthew", "mark", "luke", "john"],
   },
@@ -330,6 +341,8 @@ export const BIBLE_COLLECTIONS: BibleCollection[] = [
     id: "epistles",
     label: "The Epistles",
     subtitle: "Letters · 21 books",
+    description:
+      "Letters written to churches and believers explaining the gospel, Christian doctrine, and practical instructions for living faithfully in Christ.",
     icon: "mail-outline",
     bookIds: [
       "acts",
@@ -360,6 +373,8 @@ export const BIBLE_COLLECTIONS: BibleCollection[] = [
     id: "revelation",
     label: "Revelation",
     subtitle: "The Apocalypse · 1 book",
+    description:
+      "Reveals Jesus Christ's ultimate victory over evil, the final judgment, and the establishment of God's eternal kingdom with a new heaven and new earth.",
     icon: "flash-outline",
     bookIds: ["revelation"],
   },

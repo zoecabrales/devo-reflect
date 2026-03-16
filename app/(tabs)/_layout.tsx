@@ -25,6 +25,9 @@ export default function TabsLayout() {
   const homeIsEffectivelyFocused =
     pathname.includes("bible-browser") || pathname.includes("concordance");
 
+  // Keep the Journal tab highlighted when composing
+  const journalIsEffectivelyFocused = pathname.includes("journal-compose");
+
   // Auth state guard
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -106,9 +109,11 @@ export default function TabsLayout() {
             "journal-compose": { active: "book", inactive: "book-outline" },
           };
           const icon = icons[route.name] ?? icons.home;
-          // Keep Home highlighted when the user is inside a hidden screen
+          // Keep Home/Journal highlighted when the user is inside a hidden screen
           const isFocused =
-            focused || (route.name === "home" && homeIsEffectivelyFocused);
+            focused ||
+            (route.name === "home" && homeIsEffectivelyFocused) ||
+            (route.name === "journal" && journalIsEffectivelyFocused);
           const iconColor = isFocused ? TAB_ACTIVE_COLOR : color;
           return (
             <Ionicons
@@ -120,7 +125,9 @@ export default function TabsLayout() {
         },
         tabBarLabel: ({ focused, color, children }) => {
           const isLabelFocused =
-            focused || (route.name === "home" && homeIsEffectivelyFocused);
+            focused ||
+            (route.name === "home" && homeIsEffectivelyFocused) ||
+            (route.name === "journal" && journalIsEffectivelyFocused);
           return (
             <Text
               style={{

@@ -2,6 +2,7 @@ import { Theme } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BIBLE_COLLECTIONS,
+    BibleCollection,
     BibleVerse,
     fetchDailyVerse,
     loadReadingPosition,
@@ -14,10 +15,12 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Modal,
     RefreshControl,
     ScrollView,
     Text,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from "react-native";
 import { styles } from "./home.styles";
@@ -150,6 +153,8 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
 
 function CollectionCards({ theme }: { theme: Theme }) {
   const router = useRouter();
+  const [selected, setSelected] = useState<BibleCollection | null>(null);
+
   return (
     <View>
       <Text style={[styles.collectionSectionLabel, { color: theme.text }]}>
@@ -168,9 +173,7 @@ function CollectionCards({ theme }: { theme: Theme }) {
               styles.collectionCard,
               { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
-            onPress={() =>
-              router.push(`/(tabs)/bible-browser?collectionId=${col.id}`)
-            }
+            onPress={() => setSelected(col)}
             activeOpacity={0.75}
           >
             <View
@@ -196,9 +199,114 @@ function CollectionCards({ theme }: { theme: Theme }) {
             >
               {col.subtitle}
             </Text>
+            <Text
+              style={[
+                styles.collectionDescription,
+                { color: theme.textSecondary },
+              ]}
+              numberOfLines={4}
+            >
+              {col.description}
+            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* Collection Info Modal */}
+      <Modal
+        visible={selected !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelected(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setSelected(null)}>
+          <View style={styles.collectionModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.collectionModalSheet,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
+                <View style={styles.collectionModalHandle} />
+
+                {/* Icon */}
+                <View
+                  style={[
+                    styles.collectionModalIconWrap,
+                    { backgroundColor: theme.primary },
+                  ]}
+                >
+                  <Ionicons
+                    name={(selected?.icon ?? "book-outline") as any}
+                    size={22}
+                    color={theme.primaryText}
+                  />
+                </View>
+
+                {/* Label + subtitle */}
+                <Text
+                  style={[styles.collectionModalLabel, { color: theme.text }]}
+                >
+                  {selected?.label}
+                </Text>
+                <Text
+                  style={[
+                    styles.collectionModalSubtitle,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  {selected?.subtitle}
+                </Text>
+
+                {/* Divider */}
+                <View
+                  style={[
+                    styles.collectionModalDivider,
+                    { backgroundColor: theme.text },
+                  ]}
+                />
+
+                {/* Full description */}
+                <Text
+                  style={[
+                    styles.collectionModalDescription,
+                    { color: theme.text },
+                  ]}
+                >
+                  {selected?.description}
+                </Text>
+
+                {/* CTA */}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={[
+                    styles.collectionModalCTA,
+                    { backgroundColor: theme.primary },
+                  ]}
+                  onPress={() => {
+                    const id = selected?.id;
+                    setSelected(null);
+                    router.push(`/(tabs)/bible-browser?collectionId=${id}`);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.collectionModalCTAText,
+                      { color: theme.primaryText },
+                    ]}
+                  >
+                    Browse Books
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
