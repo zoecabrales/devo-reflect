@@ -412,6 +412,12 @@ function BrowseBibleCard({ theme }: { theme: Theme }) {
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
+// Show the verse greeting once per cold start, not on every navigation
+let verseGreetingShown = false;
+
+const PSALM_119_105 =
+  "Thy word is a lamp unto my feet, and a light unto my path.";
+
 export default function Home() {
   const { theme } = useAppTheme();
 
@@ -423,6 +429,7 @@ export default function Home() {
   const [readingPosition, setReadingPosition] =
     useState<ReadingPosition | null>(null);
   const [bookmarkCount, setBookmarkCount] = useState(0);
+  const [showVerseGreeting, setShowVerseGreeting] = useState(false);
 
   const user = auth.currentUser;
   const displayName = user?.displayName?.split(" ")[0] ?? "Friend";
@@ -431,6 +438,14 @@ export default function Home() {
   useEffect(() => {
     const id = setInterval(() => setGreeting(getGreeting()), 60_000);
     return () => clearInterval(id);
+  }, []);
+
+  // Show verse greeting once per cold start
+  useEffect(() => {
+    if (!verseGreetingShown) {
+      verseGreetingShown = true;
+      setShowVerseGreeting(true);
+    }
   }, []);
 
   async function loadVerse(isRefresh = false) {
@@ -505,6 +520,66 @@ export default function Home() {
         <BookmarkBadgeCard count={bookmarkCount} theme={theme} />
         <ConcordanceCard theme={theme} />
       </ScrollView>
+
+      {/* ── Verse Greeting Modal ─────────────────────────── */}
+      <Modal
+        visible={showVerseGreeting}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setShowVerseGreeting(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowVerseGreeting(false)}>
+          <View style={styles.verseGreetingOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.verseGreetingCard,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.verseGreetingRef,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  Psalms 119:105
+                </Text>
+                <View
+                  style={[
+                    styles.verseGreetingDivider,
+                    { backgroundColor: theme.text },
+                  ]}
+                />
+                <Text style={[styles.verseGreetingText, { color: theme.text }]}>
+                  {PSALM_119_105}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.verseGreetingBtn,
+                    {
+                      borderColor: theme.border,
+                      backgroundColor: theme.primary,
+                    },
+                  ]}
+                  onPress={() => setShowVerseGreeting(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.verseGreetingBtnText,
+                      { color: theme.primaryText },
+                    ]}
+                  >
+                    Begin Journey
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }

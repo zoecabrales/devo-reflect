@@ -1,4 +1,4 @@
-import { fs, SCROLL_PADDING_H } from "@/src/utils/responsive";
+import { fs, MODAL_MAX_WIDTH, SCROLL_PADDING_H } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -331,5 +331,55 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     opacity: 0.55,
     letterSpacing: 0.2,
+  },
+
+  // ── Verse Greeting Modal ──────────────────────────────────
+  verseGreetingOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 28,
+  },
+  verseGreetingCard: {
+    width: "100%",
+    maxWidth: MODAL_MAX_WIDTH,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 28,
+    alignItems: "center",
+    gap: 12,
+  },
+  verseGreetingRef: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    opacity: 0.5,
+  },
+  verseGreetingDivider: {
+    height: 1,
+    width: "100%",
+    opacity: 0.12,
+  },
+  verseGreetingText: {
+    fontSize: fs(18),
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.3,
+    lineHeight: fs(18) * 1.5,
+    textAlign: "center",
+  },
+  verseGreetingBtn: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 32,
+    alignItems: "center",
+  },
+  verseGreetingBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
 });
