@@ -7,7 +7,7 @@ import {
 } from "@/src/services/concordance";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -62,8 +62,53 @@ export default function Concordance() {
     runSearch(text);
   }
 
-  const visibleResults = results.slice(0, visibleCount);
-  const hasMore = visibleCount < results.length;
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const scoreResult = (text: string, search: string) => {
+    const normalizedText = text.toLowerCase();
+    const normalizedSearch = search.trim().toLowerCase();
+    if (!normalizedSearch) return 999;
+    if (normalizedText === normalizedSearch) return 0;
+    if (normalizedText.includes(` ${normalizedSearch} `) ||
+        normalizedText.startsWith(`${normalizedSearch} `) ||
+        normalizedText.endsWith(` ${normalizedSearch}`)) return 1;
+    if (normalizedText.includes(normalizedSearch)) return 2;
+    return 3;
+  };
+
+  const sortedResults = useMemo(() => {
+    if (!query.trim()) return results;
+    return [...results]
+      .sort((a, b) => {
+        const aScore = scoreResult(a.text, query);
+        const bScore = scoreResult(b.text, query);
+        if (aScore !== bScore) return aScore - bScore;
+        if (a.book !== b.book) return a.book - b.book;
+        if (a.chapter !== b.chapter) return a.chapter - b.chapter;
+        return a.verse - b.verse;
+      });
+  }, [results, query]);
+
+  const highlightQueryText = (text: string) => {
+    const searchTerm = query.trim();
+    if (!searchTerm) return text;
+
+    const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, "gi");
+    const chunks = text.split(regex);
+
+    return chunks.map((chunk, index) =>
+      regex.test(chunk) ? (
+        <Text key={index} style={styles.highlightText}>
+          {chunk}
+        </Text>
+      ) : (
+        <Text key={index}>{chunk}</Text>
+      ),
+    );
+  };
+
+  const visibleResults = sortedResults.slice(0, visibleCount);
+  const hasMore = visibleCount < sortedResults.length;
 
   return (
     <SafeAreaView
@@ -172,7 +217,7 @@ export default function Concordance() {
                 {item.bookLabel} {item.chapter}:{item.verse}
               </Text>
               <Text style={[styles.resultText, { color: theme.text }]}>
-                {item.text}
+                {highlightQueryText(item.text)}
               </Text>
             </View>
           )}

@@ -42,6 +42,17 @@ export const SUGGESTED_TERMS = [
 const TRANSLATION = "ASV";
 const SEARCH_BASE = `https://bolls.life/search/${TRANSLATION}`;
 
+/** Strip HTML tags, entities, and Strong's Concordance numbers from text */
+function cleanVerseText(text: string): string {
+  return text
+    .replace(/<[^>]*>/g, "") // Remove HTML tags
+    .replace(/&nbsp;/g, " ") // Convert &nbsp; to space
+    .replace(/&amp;/g, "&") // Convert &amp; to &
+    .replace(/\d{2,5}/g, "") // Remove Strong's numbers (2-5 digit sequences)
+    .replace(/\s+/g, " ") // Normalize multiple spaces to single space
+    .trim();
+}
+
 /** Search the ASV Bible for all verses containing `word`. */
 export async function searchConcordance(
   word: string,
@@ -53,6 +64,7 @@ export async function searchConcordance(
     await res.json();
   return raw.map((v) => ({
     ...v,
+    text: cleanVerseText(v.text),
     bookLabel: BOOK_NAMES[v.book] ?? `Book ${v.book}`,
   }));
 }

@@ -172,19 +172,29 @@ export function ChapterSkeleton() {
 export function ConcordanceSkeleton() {
   const { theme } = useAppTheme();
   return (
-    <View style={sk.list}>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <View
-          key={i}
-          style={[
-            sk.rowCard,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}
-        >
-          <SkeletonLine size="short" />
-          <SkeletonLine size={i % 2 === 0 ? "full" : "long"} />
-        </View>
-      ))}
+    <View style={{ flex: 1 }}>
+      {/* Result count header */}
+      <View style={sk.concordanceHeader}>
+        <SkeletonLine size="short" />
+      </View>
+
+      {/* Result rows */}
+      <View style={sk.list}>
+        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+          <View
+            key={i}
+            style={[sk.concordanceRow, { borderBottomColor: theme.border }]}
+          >
+            {/* Reference line */}
+            <Skeleton width="30%" height={11} borderRadius={5} />
+            {/* Verse text lines */}
+            <View style={sk.concordanceLines}>
+              <SkeletonLine size={i % 3 === 0 ? "full" : "long"} />
+              {i % 2 === 0 && <SkeletonLine size="medium" />}
+            </View>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -236,5 +246,19 @@ const sk = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  concordanceHeader: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    marginBottom: 8,
+  },
+  concordanceRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 4,
+    borderBottomWidth: 1,
+  },
+  concordanceLines: {
+    gap: 8,
   },
 });

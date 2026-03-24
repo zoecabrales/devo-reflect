@@ -101,6 +101,10 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
   },
+  highlightText: {
+    fontWeight: "700",
+    textDecorationLine: "underline",
+  },
 
   // ── Result count ─────────────────────────────────────────
   resultCount: {
