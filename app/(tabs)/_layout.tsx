@@ -106,7 +106,7 @@ export default function TabsLayout() {
           > = {
             home: { active: "home", inactive: "home-outline" },
             journal: { active: "book", inactive: "book-outline" },
-            prayers: { active: "heart", inactive: "heart-outline" },
+            growth: { active: "leaf", inactive: "leaf-outline" },
             bookmarks: { active: "bookmark", inactive: "bookmark-outline" },
             settings: { active: "settings", inactive: "settings-outline" },
             // Hidden / auxiliary screens reuse main tab icons
@@ -150,13 +150,15 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="home" options={{ title: "Home" }} />
       <Tabs.Screen name="journal" options={{ title: "Journal" }} />
-      <Tabs.Screen name="prayers" options={{ title: "Prayers" }} />
+      <Tabs.Screen name="growth" options={{ title: "Growth" }} />
       <Tabs.Screen name="bookmarks" options={{ title: "Bookmarks" }} />
       <Tabs.Screen name="settings" options={{ title: "Settings" }} />
       {/* Hidden screens — navigable but not shown in the tab bar */}
       <Tabs.Screen name="bible-browser" options={{ href: null }} />
       <Tabs.Screen name="concordance" options={{ href: null }} />
       <Tabs.Screen name="journal-compose" options={{ href: null }} />
+      {/* Disabled tabs — files kept for git history, hidden from tab bar */}
+      <Tabs.Screen name="prayers" options={{ href: null }} />
     </Tabs>
   );
 }
