@@ -3,6 +3,8 @@ import {
   CalendarWidget,
   type PickedVerse,
 } from "@/src/features/growth/CalendarWidget";
+import { PrayersWidget } from "@/src/features/growth/PrayersWidget";
+import { TopicsWidget } from "@/src/features/growth/TopicsWidget";
 import { LIST_PADDING_H } from "@/src/utils/responsive";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
@@ -49,7 +51,9 @@ export default function Growth() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
+        <PrayersWidget />
         <CalendarWidget pickedVerse={pickedVerse} />
+        <TopicsWidget />
       </ScrollView>
     </SafeAreaView>
   );

@@ -36,7 +36,8 @@ const MONTH_NAMES = [
   "December",
 ];
 
-const ROW_H = 50; // must match cell height in styles
+const ROW_H = 42; // must match cell height in styles
+const CIRCLE_D = 26; // day circle diameter — strips are centred around this
 
 function daysIn(y: number, m: number) {
   return new Date(y, m + 1, 0).getDate();
@@ -151,7 +152,7 @@ export function CalendarWidget({
 
   // ── Pre-fill modal with existing saved verse when a date is tapped ────────
   // Skipped when the modal was opened by the Bible picker (flag prevents clash).
-   
+
   useEffect(() => {
     if (!showDayModal || selectedDay === null) return;
     if (isFromPickerR.current) {
@@ -395,7 +396,7 @@ export function CalendarWidget({
             style={styles.navBtn}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={18} color={theme.text} />
+            <Ionicons name="chevron-back" size={14} color={theme.text} />
           </TouchableOpacity>
           <Text style={[styles.monthTitle, { color: theme.text }]}>
             {MONTH_NAMES[month]} {year}
@@ -405,7 +406,7 @@ export function CalendarWidget({
             style={styles.navBtn}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-forward" size={18} color={theme.text} />
+            <Ionicons name="chevron-forward" size={14} color={theme.text} />
           </TouchableOpacity>
         </View>
 
@@ -723,32 +724,32 @@ export function CalendarWidget({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    padding: 16,
+    padding: 12,
   },
   monthHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 10,
   },
   navBtn: {
-    padding: 6,
+    padding: 4,
   },
   monthTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
   },
   dayLabelsRow: {
     flexDirection: "row",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   dayLabel: {
     flex: 1,
     textAlign: "center",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
     letterSpacing: 0.8,
     textTransform: "uppercase",
@@ -763,43 +764,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  // Range oblong strips — positioned absolute, centered vertically in the cell
+  // Range oblong strips — centred vertically around the circle
   stripRight: {
     position: "absolute",
     left: "50%",
     right: 0,
-    top: (ROW_H - 32) / 2, // vertically centres the 32 px strip in ROW_H
-    bottom: (ROW_H - 32) / 2,
+    top: (ROW_H - CIRCLE_D) / 2,
+    bottom: (ROW_H - CIRCLE_D) / 2,
   },
   stripFull: {
     position: "absolute",
     left: 0,
     right: 0,
-    top: (ROW_H - 32) / 2,
-    bottom: (ROW_H - 32) / 2,
+    top: (ROW_H - CIRCLE_D) / 2,
+    bottom: (ROW_H - CIRCLE_D) / 2,
   },
   stripLeft: {
     position: "absolute",
     left: 0,
     right: "50%",
-    top: (ROW_H - 32) / 2,
-    bottom: (ROW_H - 32) / 2,
+    top: (ROW_H - CIRCLE_D) / 2,
+    bottom: (ROW_H - CIRCLE_D) / 2,
   },
   dayCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: CIRCLE_D,
+    height: CIRCLE_D,
+    borderRadius: CIRCLE_D / 2,
     alignItems: "center",
     justifyContent: "center",
   },
   dayText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "600",
   },
   hint: {
-    marginTop: 10,
+    marginTop: 6,
     textAlign: "center",
-    fontSize: 10,
+    fontSize: 9,
     opacity: 0.45,
     letterSpacing: 0.3,
   },
@@ -885,13 +886,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   // ── Saved-verse dot indicator — sits below the date circle ───────────────
-  // ROW_H=50, circle=32px centered → circle bottom = 9px from cell bottom.
-  // bottom:2 → dot top = 50-2-5 = 43px from top → 2px gap below the circle.
+  // ROW_H=42, CIRCLE_D=26 → circle bottom = (42+26)/2 = 34px from top = 8px from bottom.
+  // bottom:2 → dot top = 42-2-4 = 36px from top → 2px gap below the circle.
   savedDot: {
     position: "absolute",
     bottom: 2,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
 });
