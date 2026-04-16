@@ -30,7 +30,7 @@ import {
     TextInput,
     TouchableOpacity,
     TouchableWithoutFeedback,
-    View
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./bible-browser.styles";
@@ -65,7 +65,9 @@ function HighlightedVerseText({
   const bookmarkBg = bookmarkColor
     ? { backgroundColor: bookmarkColor + "99" }
     : {};
-  const underlineStyle = underline ? { textDecorationLine: "underline" as const } : {};
+  const underlineStyle = underline
+    ? { textDecorationLine: "underline" as const }
+    : {};
 
   if (!trimmed) {
     return (
@@ -116,6 +118,8 @@ export default function BibleBrowser() {
     verse: verseParam,
     highlight: highlightParam,
     underline: underlineParam,
+    pickMode,
+    pickTarget,
   } = useLocalSearchParams<{
     collectionId?: string;
     bookId?: string;
@@ -123,7 +127,11 @@ export default function BibleBrowser() {
     verse?: string;
     highlight?: string;
     underline?: string;
+    pickMode?: string; // "verse" when opened from CalendarWidget
+    pickTarget?: string; // "day" | "series"
   }>();
+
+  const isPickMode = pickMode === "verse";
   const { theme } = useAppTheme();
   const uid = auth.currentUser?.uid ?? "";
 
@@ -167,7 +175,13 @@ export default function BibleBrowser() {
           (highlightParam === "true" || underlineParam === "true") && verseParam
             ? parseInt(verseParam, 10)
             : undefined;
-        openChapter(found, ch, undefined, targetVerse, underlineParam === "true");
+        openChapter(
+          found,
+          ch,
+          undefined,
+          targetVerse,
+          underlineParam === "true",
+        );
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -322,6 +336,22 @@ export default function BibleBrowser() {
       params: {
         ref,
         text: drawerVerse.text,
+      },
+    });
+  }
+
+  /** Returns the selected verse back to the Growth tab (CalendarWidget pick mode) */
+  function handlePickVerse() {
+    if (!drawerVerse || !book) return;
+    const ref = `${book.label} ${chapter}:${drawerVerse.verse}`;
+    setDrawerVerse(null);
+    router.navigate({
+      pathname: "/(tabs)/growth",
+      params: {
+        pickedVerseText: drawerVerse.text,
+        pickedVerseRef: ref,
+        pickTarget: pickTarget ?? "day",
+        pickSessionId: Date.now().toString(),
       },
     });
   }
@@ -654,6 +684,32 @@ export default function BibleBrowser() {
                     Add to Journal
                   </Text>
                 </TouchableOpacity>
+
+                {/* Use this Verse — only shown when opened from CalendarWidget */}
+                {isPickMode && (
+                  <TouchableOpacity
+                    style={[
+                      styles.drawerBookmarkBtn,
+                      { marginTop: 10, backgroundColor: theme.primary },
+                    ]}
+                    onPress={handlePickVerse}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={18}
+                      color={theme.primaryText}
+                    />
+                    <Text
+                      style={[
+                        styles.drawerBookmarkBtnText,
+                        { color: theme.primaryText },
+                      ]}
+                    >
+                      Use this Verse
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </TouchableWithoutFeedback>
           </View>
