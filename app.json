@@ -24,9 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.jirehzoe.devoreflect",
-      "enableProguardInProductionBuilds": true,
-      "shrinkResources": true
+      "package": "com.jirehzoe.devoreflect"
     },
     "web": {
       "output": "static",
@@ -45,7 +43,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
