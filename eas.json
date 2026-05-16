@@ -11,7 +11,7 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "gradleCommand": ":app:assembleDebug"
+        "buildType": "apk"
       }
     },
     "production": {
