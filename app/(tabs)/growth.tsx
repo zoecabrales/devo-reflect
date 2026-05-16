@@ -1,37 +1,13 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
-import {
-  CalendarWidget,
-  type PickedVerse,
-} from "@/src/features/growth/CalendarWidget";
+import { CalendarWidget } from "@/src/features/growth/CalendarWidget";
 import { PrayersWidget } from "@/src/features/growth/PrayersWidget";
 import { TopicsWidget } from "@/src/features/growth/TopicsWidget";
 import { LIST_PADDING_H } from "@/src/utils/responsive";
-import { useLocalSearchParams } from "expo-router";
-import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Growth() {
   const { theme } = useAppTheme();
-
-  // Params set by bible-browser when the user picks a verse via "Use this Verse"
-  const { pickedVerseText, pickedVerseRef, pickTarget, pickSessionId } =
-    useLocalSearchParams<{
-      pickedVerseText?: string;
-      pickedVerseRef?: string;
-      pickTarget?: string;
-      pickSessionId?: string;
-    }>();
-
-  const pickedVerse = useMemo<PickedVerse | null>(() => {
-    if (!pickedVerseText || !pickedVerseRef || !pickSessionId) return null;
-    return {
-      text: pickedVerseText,
-      ref: pickedVerseRef,
-      target: pickTarget === "series" ? "series" : "day",
-      sessionId: pickSessionId,
-    };
-  }, [pickedVerseText, pickedVerseRef, pickTarget, pickSessionId]);
 
   return (
     <SafeAreaView
@@ -52,7 +28,7 @@ export default function Growth() {
         showsVerticalScrollIndicator={false}
       >
         <PrayersWidget />
-        <CalendarWidget pickedVerse={pickedVerse} />
+        <CalendarWidget />
         <TopicsWidget />
       </ScrollView>
     </SafeAreaView>

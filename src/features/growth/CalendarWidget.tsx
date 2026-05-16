@@ -1,23 +1,19 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
+import { BookmarkedVerse, loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
-import {
-  type CalendarVerse,
-  loadGrowthCalendar,
-  saveCalendarVerse,
-} from "@/src/services/growthCalendar";
+import { JournalEntry, loadEntries } from "@/src/services/journal";
 import { MODAL_MAX_WIDTH } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
-  PanResponder,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from "react-native";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -36,8 +32,8 @@ const MONTH_NAMES = [
   "December",
 ];
 
-const ROW_H = 42; // must match cell height in styles
-const CIRCLE_D = 26; // day circle diameter — strips are centred around this
+const ROW_H = 50; // must match cell height in styles
+const CIRCLE_D = 32; // day circle diameter — strips are centred around this
 
 function daysIn(y: number, m: number) {
   return new Date(y, m + 1, 0).getDate();
@@ -56,18 +52,13 @@ function buildGrid(y: number, m: number): (number | null)[][] {
   return rows;
 }
 
-export interface PickedVerse {
-  text: string;
-  ref: string;
-  target: "day" | "series";
-  sessionId: string; // unique per pick — prevents stale params reopening modal
+/** Converts a unix timestamp to a "YYYY-MM-DD" key using the device's local date. */
+function timestampToDateKey(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function CalendarWidget({
-  pickedVerse,
-}: {
-  pickedVerse?: PickedVerse | null;
-}) {
+export function CalendarWidget() {
   const { theme } = useAppTheme();
   const router = useRouter();
   const today = new Date();
@@ -81,160 +72,52 @@ export function CalendarWidget({
   const { year, month } = viewDate;
   const rows = buildGrid(year, month);
 
-  // ── Selection state (drives visual rendering) ────────────────────────────
+  // ── Selection state ──────────────────────────────────────────────────────
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [rangeStart, setRangeStart] = useState<number | null>(null);
-  const [rangeEnd, setRangeEnd] = useState<number | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
-  // ── Modal + field state ──────────────────────────────────────────────────
-  const [showDayModal, setShowDayModal] = useState(false);
-  const [showSeriesModal, setShowSeriesModal] = useState(false);
-  const [verseText, setVerseText] = useState("");
-  const [verseRef, setVerseRef] = useState(""); // populated by Bible picker
-  const [seriesTitle, setSeriesTitle] = useState("");
-  const [saving, setSaving] = useState(false);
+  // ── Journal data — keyed "YYYY-MM-DD" ────────────────────────────────────
+  const [journalByDate, setJournalByDate] = useState<
+    Record<string, JournalEntry[]>
+  >({});
 
-  // ── Saved verses — 1 per date, keyed "YYYY-MM-DD" ────────────────────────
-  const [savedVerses, setSavedVerses] = useState<Record<string, CalendarVerse>>(
-    {},
+  // ── Bookmark data — keyed "YYYY-MM-DD" ───────────────────────────────────
+  const [bookmarksByDate, setBookmarksByDate] = useState<
+    Record<string, BookmarkedVerse[]>
+  >({});
+
+  // ── Reload both journal entries and bookmarks whenever the Growth tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (!uid) return;
+      Promise.all([loadEntries(uid), loadBookmarks(uid)])
+        .then(([entries, bookmarks]) => {
+          // Build journal date map
+          const jMap: Record<string, JournalEntry[]> = {};
+          for (const entry of entries) {
+            const key = timestampToDateKey(entry.createdAt);
+            if (!jMap[key]) jMap[key] = [];
+            jMap[key].push(entry);
+          }
+          setJournalByDate(jMap);
+
+          // Build bookmark date map
+          const bMap: Record<string, BookmarkedVerse[]> = {};
+          for (const bm of bookmarks) {
+            const key = timestampToDateKey(bm.createdAt);
+            if (!bMap[key]) bMap[key] = [];
+            bMap[key].push(bm);
+          }
+          setBookmarksByDate(bMap);
+        })
+        .catch((err) => console.warn("Failed to load calendar data:", err));
+    }, [uid]),
   );
 
-  // Flag: modal was opened by the Bible picker (don't overwrite with saved verse)
-  const isFromPickerR = useRef(false);
-
-  // ── Load saved verses from Firestore on mount ─────────────────────────────
+  // Reset selection when navigating months
   useEffect(() => {
-    if (!uid) return;
-    loadGrowthCalendar(uid)
-      .then((data) => setSavedVerses(data))
-      .catch((err) => console.warn("Failed to load growth calendar:", err));
-  }, [uid]);
-
-  // ── Stable refs for PanResponder (no stale-closure issues) ───────────────
-  const gridW = useRef(0);
-  const isLpR = useRef(false);
-  const timerR = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tDayR = useRef<number | null>(null);
-  const rsR = useRef<number | null>(null); // rangeStart
-  const reR = useRef<number | null>(null); // rangeEnd
-  const fdR = useRef(firstDow(year, month));
-  const dimR = useRef(daysIn(year, month));
-
-  // Tracks which pick session has already been consumed (prevents stale params)
-  const lastPickSessionR = useRef<string | null>(null);
-
-  useEffect(() => {
-    fdR.current = firstDow(year, month);
-    dimR.current = daysIn(year, month);
     setSelectedDay(null);
-    setRangeStart(null);
-    setRangeEnd(null);
-    rsR.current = null;
-    reR.current = null;
   }, [year, month]);
-
-  // ── Receive a verse picked from the Bible browser ────────────────────────
-  useEffect(() => {
-    if (!pickedVerse) return;
-    if (pickedVerse.sessionId === lastPickSessionR.current) return; // already used
-    lastPickSessionR.current = pickedVerse.sessionId;
-
-    if (pickedVerse.target === "day") {
-      isFromPickerR.current = true; // mark so pre-fill effect doesn't overwrite
-      setVerseText(pickedVerse.text);
-      setVerseRef(pickedVerse.ref);
-      setShowDayModal(true);
-    } else {
-      setSeriesTitle(pickedVerse.text);
-      setShowSeriesModal(true);
-    }
-  }, [pickedVerse]);
-
-  // ── Pre-fill modal with existing saved verse when a date is tapped ────────
-  // Skipped when the modal was opened by the Bible picker (flag prevents clash).
-
-  useEffect(() => {
-    if (!showDayModal || selectedDay === null) return;
-    if (isFromPickerR.current) {
-      isFromPickerR.current = false; // consume the flag
-      return;
-    }
-    const key = dateKey(year, month, selectedDay);
-    setVerseText(savedVerses[key]?.text ?? "");
-    setVerseRef(savedVerses[key]?.ref ?? "");
-  }, [showDayModal]);
-
-  // Maps a touch position (relative to the grid View) → day number or null
-  function dayAt(lx: number, ly: number): number | null {
-    if (gridW.current === 0) return null;
-    const col = Math.min(6, Math.max(0, Math.floor(lx / (gridW.current / 7))));
-    const row = Math.max(0, Math.floor(ly / ROW_H));
-    const day = row * 7 + col - fdR.current + 1;
-    return day >= 1 && day <= dimR.current ? day : null;
-  }
-
-  // ── PanResponder (created once, refs keep handlers current) ─────────────
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => isLpR.current,
-
-      onPanResponderGrant: (e) => {
-        const day = dayAt(e.nativeEvent.locationX, e.nativeEvent.locationY);
-        tDayR.current = day;
-        isLpR.current = false;
-        timerR.current = setTimeout(() => {
-          if (tDayR.current === null) return;
-          isLpR.current = true;
-          rsR.current = tDayR.current;
-          reR.current = null;
-          setRangeStart(tDayR.current);
-          setRangeEnd(null);
-          setSelectedDay(null);
-        }, 400);
-      },
-
-      onPanResponderMove: (e) => {
-        if (!isLpR.current || rsR.current === null) return;
-        const day = dayAt(e.nativeEvent.locationX, e.nativeEvent.locationY);
-        if (day !== null && day >= rsR.current) {
-          reR.current = day;
-          setRangeEnd(day);
-        }
-      },
-
-      onPanResponderRelease: () => {
-        if (timerR.current) clearTimeout(timerR.current);
-        if (!isLpR.current && tDayR.current !== null) {
-          // Single tap
-          setSelectedDay(tDayR.current);
-          setRangeStart(null);
-          setRangeEnd(null);
-          setShowDayModal(true);
-        } else if (isLpR.current && rsR.current !== null) {
-          if (reR.current !== null && reR.current !== rsR.current) {
-            setShowSeriesModal(true); // Long-press + drag → series
-          } else {
-            setRangeStart(null);
-            setRangeEnd(null);
-            rsR.current = null;
-            reR.current = null;
-          }
-        }
-        isLpR.current = false;
-        tDayR.current = null;
-      },
-
-      onPanResponderTerminate: () => {
-        if (timerR.current) clearTimeout(timerR.current);
-        isLpR.current = false;
-        setRangeStart(null);
-        setRangeEnd(null);
-        rsR.current = null;
-        reR.current = null;
-      },
-    }),
-  ).current;
 
   // ── Visual helpers ───────────────────────────────────────────────────────
   function isToday(d: number) {
@@ -245,57 +128,41 @@ export function CalendarWidget({
     );
   }
 
-  // ── Cell colouring helpers ───────────────────────────────────────────────
-  const hasRange =
-    rangeStart !== null && rangeEnd !== null && rangeStart !== rangeEnd;
-
-  function isRangeStart(d: number) {
-    return hasRange && d === rangeStart;
-  }
-  function isRangeMid(d: number) {
-    return (
-      hasRange &&
-      rangeStart !== null &&
-      rangeEnd !== null &&
-      d > rangeStart &&
-      d < rangeEnd
-    );
-  }
-  function isRangeEnd(d: number) {
-    return hasRange && d === rangeEnd;
+  // ── Date key helper — uniquely identifies a calendar day ─────────────────
+  function dateKey(y: number, m: number, d: number): string {
+    return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   }
 
-  // True when a date has a saved verse and is NOT in an active state
-  // (active = selected / today / range endpoint — those keep the solid fill)
-  function hasSavedVerseOnly(d: number): boolean {
+  // True when the date has at least one journal entry
+  function hasJournalEntries(d: number): boolean {
+    return (journalByDate[dateKey(year, month, d)]?.length ?? 0) > 0;
+  }
+
+  // True when the date has at least one bookmark
+  function hasBookmarks(d: number): boolean {
+    return (bookmarksByDate[dateKey(year, month, d)]?.length ?? 0) > 0;
+  }
+
+  // True when a date has content (journal OR bookmark) but is NOT selected/today
+  function hasContentOnly(d: number): boolean {
     return (
-      !!savedVerses[dateKey(year, month, d)] &&
+      (hasJournalEntries(d) || hasBookmarks(d)) &&
       d !== selectedDay &&
-      !isRangeStart(d) &&
-      !isRangeEnd(d) &&
       !isToday(d)
     );
   }
 
-  // Circle background — middle range days have no circle (strip handles colouring)
+  // Circle background
   function cellBg(day: number): string | undefined {
     if (day === selectedDay) return theme.primary;
-    if (isRangeStart(day)) return theme.primary;
-    if (isRangeEnd(day)) return theme.primary;
     if (isToday(day)) return theme.primary;
-    return undefined; // saved-verse-only & mid-range days: transparent, no fill
+    return undefined;
   }
 
-  // Text colour — mid-range days sit on the tinted strip, use normal text
+  // Text colour
   function cellTextColor(day: number): string {
-    if (isRangeMid(day)) return theme.text;
-    if (hasSavedVerseOnly(day)) return theme.primary; // matches the border
-    return day === selectedDay ||
-      isRangeStart(day) ||
-      isRangeEnd(day) ||
-      isToday(day)
-      ? theme.primaryText
-      : theme.text;
+    if (hasContentOnly(day)) return theme.primary; // matches the border
+    return day === selectedDay || isToday(day) ? theme.primaryText : theme.text;
   }
 
   // ── Formatting ───────────────────────────────────────────────────────────
@@ -304,16 +171,6 @@ export function CalendarWidget({
       month: "long",
       day: "numeric",
     });
-  }
-  function fmtRange() {
-    return rangeStart && rangeEnd
-      ? `${fmtDay(rangeStart)} → ${fmtDay(rangeEnd)}`
-      : "";
-  }
-
-  // ── Date key helper — uniquely identifies a calendar day ─────────────────
-  function dateKey(y: number, m: number, d: number): string {
-    return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   }
 
   // ── Navigation ───────────────────────────────────────────────────────────
@@ -328,56 +185,27 @@ export function CalendarWidget({
     );
   }
 
-  // ── Open Bible picker ────────────────────────────────────────────────────
-  function handlePickFromBible(target: "day" | "series") {
-    // Close the modal while the user browses — state (selectedDay / range) is
-    // preserved because the Growth tab stays mounted in the background.
-    if (target === "day") setShowDayModal(false);
-    else setShowSeriesModal(false);
-
-    router.push({
-      pathname: "/(tabs)/bible-browser",
-      params: { pickMode: "verse", pickTarget: target },
-    });
+  // ── Day tap ──────────────────────────────────────────────────────────────
+  function handleDayPress(day: number) {
+    setSelectedDay(day);
+    setShowModal(true);
   }
 
-  // ── Save handlers ─────────────────────────────────────────────────────────
-  async function handleSaveVerse() {
-    if (!verseText.trim() || selectedDay === null || !uid) return;
-    setSaving(true);
-    const key = dateKey(year, month, selectedDay);
-    const text = verseText.trim();
-    const ref = verseRef.trim();
-    try {
-      // Persist to Firestore (upsert — enforces 1 verse per date)
-      await saveCalendarVerse(uid, key, text, ref);
-      // Update local state to reflect immediately without a re-fetch
-      setSavedVerses((prev) => ({
-        ...prev,
-        [key]: { dateKey: key, text, ref, updatedAt: Date.now() },
-      }));
-    } catch (err) {
-      console.warn("Failed to save calendar verse:", err);
-    } finally {
-      setSaving(false);
-      setShowDayModal(false);
-      setVerseText("");
-      setVerseRef("");
-      setSelectedDay(null);
-    }
+  function closeModal() {
+    setShowModal(false);
+    setSelectedDay(null);
   }
-  async function handleSaveSeries() {
-    setSaving(true);
-    // TODO: persist to Firestore
-    await new Promise((r) => setTimeout(r, 300));
-    setSaving(false);
-    setShowSeriesModal(false);
-    setSeriesTitle("");
-    setRangeStart(null);
-    setRangeEnd(null);
-    rsR.current = null;
-    reR.current = null;
-  }
+
+  // Content for the currently selected date
+  const selectedKey = selectedDay ? dateKey(year, month, selectedDay) : null;
+  const selectedJournalEntries = selectedKey
+    ? (journalByDate[selectedKey] ?? [])
+    : [];
+  const selectedBookmarks = selectedKey
+    ? (bookmarksByDate[selectedKey] ?? [])
+    : [];
+  const dateHasJournal = selectedJournalEntries.length > 0;
+  const dateHasBookmark = selectedBookmarks.length > 0;
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -396,7 +224,7 @@ export function CalendarWidget({
             style={styles.navBtn}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={14} color={theme.text} />
+            <Ionicons name="chevron-back" size={18} color={theme.text} />
           </TouchableOpacity>
           <Text style={[styles.monthTitle, { color: theme.text }]}>
             {MONTH_NAMES[month]} {year}
@@ -406,7 +234,7 @@ export function CalendarWidget({
             style={styles.navBtn}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-forward" size={14} color={theme.text} />
+            <Ionicons name="chevron-forward" size={18} color={theme.text} />
           </TouchableOpacity>
         </View>
 
@@ -422,52 +250,26 @@ export function CalendarWidget({
           ))}
         </View>
 
-        {/* Date grid — PanResponder lives here */}
-        <View
-          {...pan.panHandlers}
-          onLayout={(e) => {
-            gridW.current = e.nativeEvent.layout.width;
-          }}
-        >
+        {/* Date grid — each cell is individually tappable */}
+        <View>
           {rows.map((row, ri) => (
             <View key={ri} style={styles.row}>
               {row.map((day, ci) =>
                 day === null ? (
                   <View key={ci} style={styles.cell} />
                 ) : (
-                  <View key={ci} style={styles.cell}>
-                    {/* ── Oblong range strips (drawn behind the circle) ── */}
-                    {isRangeStart(day) && (
-                      <View
-                        style={[
-                          styles.stripRight,
-                          { backgroundColor: theme.primary + "40" },
-                        ]}
-                      />
-                    )}
-                    {isRangeMid(day) && (
-                      <View
-                        style={[
-                          styles.stripFull,
-                          { backgroundColor: theme.primary + "40" },
-                        ]}
-                      />
-                    )}
-                    {isRangeEnd(day) && (
-                      <View
-                        style={[
-                          styles.stripLeft,
-                          { backgroundColor: theme.primary + "40" },
-                        ]}
-                      />
-                    )}
-
-                    {/* ── Day circle (sits on top of strip) ── */}
+                  <TouchableOpacity
+                    key={ci}
+                    style={styles.cell}
+                    onPress={() => handleDayPress(day)}
+                    activeOpacity={0.7}
+                  >
+                    {/* ── Day circle ── */}
                     <View
                       style={[
                         styles.dayCircle,
                         { backgroundColor: cellBg(day) },
-                        hasSavedVerseOnly(day) && {
+                        hasContentOnly(day) && {
                           borderWidth: 1.5,
                           borderColor: theme.primary,
                         },
@@ -480,8 +282,8 @@ export function CalendarWidget({
                       </Text>
                     </View>
 
-                    {/* Dot indicator — shown below the circle when a verse is saved */}
-                    {savedVerses[dateKey(year, month, day)] && (
+                    {/* Dot — shown when date has journal entries or bookmarks */}
+                    {(hasJournalEntries(day) || hasBookmarks(day)) && (
                       <View
                         style={[
                           styles.savedDot,
@@ -489,7 +291,7 @@ export function CalendarWidget({
                         ]}
                       />
                     )}
-                  </View>
+                  </TouchableOpacity>
                 ),
               )}
             </View>
@@ -498,27 +300,18 @@ export function CalendarWidget({
 
         {/* Hint */}
         <Text style={[styles.hint, { color: theme.textSecondary }]}>
-          Tap a date · Hold &amp; drag to select a range
+          Tap a date to view or add journal entries
         </Text>
       </View>
 
-      {/* ── Single-day modal ─────────────────────────────────────────────── */}
+      {/* ── Journal entries modal ─────────────────────────────────────────── */}
       <Modal
-        visible={showDayModal}
+        visible={showModal}
         transparent
         animationType="fade"
-        onRequestClose={() => {
-          setShowDayModal(false);
-          setSelectedDay(null);
-        }}
+        onRequestClose={closeModal}
       >
-        <TouchableWithoutFeedback
-          onPress={() => {
-            setShowDayModal(false);
-            setSelectedDay(null);
-            setVerseText("");
-          }}
-        >
+        <TouchableWithoutFeedback onPress={closeModal}>
           <View style={styles.overlay}>
             <TouchableWithoutFeedback>
               <View
@@ -532,187 +325,198 @@ export function CalendarWidget({
                 >
                   {selectedDay ? fmtDay(selectedDay) : ""}
                 </Text>
-                <Text style={[styles.modalTitle, { color: theme.text }]}>
-                  Save your Verse of the Day
-                </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.versePicker,
-                    {
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  onPress={() => handlePickFromBible("day")}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      verseText
-                        ? styles.versePickerValue
-                        : styles.versePickerPlaceholder,
-                      { color: verseText ? theme.text : theme.textSecondary },
-                    ]}
-                    numberOfLines={4}
-                  >
-                    {verseText || "Tap to pick a verse from the Bible…"}
-                  </Text>
-                  <Ionicons
-                    name="book-outline"
-                    size={16}
-                    color={theme.textSecondary}
-                    style={styles.versePickerIcon}
-                  />
-                </TouchableOpacity>
-                <View style={styles.actions}>
-                  <TouchableOpacity
-                    style={[styles.cancelBtn, { borderColor: theme.border }]}
-                    onPress={() => {
-                      setShowDayModal(false);
-                      setSelectedDay(null);
-                      setVerseText("");
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text
+                {/* ── Action rows ─────────────────────────────────────── */}
+                {!dateHasJournal && !dateHasBookmark ? (
+                  /* Empty date — offer to add content */
+                  <>
+                    <TouchableOpacity
                       style={[
-                        styles.cancelText,
-                        { color: theme.textSecondary },
+                        styles.actionRow,
+                        {
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
                       ]}
+                      onPress={() => {
+                        closeModal();
+                        router.push("/(tabs)/journal-compose");
+                      }}
+                      activeOpacity={0.7}
                     >
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.saveBtn, { backgroundColor: theme.primary }]}
-                    onPress={handleSaveVerse}
-                    activeOpacity={0.8}
-                    disabled={saving || !verseText.trim()}
-                  >
-                    {saving ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={theme.primaryText}
+                      <Ionicons
+                        name="book-outline"
+                        size={16}
+                        color={theme.primary}
                       />
-                    ) : (
                       <Text
-                        style={[styles.saveText, { color: theme.primaryText }]}
+                        style={[styles.actionRowText, { color: theme.text }]}
                       >
-                        Save
+                        Add a Journal
                       </Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={14}
+                        color={theme.textSecondary}
+                      />
+                    </TouchableOpacity>
 
-      {/* ── Series (range) modal ──────────────────────────────────────────── */}
-      <Modal
-        visible={showSeriesModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          setShowSeriesModal(false);
-          setRangeStart(null);
-          setRangeEnd(null);
-        }}
-      >
-        <TouchableWithoutFeedback
-          onPress={() => {
-            setShowSeriesModal(false);
-            setRangeStart(null);
-            setRangeEnd(null);
-            setSeriesTitle("");
-          }}
-        >
-          <View style={styles.overlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.modalCard,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}
-              >
-                <Text
-                  style={[styles.modalLabel, { color: theme.textSecondary }]}
-                >
-                  {fmtRange()}
-                </Text>
-                <Text style={[styles.modalTitle, { color: theme.text }]}>
-                  Are you in for a good series?
-                </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionRow,
+                        {
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      onPress={() => {
+                        closeModal();
+                        router.push("/(tabs)/bible-browser");
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="bookmark-outline"
+                        size={16}
+                        color={theme.primary}
+                      />
+                      <Text
+                        style={[styles.actionRowText, { color: theme.text }]}
+                      >
+                        Bookmark a Verse
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={14}
+                        color={theme.textSecondary}
+                      />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  /* Populated date — show entries filtered to this date */
+                  <ScrollView
+                    style={styles.contentList}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {/* ── Journal entries ── */}
+                    {dateHasJournal && (
+                      <>
+                        <Text
+                          style={[
+                            styles.sectionSubLabel,
+                            { color: theme.textSecondary },
+                          ]}
+                        >
+                          Journal
+                        </Text>
+                        {selectedJournalEntries.map((entry) => (
+                          <TouchableOpacity
+                            key={entry.id}
+                            style={[
+                              styles.entryCard,
+                              {
+                                borderColor: theme.border,
+                                backgroundColor: theme.background,
+                                borderLeftColor: theme.primary,
+                              },
+                            ]}
+                            onPress={() => {
+                              closeModal();
+                              router.push({
+                                pathname: "/(tabs)/journal-compose",
+                                params: { id: entry.id },
+                              });
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[styles.entryTitle, { color: theme.text }]}
+                              numberOfLines={1}
+                            >
+                              {entry.title ||
+                                entry.observation.split("\n")[0] ||
+                                "Untitled"}
+                            </Text>
+                            {entry.scripture.length > 0 && (
+                              <Text
+                                style={[
+                                  styles.entryRef,
+                                  { color: theme.primary },
+                                ]}
+                                numberOfLines={1}
+                              >
+                                {entry.scripture[0].ref}
+                                {entry.scripture.length > 1
+                                  ? ` +${entry.scripture.length - 1} more`
+                                  : ""}
+                              </Text>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </>
+                    )}
+
+                    {/* ── Bookmarks ── */}
+                    {dateHasBookmark && (
+                      <>
+                        <Text
+                          style={[
+                            styles.sectionSubLabel,
+                            {
+                              color: theme.textSecondary,
+                              marginTop: dateHasJournal ? 12 : 0,
+                            },
+                          ]}
+                        >
+                          Bookmarks
+                        </Text>
+                        {selectedBookmarks.map((bm) => (
+                          <View
+                            key={bm.id}
+                            style={[
+                              styles.entryCard,
+                              {
+                                borderColor: theme.border,
+                                backgroundColor: theme.background,
+                                borderLeftColor: theme.primary,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.entryRef,
+                                { color: theme.primary },
+                              ]}
+                            >
+                              {bm.bookLabel} {bm.chapter}:{bm.verse} ·{" "}
+                              {bm.version}
+                            </Text>
+                            <Text
+                              style={[styles.entryTitle, { color: theme.text }]}
+                            >
+                              {bm.text}
+                            </Text>
+                          </View>
+                        ))}
+                      </>
+                    )}
+                  </ScrollView>
+                )}
+
+                {/* ── Close ───────────────────────────────────────────── */}
                 <TouchableOpacity
-                  style={[
-                    styles.versePicker,
-                    {
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  onPress={() => handlePickFromBible("series")}
+                  style={[styles.closeBtn, { borderColor: theme.border }]}
+                  onPress={closeModal}
                   activeOpacity={0.7}
                 >
                   <Text
                     style={[
-                      seriesTitle
-                        ? styles.versePickerValue
-                        : styles.versePickerPlaceholder,
-                      { color: seriesTitle ? theme.text : theme.textSecondary },
+                      styles.closeBtnText,
+                      { color: theme.textSecondary },
                     ]}
-                    numberOfLines={4}
                   >
-                    {seriesTitle || "Tap to pick a verse from the Bible…"}
+                    Close
                   </Text>
-                  <Ionicons
-                    name="book-outline"
-                    size={16}
-                    color={theme.textSecondary}
-                    style={styles.versePickerIcon}
-                  />
                 </TouchableOpacity>
-                <View style={styles.actions}>
-                  <TouchableOpacity
-                    style={[styles.cancelBtn, { borderColor: theme.border }]}
-                    onPress={() => {
-                      setShowSeriesModal(false);
-                      setRangeStart(null);
-                      setRangeEnd(null);
-                      setSeriesTitle("");
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.cancelText,
-                        { color: theme.textSecondary },
-                      ]}
-                    >
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.saveBtn, { backgroundColor: theme.primary }]}
-                    onPress={handleSaveSeries}
-                    activeOpacity={0.8}
-                    disabled={saving || !seriesTitle.trim()}
-                  >
-                    {saving ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={theme.primaryText}
-                      />
-                    ) : (
-                      <Text
-                        style={[styles.saveText, { color: theme.primaryText }]}
-                      >
-                        Save
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -724,32 +528,32 @@ export function CalendarWidget({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 12,
+    padding: 16,
   },
   monthHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 14,
   },
   navBtn: {
     padding: 4,
   },
   monthTitle: {
-    fontSize: 13,
+    fontSize: 16,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
   },
   dayLabelsRow: {
     flexDirection: "row",
-    marginBottom: 2,
+    marginBottom: 4,
   },
   dayLabel: {
     flex: 1,
     textAlign: "center",
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.8,
     textTransform: "uppercase",
@@ -760,31 +564,9 @@ const styles = StyleSheet.create({
   },
   cell: {
     flex: 1,
-    height: ROW_H, // explicit height so absolute strips align correctly
+    height: ROW_H,
     alignItems: "center",
     justifyContent: "center",
-  },
-  // Range oblong strips — centred vertically around the circle
-  stripRight: {
-    position: "absolute",
-    left: "50%",
-    right: 0,
-    top: (ROW_H - CIRCLE_D) / 2,
-    bottom: (ROW_H - CIRCLE_D) / 2,
-  },
-  stripFull: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: (ROW_H - CIRCLE_D) / 2,
-    bottom: (ROW_H - CIRCLE_D) / 2,
-  },
-  stripLeft: {
-    position: "absolute",
-    left: 0,
-    right: "50%",
-    top: (ROW_H - CIRCLE_D) / 2,
-    bottom: (ROW_H - CIRCLE_D) / 2,
   },
   dayCircle: {
     width: CIRCLE_D,
@@ -794,23 +576,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dayText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "600",
   },
   hint: {
-    marginTop: 6,
+    marginTop: 8,
     textAlign: "center",
-    fontSize: 9,
+    fontSize: 11,
     opacity: 0.45,
     letterSpacing: 0.3,
   },
-  // ── Modal shared ──────────────────────────────────────────
+  // ── Dot indicator — sits below the date circle ───────────────────────────
+  savedDot: {
+    position: "absolute",
+    bottom: 2,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  // ── Modal ────────────────────────────────────────────────────────────────
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    padding: 16,
   },
   modalCard: {
     width: "100%",
@@ -821,78 +611,66 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   modalLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 2,
     textTransform: "uppercase",
     opacity: 0.55,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: "Oswald_700Bold",
-    letterSpacing: 0.3,
+  // ── Populated-date content list ──────────────────────────────────────────
+  contentList: {
+    maxHeight: 420,
   },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
-    lineHeight: 22,
-    minHeight: 80,
-    maxHeight: 140,
-  },
-  actions: { flexDirection: "row", gap: 10, marginTop: 4 },
-  cancelBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  cancelText: { fontSize: 14, fontWeight: "600", letterSpacing: 0.2 },
-  saveBtn: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  saveText: { fontSize: 14, fontWeight: "700", letterSpacing: 0.3 },
-  // ── Verse picker (replaces TextInput) ────────────────────────────────────
-  versePicker: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 80,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  versePickerPlaceholder: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
+  sectionSubLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
     opacity: 0.5,
-    fontStyle: "italic",
+    marginBottom: 6,
   },
-  versePickerValue: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 21,
+  entryCard: {
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+    gap: 4,
+  },
+  entryTitle: {
+    fontSize: 13,
+    fontWeight: "600",
     letterSpacing: 0.1,
   },
-  versePickerIcon: {
-    marginTop: 2,
+  entryRef: {
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.2,
   },
-  // ── Saved-verse dot indicator — sits below the date circle ───────────────
-  // ROW_H=42, CIRCLE_D=26 → circle bottom = (42+26)/2 = 34px from top = 8px from bottom.
-  // bottom:2 → dot top = 42-2-4 = 36px from top → 2px gap below the circle.
-  savedDot: {
-    position: "absolute",
-    bottom: 2,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+  // ── Action rows ──────────────────────────────────────────────────────────
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
+  actionRowText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
+    letterSpacing: 0.1,
+  },
+  // ── Close button ─────────────────────────────────────────────────────────
+  closeBtn: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  closeBtnText: { fontSize: 14, fontWeight: "600", letterSpacing: 0.2 },
 });

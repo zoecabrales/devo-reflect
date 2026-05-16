@@ -164,7 +164,7 @@ export function PrayersWidget() {
       >
         {/* Widget header */}
         <View style={styles.widgetHeader}>
-          <Ionicons name="hand-left-outline" size={13} color={theme.primary} />
+          <Ionicons name="hand-left-outline" size={16} color={theme.primary} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.widgetTitle, { color: theme.text }]}>
               Prayers
@@ -207,7 +207,7 @@ export function PrayersWidget() {
             {adding ? (
               <ActivityIndicator size="small" color={theme.primaryText} />
             ) : (
-              <Ionicons name="add" size={20} color={theme.primaryText} />
+              <Ionicons name="add" size={24} color={theme.primaryText} />
             )}
           </TouchableOpacity>
         </View>
@@ -285,7 +285,7 @@ export function PrayersWidget() {
                     activeOpacity={0.7}
                   >
                     {isAnswered && (
-                      <Ionicons name="checkmark" size={14} color="#4CAF50" />
+                      <Ionicons name="checkmark" size={16} color="#4CAF50" />
                     )}
                   </TouchableOpacity>
                   <View style={styles.rowBody}>
@@ -315,7 +315,7 @@ export function PrayersWidget() {
                   >
                     <Ionicons
                       name="pencil-outline"
-                      size={14}
+                      size={16}
                       color={theme.textSecondary}
                     />
                   </TouchableOpacity>
@@ -326,7 +326,7 @@ export function PrayersWidget() {
                   >
                     <Ionicons
                       name="trash-outline"
-                      size={15}
+                      size={17}
                       color={theme.textSecondary}
                     />
                   </TouchableOpacity>
@@ -516,20 +516,20 @@ export function PrayersWidget() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 12, borderWidth: 1, padding: 12 },
+  card: { borderRadius: 14, borderWidth: 1, padding: 16 },
   widgetHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    marginBottom: 10,
+    gap: 7,
+    marginBottom: 14,
   },
   widgetTitle: {
-    fontSize: 13,
+    fontSize: 16,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
   },
   widgetCount: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.5,
     opacity: 0.6,
@@ -538,37 +538,37 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   textInput: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    fontSize: 13,
-    maxHeight: 80,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 15,
+    maxHeight: 90,
   },
   addBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  list: { gap: 6 },
+  list: { gap: 8 },
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 8,
-    borderRadius: 10,
-    padding: 8,
+    gap: 10,
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
   },
   checkBtn: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
@@ -576,10 +576,10 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   rowBody: { flex: 1, gap: 2 },
-  rowText: { fontSize: 12, lineHeight: 17, letterSpacing: 0.1 },
+  rowText: { fontSize: 14, lineHeight: 20, letterSpacing: 0.1 },
   rowTextAnswered: { opacity: 0.4, textDecorationLine: "line-through" },
   rowDate: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 1,
     opacity: 0.35,
@@ -587,30 +587,30 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   answeredBadge: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.8,
     textTransform: "uppercase",
     color: "#4CAF50",
     marginTop: 1,
   },
-  iconBtn: { padding: 3, marginTop: 1 },
+  iconBtn: { padding: 4, marginTop: 1 },
   empty: { alignItems: "center", gap: 10, paddingVertical: 6 },
   emptyPrompt: {
-    fontSize: 12,
+    fontSize: 14,
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: 20,
     opacity: 0.6,
   },
   lordsPrayerCard: {
     width: "100%",
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    padding: 12,
-    gap: 6,
+    padding: 14,
+    gap: 8,
   },
   lordsPrayerRef: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: 2,
     textTransform: "uppercase",
@@ -619,17 +619,17 @@ const styles = StyleSheet.create({
   },
   lordsPrayerRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
   verseNum: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "700",
     opacity: 0.45,
     marginTop: 2,
-    minWidth: 12,
+    minWidth: 14,
     textAlign: "right",
   },
   verseText: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 21,
     fontStyle: "italic",
     letterSpacing: 0.1,
   },

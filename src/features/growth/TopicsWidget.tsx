@@ -116,7 +116,7 @@ export function TopicsWidget() {
     >
       {/* Widget header */}
       <View style={styles.widgetHeader}>
-        <Ionicons name="heart-outline" size={13} color={theme.primary} />
+        <Ionicons name="heart-outline" size={16} color={theme.primary} />
         <Text style={[styles.widgetTitle, { color: theme.text }]}>Topics</Text>
       </View>
 
@@ -137,13 +137,13 @@ export function TopicsWidget() {
               onPress={() => toggleTopic(topic.id)}
               activeOpacity={0.7}
             >
-              <Ionicons name={topic.icon} size={15} color={theme.primary} />
+              <Ionicons name={topic.icon} size={18} color={theme.primary} />
               <Text style={[styles.topicLabel, { color: theme.text }]}>
                 {topic.label}
               </Text>
               <Ionicons
                 name={isOpen ? "chevron-up" : "chevron-down"}
-                size={13}
+                size={16}
                 color={theme.textSecondary}
               />
             </TouchableOpacity>
@@ -185,54 +185,54 @@ export function TopicsWidget() {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 12,
+    padding: 16,
   },
   widgetHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    marginBottom: 10,
+    gap: 7,
+    marginBottom: 14,
   },
   widgetTitle: {
-    fontSize: 13,
+    fontSize: 16,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.4,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: 1,
+    marginVertical: 2,
   },
   topicRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingVertical: 8,
+    gap: 10,
+    paddingVertical: 12,
   },
   topicLabel: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: "600",
     letterSpacing: 0.2,
   },
   verseList: {
-    marginBottom: 4,
-    marginLeft: 22,
+    marginBottom: 6,
+    marginLeft: 28,
   },
   verseItem: {
-    paddingVertical: 7,
-    gap: 3,
+    paddingVertical: 10,
+    gap: 5,
   },
   verseRef: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: "700",
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   verseText: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 14,
+    lineHeight: 21,
     letterSpacing: 0.1,
   },
 });
