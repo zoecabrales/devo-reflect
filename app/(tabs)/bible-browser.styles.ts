@@ -1,3 +1,4 @@
+import { fs, LIST_PADDING_H } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -9,7 +10,7 @@ export const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingTop: 12,
     paddingBottom: 16,
     gap: 12,
@@ -48,7 +49,7 @@ export const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 20,
+    marginHorizontal: LIST_PADDING_H,
     marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 9,
@@ -100,7 +101,7 @@ export const styles = StyleSheet.create({
 
   // ── Section Header ───────────────────────────────────────
   sectionHeader: {
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingVertical: 10,
     marginBottom: 2,
   },
@@ -117,7 +118,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
@@ -150,7 +151,7 @@ export const styles = StyleSheet.create({
 
   // ── Verses ───────────────────────────────────────────────
   versesList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: LIST_PADDING_H,
     paddingBottom: 48,
     gap: 20,
   },
@@ -175,8 +176,8 @@ export const styles = StyleSheet.create({
     opacity: 0.85,
   },
   verseText: {
-    fontSize: 16,
-    lineHeight: 26,
+    fontSize: fs(16),
+    lineHeight: fs(26),
     flex: 1,
     letterSpacing: 0.15,
   },

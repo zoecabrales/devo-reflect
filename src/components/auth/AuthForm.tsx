@@ -3,13 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { styles } from "./AuthForm.styles";
 
@@ -346,6 +346,25 @@ export default function AuthForm() {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Legal footer — pinned to bottom, outside the scroll area */}
+      <Text style={styles.legalText}>
+        By continuing, you agree to our{" "}
+        <Text
+          style={styles.legalLink}
+          onPress={() => router.push("/(auth)/terms-and-conditions")}
+        >
+          Terms & Conditions
+        </Text>{" "}
+        and{" "}
+        <Text
+          style={styles.legalLink}
+          onPress={() => router.push("/(auth)/privacy-policy")}
+        >
+          Privacy Policy
+        </Text>
+        .
+      </Text>
     </KeyboardAvoidingView>
   );
 }

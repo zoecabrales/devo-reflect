@@ -59,6 +59,20 @@ export const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
   },
+  legalText: {
+    textAlign: "center",
+    fontSize: 11,
+    color: "#888",
+    lineHeight: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  legalLink: {
+    fontSize: 11,
+    color: "#2563eb",
+    fontWeight: "600",
+  },
   toggleRow: {
     flexDirection: "row",
     justifyContent: "center",

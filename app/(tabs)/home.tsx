@@ -1,7 +1,9 @@
+import { VerseCardSkeleton } from "@/src/components";
 import { Theme } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BIBLE_COLLECTIONS,
+    BibleCollection,
     BibleVerse,
     fetchDailyVerse,
     loadReadingPosition,
@@ -13,11 +15,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
+    Modal,
     RefreshControl,
     ScrollView,
     Text,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from "react-native";
 import { styles } from "./home.styles";
@@ -51,30 +54,6 @@ function getFormattedDate(): string {
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
-
-function LoadingSkeleton({ theme }: { theme: Theme }) {
-  return (
-    <View
-      style={[
-        styles.loadingCard,
-        { backgroundColor: theme.surface, borderColor: theme.border },
-      ]}
-    >
-      <View style={[styles.skeletonShort, { backgroundColor: theme.text }]} />
-      <View style={[styles.skeletonMedium, { backgroundColor: theme.text }]} />
-      <View style={[styles.skeletonLong, { backgroundColor: theme.text }]} />
-      <View style={[styles.skeletonLongAlt, { backgroundColor: theme.text }]} />
-      <View
-        style={[styles.skeletonLongAlt2, { backgroundColor: theme.text }]}
-      />
-      <ActivityIndicator
-        size="small"
-        color={theme.textSecondary}
-        style={{ marginTop: 4 }}
-      />
-    </View>
-  );
-}
 
 function ErrorCard({ theme, onRetry }: { theme: Theme; onRetry: () => void }) {
   return (
@@ -150,6 +129,8 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
 
 function CollectionCards({ theme }: { theme: Theme }) {
   const router = useRouter();
+  const [selected, setSelected] = useState<BibleCollection | null>(null);
+
   return (
     <View>
       <Text style={[styles.collectionSectionLabel, { color: theme.text }]}>
@@ -168,9 +149,7 @@ function CollectionCards({ theme }: { theme: Theme }) {
               styles.collectionCard,
               { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
-            onPress={() =>
-              router.push(`/(tabs)/bible-browser?collectionId=${col.id}`)
-            }
+            onPress={() => setSelected(col)}
             activeOpacity={0.75}
           >
             <View
@@ -196,9 +175,114 @@ function CollectionCards({ theme }: { theme: Theme }) {
             >
               {col.subtitle}
             </Text>
+            <Text
+              style={[
+                styles.collectionDescription,
+                { color: theme.textSecondary },
+              ]}
+              numberOfLines={4}
+            >
+              {col.description}
+            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* Collection Info Modal */}
+      <Modal
+        visible={selected !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelected(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setSelected(null)}>
+          <View style={styles.collectionModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.collectionModalSheet,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
+                <View style={styles.collectionModalHandle} />
+
+                {/* Icon */}
+                <View
+                  style={[
+                    styles.collectionModalIconWrap,
+                    { backgroundColor: theme.primary },
+                  ]}
+                >
+                  <Ionicons
+                    name={(selected?.icon ?? "book-outline") as any}
+                    size={22}
+                    color={theme.primaryText}
+                  />
+                </View>
+
+                {/* Label + subtitle */}
+                <Text
+                  style={[styles.collectionModalLabel, { color: theme.text }]}
+                >
+                  {selected?.label}
+                </Text>
+                <Text
+                  style={[
+                    styles.collectionModalSubtitle,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  {selected?.subtitle}
+                </Text>
+
+                {/* Divider */}
+                <View
+                  style={[
+                    styles.collectionModalDivider,
+                    { backgroundColor: theme.text },
+                  ]}
+                />
+
+                {/* Full description */}
+                <Text
+                  style={[
+                    styles.collectionModalDescription,
+                    { color: theme.text },
+                  ]}
+                >
+                  {selected?.description}
+                </Text>
+
+                {/* CTA */}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={[
+                    styles.collectionModalCTA,
+                    { backgroundColor: theme.primary },
+                  ]}
+                  onPress={() => {
+                    const id = selected?.id;
+                    setSelected(null);
+                    router.push(`/(tabs)/bible-browser?collectionId=${id}`);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.collectionModalCTAText,
+                      { color: theme.primaryText },
+                    ]}
+                  >
+                    Browse Books
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -328,6 +412,12 @@ function BrowseBibleCard({ theme }: { theme: Theme }) {
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
+// Show the verse greeting once per cold start, not on every navigation
+let verseGreetingShown = false;
+
+const PSALM_119_105 =
+  "Thy word is a lamp unto my feet, and a light unto my path.";
+
 export default function Home() {
   const { theme } = useAppTheme();
 
@@ -339,6 +429,7 @@ export default function Home() {
   const [readingPosition, setReadingPosition] =
     useState<ReadingPosition | null>(null);
   const [bookmarkCount, setBookmarkCount] = useState(0);
+  const [showVerseGreeting, setShowVerseGreeting] = useState(false);
 
   const user = auth.currentUser;
   const displayName = user?.displayName?.split(" ")[0] ?? "Friend";
@@ -347,6 +438,14 @@ export default function Home() {
   useEffect(() => {
     const id = setInterval(() => setGreeting(getGreeting()), 60_000);
     return () => clearInterval(id);
+  }, []);
+
+  // Show verse greeting once per cold start
+  useEffect(() => {
+    if (!verseGreetingShown) {
+      verseGreetingShown = true;
+      setShowVerseGreeting(true);
+    }
   }, []);
 
   async function loadVerse(isRefresh = false) {
@@ -400,7 +499,7 @@ export default function Home() {
 
         {/* Verse of the Day */}
         {loading ? (
-          <LoadingSkeleton theme={theme} />
+          <VerseCardSkeleton />
         ) : error ? (
           <ErrorCard theme={theme} onRetry={loadVerse} />
         ) : verse ? (
@@ -421,6 +520,66 @@ export default function Home() {
         <BookmarkBadgeCard count={bookmarkCount} theme={theme} />
         <ConcordanceCard theme={theme} />
       </ScrollView>
+
+      {/* ── Verse Greeting Modal ─────────────────────────── */}
+      <Modal
+        visible={showVerseGreeting}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setShowVerseGreeting(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowVerseGreeting(false)}>
+          <View style={styles.verseGreetingOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.verseGreetingCard,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.verseGreetingRef,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  Psalms 119:105
+                </Text>
+                <View
+                  style={[
+                    styles.verseGreetingDivider,
+                    { backgroundColor: theme.text },
+                  ]}
+                />
+                <Text style={[styles.verseGreetingText, { color: theme.text }]}>
+                  {PSALM_119_105}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.verseGreetingBtn,
+                    {
+                      borderColor: theme.border,
+                      backgroundColor: theme.primary,
+                    },
+                  ]}
+                  onPress={() => setShowVerseGreeting(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.verseGreetingBtnText,
+                      { color: theme.primaryText },
+                    ]}
+                  >
+                    Begin Journey
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }

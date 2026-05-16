@@ -1,50 +1,72 @@
-# Welcome to your Expo app 👋
+# Devo Reflect
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A personal devotional app built with React Native and Expo. It is designed around a daily reading habit — providing a verse of the day, a full Bible reader, SOAP journaling, prayer tracking, and verse bookmarking, all synced to the cloud per user account.
 
-## Get started
+---
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+### Home
 
-2. Start the app
+Displays a daily verse drawn from a curated list, rotating once every calendar day (Philippine Time). The verse is cached locally so it loads instantly on repeat visits. The screen also surfaces a resume-reading shortcut to the last opened chapter, a bookmark count, and quick links to the Bible browser and concordance.
 
-   ```bash
-   npx expo start
-   ```
+### Bible Browser
 
-In the output, you'll find options to open the app in a
+A full 66-book Bible reader supporting five translations: ASV, KJV, WEB, BBE, and YLT. Users can browse by collection (Pentateuch, Historical Books, Wisdom and Poetry, The Prophets, The Gospels, The Epistles, Revelation), search within a chapter, highlight verses with color, bookmark individual verses, and share verse text. Reading position is saved automatically on every chapter open.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Concordance
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+A full-text search across the ASV Bible. Results are grouped by book and show the matching verse inline. Intended for word or phrase lookups without knowing the exact reference.
 
-## Get a fresh project
+### SOAP Journal
 
-When you're ready, run:
+Structured journaling based on the SOAP method — Scripture, Observation, Application, Prayer. Each entry can have one or more attached verse references (pre-filled when launched from the Bible browser), free-text fields for each SOAP section, and user-defined tags. Entries are stored in Firestore and listed newest-first with section grouping by date.
+
+### Prayers
+
+A personal prayer log. Users add prayer requests as text entries and mark them answered or unanswered. Answered prayers are visually distinguished in the list. All prayer data is stored in Firestore.
+
+### Bookmarks
+
+A saved-verse list pulled from Firestore. Each bookmark shows the verse reference and full text, and tapping it opens the verse in context in the Bible browser. Bookmarks can be deleted with a swipe action.
+
+### Settings
+
+Controls for appearance (light, dark, or system-matched color mode) and eight color themes: Default, Sepia, Ocean, Forest, Rose, Lavender, Slate, and Dusk. Also provides account management — change password, sign out, and permanent account deletion.
+
+---
+
+## Authentication
+
+Accounts use email and password via Firebase Auth. New accounts require email verification before accessing the app. A 10-minute idle timeout automatically signs the user out when the app is sent to the background for an extended period. Password reset is available from the sign-in screen.
+
+---
+
+## Tech Stack
+
+| Layer             | Choice                                                       |
+| ----------------- | ------------------------------------------------------------ |
+| Framework         | React Native 0.81 + Expo 54                                  |
+| Navigation        | expo-router (file-based)                                     |
+| Auth and database | Firebase Auth + Firestore                                    |
+| Local storage     | AsyncStorage (verse cache, reading position, highlights)     |
+| UI                | Custom theme system with light/dark variants per color theme |
+| Typography        | Oswald 700 Bold (headers), system sans-serif (body)          |
+| Target devices    | iPhone and iPad (iPad 11th gen layout tested)                |
+
+---
+
+## Data Storage
+
+User data is organized in Firestore under `users/{uid}` with three sub-collections: `bookmarks`, `journal`, and `prayers`. Verse highlights and the daily verse cache are stored locally in AsyncStorage and are not synced across devices.
+
+---
+
+## Running the App
 
 ```bash
-npm run reset-project
+npm install
+npm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Requires a Firebase project with Authentication (email/password) and Firestore enabled. Add your Firebase config to the appropriate environment file before running.

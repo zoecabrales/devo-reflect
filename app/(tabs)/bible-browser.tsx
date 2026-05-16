@@ -1,3 +1,4 @@
+import { ChapterSkeleton } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BIBLE_BOOKS,
@@ -21,7 +22,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
     Modal,
     ScrollView,
     SectionList,
@@ -52,22 +52,31 @@ function HighlightedVerseText({
   text,
   query,
   bookmarkColor,
+  underline,
   textStyle,
 }: {
   text: string;
   query: string;
   bookmarkColor?: string;
+  underline?: boolean;
   textStyle: object;
 }) {
   const trimmed = query.trim();
   const bookmarkBg = bookmarkColor
     ? { backgroundColor: bookmarkColor + "99" }
     : {};
+  const underlineStyle = underline
+    ? { textDecorationLine: "underline" as const }
+    : {};
 
   if (!trimmed) {
     return (
       <Text style={textStyle}>
-        {bookmarkColor ? <Text style={bookmarkBg}>{text}</Text> : text}
+        {bookmarkColor || underline ? (
+          <Text style={[bookmarkBg, underlineStyle]}>{text}</Text>
+        ) : (
+          text
+        )}
       </Text>
     );
   }
@@ -84,13 +93,14 @@ function HighlightedVerseText({
             key={i}
             style={[
               bookmarkBg,
+              underlineStyle,
               { backgroundColor: "#FFD966CC", fontWeight: "700" },
             ]}
           >
             {part}
           </Text>
         ) : (
-          <Text key={i} style={bookmarkBg}>
+          <Text key={i} style={[bookmarkBg, underlineStyle]}>
             {part}
           </Text>
         ),
@@ -107,13 +117,21 @@ export default function BibleBrowser() {
     chapter: chapterParam,
     verse: verseParam,
     highlight: highlightParam,
+    underline: underlineParam,
+    pickMode,
+    pickTarget,
   } = useLocalSearchParams<{
     collectionId?: string;
     bookId?: string;
     chapter?: string;
     verse?: string;
     highlight?: string;
+    underline?: string;
+    pickMode?: string; // "verse" when opened from CalendarWidget
+    pickTarget?: string; // "day" | "series"
   }>();
+
+  const isPickMode = pickMode === "verse";
   const { theme } = useAppTheme();
   const uid = auth.currentUser?.uid ?? "";
 
@@ -134,6 +152,8 @@ export default function BibleBrowser() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [highlights, setHighlights] = useState<Map<string, string>>(new Map());
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+  const [journaled, setJournaled] = useState<Set<string>>(new Set());
+  const [underlined, setUnderlined] = useState<Set<string>>(new Set());
   const [bookmarkConfirm, setBookmarkConfirm] = useState<string | null>(null);
   const [drawerVerse, setDrawerVerse] = useState<ChapterVerse | null>(null);
   const [shareVerse, setShareVerse] = useState<ChapterVerse | null>(null);
@@ -152,16 +172,30 @@ export default function BibleBrowser() {
       const ch = parseInt(chapterParam, 10);
       if (found && !isNaN(ch)) {
         const targetVerse =
-          highlightParam === "true" && verseParam
+          (highlightParam === "true" || underlineParam === "true") && verseParam
             ? parseInt(verseParam, 10)
             : undefined;
-        openChapter(found, ch, undefined, targetVerse);
+        openChapter(
+          found,
+          ch,
+          undefined,
+          targetVerse,
+          underlineParam === "true",
+        );
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId, chapterParam, verseParam, highlightParam]);
+  }, [bookId, chapterParam, verseParam, highlightParam, underlineParam]);
+
+  // Clear underlines when user starts searching
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setUnderlined(new Set());
+    }
+  }, [searchQuery]);
 
   function goBack() {
+    setUnderlined(new Set()); // Clear temporary underlines when navigating
     if (screen === "verses") {
       setScreen("chapters");
       setVerses([]);
@@ -183,6 +217,7 @@ export default function BibleBrowser() {
     ch: number,
     ver?: BibleVersion,
     autoHighlightVerse?: number,
+    autoUnderlineVerse: boolean = false,
   ) {
     setBook(b);
     setChapter(ch);
@@ -202,7 +237,7 @@ export default function BibleBrowser() {
 
       // Auto-highlight the target verse if it has no existing highlight
       let finalHighlights = savedHighlights;
-      if (autoHighlightVerse) {
+      if (autoHighlightVerse && !autoUnderlineVerse) {
         const key = verseKey(b.id, ch, autoHighlightVerse);
         if (!savedHighlights.has(key)) {
           await saveHighlight(key, HIGHLIGHT_COLORS[0]);
@@ -213,6 +248,14 @@ export default function BibleBrowser() {
 
       setHighlights(finalHighlights);
       setBookmarked(new Set(savedBookmarks.map((bm) => bm.id)));
+
+      // Set temporary underline for Concordance navigation
+      if (autoUnderlineVerse && autoHighlightVerse) {
+        const key = verseKey(b.id, ch, autoHighlightVerse);
+        setUnderlined(new Set([key]));
+      } else {
+        setUnderlined(new Set());
+      }
       // Persist reading position so Home can show "Resume Reading"
       await saveReadingPosition({
         bookId: b.id,
@@ -280,6 +323,37 @@ export default function BibleBrowser() {
     if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
     setBookmarkConfirm(label);
     confirmTimerRef.current = setTimeout(() => setBookmarkConfirm(null), 2000);
+  }
+
+  function handleDrawerJournal() {
+    if (!drawerVerse || !book) return;
+    const key = verseKey(book.id, chapter!, drawerVerse.verse);
+    setJournaled((prev) => new Set([...prev, key]));
+    const ref = `${book.label} ${chapter}:${drawerVerse.verse}`;
+    setDrawerVerse(null);
+    router.push({
+      pathname: "/(tabs)/journal-compose",
+      params: {
+        ref,
+        text: drawerVerse.text,
+      },
+    });
+  }
+
+  /** Returns the selected verse back to the Growth tab (CalendarWidget pick mode) */
+  function handlePickVerse() {
+    if (!drawerVerse || !book) return;
+    const ref = `${book.label} ${chapter}:${drawerVerse.verse}`;
+    setDrawerVerse(null);
+    router.navigate({
+      pathname: "/(tabs)/growth",
+      params: {
+        pickedVerseText: drawerVerse.text,
+        pickedVerseRef: ref,
+        pickTarget: pickTarget ?? "day",
+        pickSessionId: Date.now().toString(),
+      },
+    });
   }
 
   const headerTitle =
@@ -585,6 +659,57 @@ export default function BibleBrowser() {
                     Add to Bookmarks
                   </Text>
                 </TouchableOpacity>
+
+                {/* Add to Journal button */}
+                <TouchableOpacity
+                  style={[
+                    styles.drawerBookmarkBtn,
+                    {
+                      marginTop: 10,
+                      backgroundColor: theme.surface,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                  onPress={handleDrawerJournal}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="book-outline" size={18} color={theme.text} />
+                  <Text
+                    style={[
+                      styles.drawerBookmarkBtnText,
+                      { color: theme.text },
+                    ]}
+                  >
+                    Add to Journal
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Use this Verse — only shown when opened from CalendarWidget */}
+                {isPickMode && (
+                  <TouchableOpacity
+                    style={[
+                      styles.drawerBookmarkBtn,
+                      { marginTop: 10, backgroundColor: theme.primary },
+                    ]}
+                    onPress={handlePickVerse}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={18}
+                      color={theme.primaryText}
+                    />
+                    <Text
+                      style={[
+                        styles.drawerBookmarkBtnText,
+                        { color: theme.primaryText },
+                      ]}
+                    >
+                      Use this Verse
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -685,12 +810,7 @@ export default function BibleBrowser() {
       {/* Verses */}
       {screen === "verses" &&
         (loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color={theme.textSecondary} />
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              Loading chapter…
-            </Text>
-          </View>
+          <ChapterSkeleton />
         ) : error ? (
           <View style={styles.centered}>
             <Text style={[styles.emptyText, { color: theme.text }]}>
@@ -715,6 +835,8 @@ export default function BibleBrowser() {
               const key = verseKey(book!.id, chapter!, v.verse);
               const highlightColor = highlights.get(key);
               const isBookmarked = bookmarked.has(key);
+              const isJournaled = journaled.has(key);
+              const isUnderlined = underlined.has(key);
               return (
                 <TouchableOpacity
                   key={v.verse}
@@ -745,11 +867,20 @@ export default function BibleBrowser() {
                         style={styles.verseBookmarkIcon}
                       />
                     )}
+                    {isJournaled && (
+                      <Ionicons
+                        name="book"
+                        size={9}
+                        color={theme.textSecondary}
+                        style={styles.verseBookmarkIcon}
+                      />
+                    )}
                   </View>
                   <HighlightedVerseText
                     text={v.text}
                     query={searchQuery}
                     bookmarkColor={highlightColor}
+                    underline={isUnderlined}
                     textStyle={[styles.verseText, { color: theme.text }]}
                   />
                 </TouchableOpacity>

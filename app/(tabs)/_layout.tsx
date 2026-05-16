@@ -6,6 +6,7 @@ import {
     signOutUser,
 } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
+import { hideSplashOnce } from "@/src/utils/splashGuard";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs, usePathname, useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
@@ -25,9 +26,17 @@ export default function TabsLayout() {
   const homeIsEffectivelyFocused =
     pathname.includes("bible-browser") || pathname.includes("concordance");
 
+  // Keep the Journal tab highlighted when composing
+  const journalIsEffectivelyFocused = pathname.includes("journal-compose");
+
   // Auth state guard
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      // Hide the native splash in case navigation state was restored directly
+      // to (tabs) — prevents the dashboard flashing before the auth redirect.
+      // hideSplashOnce() is a no-op if SplashScreen.tsx already called it.
+      hideSplashOnce();
+
       if (!user) {
         setAuthState("unauthenticated");
       } else if (!user.emailVerified) {
@@ -97,14 +106,20 @@ export default function TabsLayout() {
           > = {
             home: { active: "home", inactive: "home-outline" },
             journal: { active: "book", inactive: "book-outline" },
-            prayers: { active: "heart", inactive: "heart-outline" },
+            growth: { active: "leaf", inactive: "leaf-outline" },
             bookmarks: { active: "bookmark", inactive: "bookmark-outline" },
             settings: { active: "settings", inactive: "settings-outline" },
+            // Hidden / auxiliary screens reuse main tab icons
+            "bible-browser": { active: "home", inactive: "home-outline" },
+            concordance: { active: "home", inactive: "home-outline" },
+            "journal-compose": { active: "book", inactive: "book-outline" },
           };
-          const icon = icons[route.name];
-          // Keep Home highlighted when the user is inside a hidden screen
+          const icon = icons[route.name] ?? icons.home;
+          // Keep Home/Journal highlighted when the user is inside a hidden screen
           const isFocused =
-            focused || (route.name === "home" && homeIsEffectivelyFocused);
+            focused ||
+            (route.name === "home" && homeIsEffectivelyFocused) ||
+            (route.name === "journal" && journalIsEffectivelyFocused);
           const iconColor = isFocused ? TAB_ACTIVE_COLOR : color;
           return (
             <Ionicons
@@ -116,7 +131,9 @@ export default function TabsLayout() {
         },
         tabBarLabel: ({ focused, color, children }) => {
           const isLabelFocused =
-            focused || (route.name === "home" && homeIsEffectivelyFocused);
+            focused ||
+            (route.name === "home" && homeIsEffectivelyFocused) ||
+            (route.name === "journal" && journalIsEffectivelyFocused);
           return (
             <Text
               style={{
@@ -133,12 +150,15 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="home" options={{ title: "Home" }} />
       <Tabs.Screen name="journal" options={{ title: "Journal" }} />
-      <Tabs.Screen name="prayers" options={{ title: "Prayers" }} />
+      <Tabs.Screen name="growth" options={{ title: "Growth" }} />
       <Tabs.Screen name="bookmarks" options={{ title: "Bookmarks" }} />
       <Tabs.Screen name="settings" options={{ title: "Settings" }} />
       {/* Hidden screens — navigable but not shown in the tab bar */}
       <Tabs.Screen name="bible-browser" options={{ href: null }} />
       <Tabs.Screen name="concordance" options={{ href: null }} />
+      <Tabs.Screen name="journal-compose" options={{ href: null }} />
+      {/* Disabled tabs — files kept for git history, hidden from tab bar */}
+      <Tabs.Screen name="prayers" options={{ href: null }} />
     </Tabs>
   );
 }

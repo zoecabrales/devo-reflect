@@ -1,4 +1,5 @@
 import { auth } from "@/src/services/firebase";
+import { hideSplashOnce } from "@/src/utils/splashGuard";
 import { useRouter } from "expo-router";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { useEffect, useRef } from "react";
@@ -10,6 +11,9 @@ export default function SplashScreen() {
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Hide the native splash so the custom animation underneath is visible.
+    hideSplashOnce();
+
     const authStatePromise = new Promise<User | null>((resolve) => {
       const unsubscribe = onAuthStateChanged(auth, (user) => {
         unsubscribe();

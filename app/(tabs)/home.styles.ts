@@ -1,3 +1,4 @@
+import { fs, MODAL_MAX_WIDTH, SCROLL_PADDING_H } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -6,7 +7,7 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    padding: SCROLL_PADDING_H,
     paddingTop: 56,
     gap: 24,
   },
@@ -16,7 +17,7 @@ export const styles = StyleSheet.create({
     gap: 6,
   },
   greeting: {
-    fontSize: 30,
+    fontSize: fs(30),
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.5,
   },
@@ -49,13 +50,13 @@ export const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   verseReference: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.5,
   },
   verseText: {
-    fontSize: 17,
-    lineHeight: 27,
+    fontSize: fs(17),
+    lineHeight: fs(27),
     fontStyle: "italic",
     letterSpacing: 0.2,
   },
@@ -85,44 +86,6 @@ export const styles = StyleSheet.create({
   readInContextText: {
     fontSize: 12,
     fontWeight: "600",
-  },
-
-  // ── Loading Skeleton ─────────────────────────────────────
-  loadingCard: {
-    borderRadius: 14,
-    padding: 16,
-    gap: 10,
-    borderWidth: 1,
-  },
-  skeletonShort: {
-    height: 12,
-    borderRadius: 6,
-    width: "35%",
-    opacity: 0.12,
-  },
-  skeletonMedium: {
-    height: 16,
-    borderRadius: 8,
-    width: "55%",
-    opacity: 0.12,
-  },
-  skeletonLong: {
-    height: 14,
-    borderRadius: 7,
-    width: "100%",
-    opacity: 0.12,
-  },
-  skeletonLongAlt: {
-    height: 14,
-    borderRadius: 7,
-    width: "85%",
-    opacity: 0.12,
-  },
-  skeletonLongAlt2: {
-    height: 14,
-    borderRadius: 7,
-    width: "90%",
-    opacity: 0.12,
   },
 
   // ── Quick Access Label ───────────────────────────────────
@@ -189,38 +152,115 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
   collectionScroll: {
-    marginHorizontal: -24, // bleed to screen edges
+    marginHorizontal: -SCROLL_PADDING_H, // bleed to screen edges
   },
   collectionScrollContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: SCROLL_PADDING_H,
     gap: 10,
   },
   collectionCard: {
-    width: 96,
-    borderRadius: 10,
-    padding: 10,
+    width: 168,
+    borderRadius: 12,
+    padding: 14,
     borderWidth: 1,
-    gap: 7,
+    gap: 8,
     alignItems: "flex-start",
   },
   collectionIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   collectionLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.3,
-    lineHeight: 13,
+    lineHeight: 15,
   },
   collectionSubtitle: {
-    fontSize: 9,
+    fontSize: 10,
     opacity: 0.5,
     letterSpacing: 0.1,
-    lineHeight: 12,
+    lineHeight: 13,
+    marginTop: -2,
+  },
+  collectionDescription: {
+    fontSize: 11,
+    lineHeight: 16,
+    opacity: 0.65,
+    letterSpacing: 0.1,
+    marginTop: 2,
+  },
+
+  // ── Collection Info Modal ────────────────────────────────
+  collectionModalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  collectionModalSheet: {
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    paddingTop: 12,
+  },
+  collectionModalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#888",
+    alignSelf: "center",
+    marginBottom: 20,
+    opacity: 0.35,
+  },
+  collectionModalIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  collectionModalLabel: {
+    fontSize: 22,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  collectionModalSubtitle: {
+    fontSize: 11,
+    opacity: 0.5,
+    letterSpacing: 0.2,
+    marginBottom: 16,
+  },
+  collectionModalDivider: {
+    height: 1,
+    opacity: 0.12,
+    marginBottom: 16,
+  },
+  collectionModalDescription: {
+    fontSize: 14,
+    lineHeight: 22,
+    opacity: 0.75,
+    letterSpacing: 0.1,
+    marginBottom: 28,
+  },
+  collectionModalCTA: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  collectionModalCTAText: {
+    fontSize: 14,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
 
   // ── Error State ──────────────────────────────────────────
@@ -291,5 +331,55 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     opacity: 0.55,
     letterSpacing: 0.2,
+  },
+
+  // ── Verse Greeting Modal ──────────────────────────────────
+  verseGreetingOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 28,
+  },
+  verseGreetingCard: {
+    width: "100%",
+    maxWidth: MODAL_MAX_WIDTH,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 28,
+    alignItems: "center",
+    gap: 12,
+  },
+  verseGreetingRef: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    opacity: 0.5,
+  },
+  verseGreetingDivider: {
+    height: 1,
+    width: "100%",
+    opacity: 0.12,
+  },
+  verseGreetingText: {
+    fontSize: fs(18),
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.3,
+    lineHeight: fs(18) * 1.5,
+    textAlign: "center",
+  },
+  verseGreetingBtn: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 32,
+    alignItems: "center",
+  },
+  verseGreetingBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
 });

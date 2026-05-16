@@ -1,16 +1,12 @@
+import { JournalListSkeleton } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
 import { deleteEntry, JournalEntry, loadEntries } from "@/src/services/journal";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-    ActivityIndicator,
-    SectionList,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+// prettier-ignore
+import { Modal, ScrollView, SectionList, Text, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./journal.styles";
 
@@ -79,6 +75,8 @@ export default function Journal() {
   const router = useRouter();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [guideVisible, setGuideVisible] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const uid = auth.currentUser?.uid ?? "";
 
@@ -92,9 +90,11 @@ export default function Journal() {
     }, [uid]),
   );
 
-  async function handleDelete(id: string) {
-    await deleteEntry(uid, id);
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    await deleteEntry(uid, deleteTargetId);
+    setEntries((prev) => prev.filter((e) => e.id !== deleteTargetId));
+    setDeleteTargetId(null);
   }
 
   const streak = calcStreak(entries);
@@ -120,27 +120,60 @@ export default function Journal() {
                 : "Start your first SOAP entry"}
             </Text>
           </View>
-          {streak > 0 && (
-            <View
-              style={[
-                styles.streakBadge,
-                { borderColor: theme.border, backgroundColor: theme.surface },
-              ]}
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.helpBtn, { borderColor: theme.border }]}
+              onPress={() => setGuideVisible(true)}
+              activeOpacity={0.7}
             >
-              <Text>🔥</Text>
-              <Text style={[styles.streakText, { color: theme.text }]}>
-                {streak} day{streak === 1 ? "" : "s"}
+              <Ionicons
+                name="help-outline"
+                size={14}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+            {streak > 0 && (
+              <View
+                style={[
+                  styles.streakBadge,
+                  { borderColor: theme.border, backgroundColor: theme.surface },
+                ]}
+              >
+                <Text>🔥</Text>
+                <Text style={[styles.streakText, { color: theme.text }]}>
+                  {streak} day{streak === 1 ? "" : "s"}
+                </Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={[
+                styles.newEntryBtn,
+                {
+                  backgroundColor: theme.primary,
+                },
+              ]}
+              onPress={() => router.push("/(tabs)/journal-compose")}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="add" size={16} color={theme.primaryText} />
+              <Text
+                style={[
+                  styles.newEntryText,
+                  {
+                    color: theme.primaryText,
+                  },
+                ]}
+              >
+                New
               </Text>
-            </View>
-          )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
       {/* ── Body ── */}
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={theme.textSecondary} />
-        </View>
+        <JournalListSkeleton />
       ) : entries.length === 0 ? (
         /* ── Empty state ── */
         <View style={styles.empty}>
@@ -286,7 +319,7 @@ export default function Journal() {
                   {/* Delete */}
                   <TouchableOpacity
                     style={styles.deleteBtn}
-                    onPress={() => handleDelete(item.id)}
+                    onPress={() => setDeleteTargetId(item.id)}
                     activeOpacity={0.7}
                   >
                     <Ionicons
@@ -353,15 +386,207 @@ export default function Journal() {
           }}
         />
       )}
-
-      {/* ── FAB ── */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: theme.primary }]}
-        onPress={() => router.push("/(tabs)/journal-compose")}
-        activeOpacity={0.85}
+      {/* ── Delete Confirmation Modal ── */}
+      <Modal
+        visible={deleteTargetId !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteTargetId(null)}
       >
-        <Ionicons name="add" size={28} color={theme.primaryText} />
-      </TouchableOpacity>
+        <TouchableWithoutFeedback onPress={() => setDeleteTargetId(null)}>
+          <View style={styles.deleteModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.deleteModalCard,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.deleteModalTitle, { color: theme.text }]}>
+                  Delete Entry
+                </Text>
+                <Text
+                  style={[
+                    styles.deleteModalBody,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  This entry will be permanently removed. This cannot be undone.
+                </Text>
+                <View style={styles.deleteModalActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteModalCancel,
+                      { borderColor: theme.border },
+                    ]}
+                    onPress={() => setDeleteTargetId(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.deleteModalCancelText,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteModalConfirm,
+                      { backgroundColor: "#e53e3e" },
+                    ]}
+                    onPress={confirmDelete}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[styles.deleteModalConfirmText, { color: "#fff" }]}
+                    >
+                      Delete
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* ── SOAP Guide Modal ── */}
+      <Modal
+        visible={guideVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setGuideVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setGuideVisible(false)}>
+          <View style={styles.guideModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.guideModalSheet,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <View style={styles.guideModalHandle} />
+
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <Text style={[styles.guideModalTitle, { color: theme.text }]}>
+                    The SOAP Method
+                  </Text>
+                  <Text
+                    style={[
+                      styles.guideModalIntro,
+                      { color: theme.textSecondary },
+                    ]}
+                  >
+                    A simple framework for reading Scripture slowly and
+                    responding personally.
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.guideModalDivider,
+                      { backgroundColor: theme.text },
+                    ]}
+                  />
+
+                  {(
+                    [
+                      {
+                        letter: "S",
+                        name: "Scripture",
+                        desc: "Choose a verse or passage to focus on. Write it out rather than just referencing it — the act of writing slows you down.",
+                        prompt: "What verse stood out to me today?",
+                      },
+                      {
+                        letter: "O",
+                        name: "Observation",
+                        desc: "What does the text say? Note context, who is speaking, repeated words. Stay with what's actually in the passage.",
+                        prompt: "What do I notice about this passage?",
+                      },
+                      {
+                        letter: "A",
+                        name: "Application",
+                        desc: "What does this mean for your life today? Be specific — one action, one attitude, one relationship.",
+                        prompt: "How does this apply to my life right now?",
+                      },
+                      {
+                        letter: "P",
+                        name: "Prayer",
+                        desc: "Respond to God based on what you read. It doesn't need to be long — honesty matters more than length.",
+                        prompt: "What do I want to say to God in response?",
+                      },
+                    ] as const
+                  ).map((step) => (
+                    <View key={step.letter} style={styles.guideStep}>
+                      <View
+                        style={[
+                          styles.guideStepBadge,
+                          { backgroundColor: theme.primary },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.guideStepLetter,
+                            { color: theme.primaryText },
+                          ]}
+                        >
+                          {step.letter}
+                        </Text>
+                      </View>
+                      <View style={styles.guideStepBody}>
+                        <Text
+                          style={[styles.guideStepName, { color: theme.text }]}
+                        >
+                          {step.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.guideStepDesc,
+                            { color: theme.textSecondary },
+                          ]}
+                        >
+                          {step.desc}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.guideStepPrompt,
+                            { color: theme.textSecondary },
+                          ]}
+                        >
+                          "{step.prompt}"
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={[
+                      styles.guideModalCTA,
+                      { backgroundColor: theme.primary },
+                    ]}
+                    onPress={() => setGuideVisible(false)}
+                  >
+                    <Text
+                      style={[
+                        styles.guideModalCTAText,
+                        { color: theme.primaryText },
+                      ]}
+                    >
+                      Got it
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
