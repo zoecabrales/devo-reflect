@@ -24,8 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.jirehzoe.devoreflect",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.jirehzoe.devoreflect"
     },
     "web": {
       "output": "static",
