@@ -1,25 +1,25 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
 import {
-    addEntry,
-    JournalEntry,
-    JournalEntryDraft,
-    loadEntry,
-    ScriptureRef,
-    updateEntry,
+  addEntry,
+  JournalEntry,
+  JournalEntryDraft,
+  loadEntry,
+  ScriptureRef,
+  updateEntry,
 } from "@/src/services/journal";
 import { LIST_PADDING_H } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -340,36 +340,7 @@ export default function JournalCompose() {
                 textTransform: "uppercase",
               }}
             >
-              Title
-            </Text>
-            <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.surface,
-                borderRadius: 10,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                color: theme.text,
-                fontSize: 14,
-              }}
-              placeholder="Give this entry a short title…"
-              placeholderTextColor={theme.textSecondary}
-              value={draft.title ?? ""}
-              onChangeText={(text) => updateField("title", text)}
-            />
-          </View>
-
-          <View style={{ gap: 6 }}>
-            <Text
-              style={{
-                fontSize: 12,
-                color: theme.textSecondary,
-                letterSpacing: 0.6,
-                textTransform: "uppercase",
-              }}
-            >
-              Observation
+              O — Observation
             </Text>
             <TextInput
               style={{
@@ -401,7 +372,7 @@ export default function JournalCompose() {
                 textTransform: "uppercase",
               }}
             >
-              Application
+              A — Application
             </Text>
             <TextInput
               style={{
@@ -433,7 +404,7 @@ export default function JournalCompose() {
                 textTransform: "uppercase",
               }}
             >
-              Prayer
+              P — Prayer
             </Text>
             <TextInput
               style={{
@@ -453,6 +424,35 @@ export default function JournalCompose() {
               placeholderTextColor={theme.textSecondary}
               value={draft.prayer}
               onChangeText={(text) => updateField("prayer", text)}
+            />
+          </View>
+
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                color: theme.textSecondary,
+                letterSpacing: 0.6,
+                textTransform: "uppercase",
+              }}
+            >
+              Title
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: theme.border,
+                backgroundColor: theme.surface,
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                color: theme.text,
+                fontSize: 14,
+              }}
+              placeholder="Give this entry a short title…"
+              placeholderTextColor={theme.textSecondary}
+              value={draft.title ?? ""}
+              onChangeText={(text) => updateField("title", text)}
             />
           </View>
         </ScrollView>
