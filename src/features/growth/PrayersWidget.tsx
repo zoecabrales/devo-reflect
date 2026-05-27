@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "stretch",
     gap: 8,
     marginBottom: 12,
   },
@@ -551,7 +551,6 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     width: 44,
-    height: 44,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
