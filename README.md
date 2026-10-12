@@ -60,6 +60,8 @@ Accounts use email and password via Firebase Auth. New accounts require email ve
 
 User data is organized in Firestore under `users/{uid}` with three sub-collections: `bookmarks`, `journal`, and `prayers`. Verse highlights and the daily verse cache are stored locally in AsyncStorage and are not synced across devices.
 
+The Bible text itself (ASV, KJV, WEB, BBE and YLT — all 66 books) is bundled in the app under `assets/bible/<version>/<book>.json`, so chapters open instantly and work offline. To regenerate it, run `node scripts/build-bible-data.js`; it downloads the text and rewrites `src/services/bibleData.ts`. Only the concordance search still needs the network.
+
 ---
 
 ## Running the App

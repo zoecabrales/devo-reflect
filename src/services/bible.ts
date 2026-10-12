@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const BASE_URL = "https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles";
+import { BIBLE_DATA } from "./bibleData";
 
 // ── Reading Position ─────────────────────────────────────────────────────────
 
@@ -155,41 +154,23 @@ export interface ChapterVerse {
 }
 
 /**
- * Fetches all verses for a given book + chapter.
- * Requests are made in parallel batches of 30 until an empty batch is returned.
+ * Returns all verses for a given book + chapter from the Bible data bundled
+ * with the app, so it works offline and does not hit the network.
  */
 export async function fetchChapter(
   bookId: string,
   chapter: number,
   version: string = BIBLE_VERSION,
 ): Promise<ChapterVerse[]> {
-  const BATCH = 30;
-  const all: ChapterVerse[] = [];
-  let offset = 0;
+  const verses = loadChapter(version, bookId, chapter);
+  return verses.map((text, i) => ({ verse: i + 1, text }));
+}
 
-  while (true) {
-    const batch = await Promise.all(
-      Array.from({ length: BATCH }, async (_, i) => {
-        const v = offset + i + 1;
-        const url = `${BASE_URL}/${version}/books/${bookId}/chapters/${chapter}/verses/${v}.json`;
-        try {
-          const r = await fetch(url);
-          if (!r.ok) return null;
-          const d = (await r.json()) as { text: string };
-          return { verse: v, text: d.text };
-        } catch {
-          return null;
-        }
-      }),
-    );
-
-    const valid = batch.filter(Boolean) as ChapterVerse[];
-    all.push(...valid);
-    if (valid.length === 0) break;
-    offset += BATCH;
-  }
-
-  return all;
+/** Reads one chapter (array of verse texts, verse 1 first) from bundled data. */
+function loadChapter(version: string, bookId: string, chapter: number): string[] {
+  const loadBook = BIBLE_DATA[version]?.[bookId];
+  if (!loadBook) return [];
+  return loadBook()[chapter - 1] ?? [];
 }
 
 export interface BibleVerse {
@@ -199,10 +180,6 @@ export interface BibleVerse {
   verse: number;
   text: string;
   version: string;
-}
-
-interface ApiVerseResponse {
-  text: string;
 }
 
 // Curated list of well-known, encouraging Bible verses
@@ -426,17 +403,12 @@ export async function fetchDailyVerse(): Promise<BibleVerse> {
     // Cache unreadable — fall through to fetch
   }
 
-  // Fetch from CDN
   const ref = CURATED_VERSES[getDailyVerseIndex()];
-  const url = `${BASE_URL}/${BIBLE_VERSION}/books/${ref.book}/chapters/${ref.chapter}/verses/${ref.verse}.json`;
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Bible API error: ${response.status}`);
+  const text = loadChapter(BIBLE_VERSION, ref.book, ref.chapter)[ref.verse - 1];
+  if (!text) {
+    throw new Error(`Verse not found: ${ref.bookLabel} ${ref.chapter}:${ref.verse}`);
   }
-
-  const data: ApiVerseResponse = await response.json();
-  const verse: BibleVerse = { ...ref, text: data.text, version: "ASV" };
+  const verse: BibleVerse = { ...ref, text, version: "ASV" };
 
   // Persist for the rest of today
   try {
