@@ -18,7 +18,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "./settings.styles";
+import { styles } from "@/src/styles/settings.styles";
 
 const SUPPORT_EMAIL = "jirehzoe@gmail.com";
 

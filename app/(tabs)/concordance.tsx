@@ -17,7 +17,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "./concordance.styles";
+import { styles } from "@/src/styles/concordance.styles";
 
 const PAGE_SIZE = 10;
 

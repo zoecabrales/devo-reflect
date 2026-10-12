@@ -17,7 +17,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "./bookmarks.styles";
+import { styles } from "@/src/styles/bookmarks.styles";
 
 const JOSHUA_1_8 = {
   ref: "Joshua 1:8",
