@@ -33,7 +33,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "./bible-browser.styles";
+import { styles } from "@/src/styles/bible-browser.styles";
 
 type Screen = "books" | "chapters" | "verses";
 

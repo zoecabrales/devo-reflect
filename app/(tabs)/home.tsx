@@ -23,7 +23,7 @@ import {
     TouchableWithoutFeedback,
     View,
 } from "react-native";
-import { styles } from "./home.styles";
+import { styles } from "@/src/styles/home.styles";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

@@ -8,7 +8,7 @@ import { useCallback, useState } from "react";
 // prettier-ignore
 import { Modal, ScrollView, SectionList, Text, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "./journal.styles";
+import { styles } from "@/src/styles/journal.styles";
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
