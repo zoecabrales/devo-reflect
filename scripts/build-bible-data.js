@@ -1,0 +1,162 @@
+/**
+ * Downloads every chapter of every translation listed below and stores it
+ * under assets/bible/<version>/<book>.json, then generates
+ * src/services/bibleData.ts (a static require map used for offline reading).
+ *
+ * Each book file is an array of chapters; each chapter is an array of verse
+ * texts where index 0 is verse 1.
+ *
+ * Usage (from the project root): node scripts/build-bible-data.js
+ */
+const fs = require("fs");
+const path = require("path");
+
+const ROOT = process.cwd();
+const BASE = "https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles";
+const VERSIONS = ["en-asv", "en-kjv", "en-web", "en-bbe", "en-ylt"];
+const CONCURRENCY = 12;
+// App book ids that differ from the CDN folder name.
+const CDN_ID = { "song-of-solomon": "songofsolomon" };
+
+const source = fs.readFileSync(
+  path.join(ROOT, "src/services/bible.ts"),
+  "utf8",
+);
+const BOOKS = [...source.matchAll(/id:\s*"([^"]+)",\s*label:\s*"[^"]+",\s*chapters:\s*(\d+)/g)].map(
+  (m) => ({ id: m[1], chapters: Number(m[2]) }),
+);
+if (BOOKS.length !== 66) throw new Error(`Expected 66 books, found ${BOOKS.length}`);
+
+async function fetchJson(url) {
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      if (attempt === 5) throw new Error(`${url}: ${err.message}`);
+      await new Promise((r) => setTimeout(r, 500 * attempt));
+    }
+  }
+}
+
+async function fetchChapter(version, bookId, chapter) {
+  const json = await fetchJson(
+    `${BASE}/${version}/books/${CDN_ID[bookId] ?? bookId}/chapters/${chapter}.json`,
+  );
+  if (!json || !Array.isArray(json.data) || json.data.length === 0) {
+    throw new Error(`Missing chapter ${version}/${bookId}/${chapter}`);
+  }
+  const rows = json.data.map((v) => ({ verse: Number(v.verse), text: v.text }));
+  return toVerseArray(rows, `${version}/${bookId}/${chapter}`);
+}
+
+function toVerseArray(rows, label) {
+  const verses = [];
+  for (const v of rows) {
+    verses[v.verse - 1] = String(v.text)
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  for (let i = 0; i < verses.length; i++) {
+    if (verses[i] === undefined) throw new Error(`Gap at ${label} verse ${i + 1}`);
+  }
+  return verses;
+}
+
+// YLT is not on the wldeh CDN, so it comes from bolls.life (book numbers 1-66).
+async function fetchYltChapter(bookIndex, bookId, chapter) {
+  const rows = await fetchJson(`https://bolls.life/get-text/YLT/${bookIndex + 1}/${chapter}/`);
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error(`Missing chapter en-ylt/${bookId}/${chapter}`);
+  }
+  return toVerseArray(rows, `en-ylt/${bookId}/${chapter}`);
+}
+
+// BBE is not on either API, so it comes from a single public-domain JSON file.
+const BBE_URL = "https://cdn.jsdelivr.net/gh/thiagobodruk/bible@master/json/en_bbe.json";
+async function loadBbe() {
+  const res = await fetch(BBE_URL);
+  if (!res.ok) throw new Error(`BBE download failed: HTTP ${res.status}`);
+  const text = (await res.text()).replace(/^\uFEFF/, "");
+  const books = JSON.parse(text);
+  if (books.length !== 66) throw new Error(`BBE has ${books.length} books`);
+  return books;
+}
+
+async function pool(items, worker) {
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: CONCURRENCY }, async () => {
+      while (next < items.length) {
+        const item = items[next++];
+        await worker(item);
+      }
+    }),
+  );
+}
+
+async function main() {
+  const bbe = VERSIONS.includes("en-bbe") ? await loadBbe() : null;
+
+  for (const version of VERSIONS) {
+    const dir = path.join(ROOT, "assets", "bible", version);
+    fs.mkdirSync(dir, { recursive: true });
+    let verseCount = 0;
+    await pool(BOOKS.map((book, index) => ({ book, index })), async ({ book, index }) => {
+      const file = path.join(dir, `${book.id}.json`);
+      let chapters;
+      if (fs.existsSync(file)) {
+        chapters = JSON.parse(fs.readFileSync(file, "utf8"));
+      } else {
+        chapters = [];
+        if (version === "en-bbe") {
+          for (const ch of bbe[index].chapters) {
+            chapters.push(toVerseArray(ch.map((t, i) => ({ verse: i + 1, text: t })), `en-bbe/${book.id}`));
+          }
+        } else {
+          for (let c = 1; c <= book.chapters; c++) {
+            chapters.push(
+              version === "en-ylt"
+                ? await fetchYltChapter(index, book.id, c)
+                : await fetchChapter(version, book.id, c),
+            );
+          }
+        }
+        fs.writeFileSync(file, JSON.stringify(chapters));
+      }
+      if (chapters.length !== book.chapters) {
+        throw new Error(`${version}/${book.id}: ${chapters.length} chapters, expected ${book.chapters}`);
+      }
+      verseCount += chapters.reduce((n, ch) => n + ch.length, 0);
+    });
+    console.log(`${version}: ${verseCount} verses`);
+  }
+
+  const lines = [
+    "// AUTO-GENERATED by scripts/build-bible-data.js — do not edit by hand.",
+    "// Each loader is lazy so a book is only parsed when it is first opened.",
+    "type BookLoader = () => string[][];",
+    "",
+    "export const BIBLE_DATA: Record<string, Record<string, BookLoader>> = {",
+  ];
+  for (const version of VERSIONS) {
+    lines.push(`  "${version}": {`);
+    for (const book of BOOKS) {
+      lines.push(
+        `    "${book.id}": () => require("../../assets/bible/${version}/${book.id}.json"),`,
+      );
+    }
+    lines.push("  },");
+  }
+  lines.push("};", "");
+  fs.writeFileSync(path.join(ROOT, "src/services/bibleData.ts"), lines.join("\n"));
+  console.log("Generated src/services/bibleData.ts");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
