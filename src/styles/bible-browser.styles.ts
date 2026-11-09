@@ -46,6 +46,22 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
   },
+  // Banner while a bookmark is being added for a Growth calendar day
+  planBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: LIST_PADDING_H,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  planBannerText: {
+    flex: 1,
+    fontSize: 13,
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",

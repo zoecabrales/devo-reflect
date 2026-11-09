@@ -3,6 +3,7 @@ import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { BookmarkedVerse, loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { JournalEntry, loadEntries } from "@/src/services/journal";
+import { dateKeyOf } from "@/src/utils/dateKey";
 import { MODAL_MAX_WIDTH } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -51,11 +52,6 @@ function buildGrid(y: number, m: number): (number | null)[][] {
   return rows;
 }
 
-/** Converts a unix timestamp to a "YYYY-MM-DD" key using the device's local date. */
-function timestampToDateKey(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 /**
  * Month calendar of journal entries and bookmarks.
@@ -101,7 +97,8 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
           // Build journal date map
           const jMap: Record<string, JournalEntry[]> = {};
           for (const entry of entries) {
-            const key = timestampToDateKey(entry.createdAt);
+            // The calendar day it was added for, else the day it was written
+            const key = entry.forDate ?? dateKeyOf(entry.createdAt);
             if (!jMap[key]) jMap[key] = [];
             jMap[key].push(entry);
           }
@@ -110,7 +107,7 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
           // Build bookmark date map
           const bMap: Record<string, BookmarkedVerse[]> = {};
           for (const bm of bookmarks) {
-            const key = timestampToDateKey(bm.createdAt);
+            const key = bm.forDate ?? dateKeyOf(bm.createdAt);
             if (!bMap[key]) bMap[key] = [];
             bMap[key].push(bm);
           }
@@ -207,6 +204,10 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
 
   // Content for the currently selected date
   const selectedKey = selectedDay ? dateKey(year, month, selectedDay) : null;
+  // Future days can only have a verse planned, not a journal entry
+  const selectedIsFuture =
+    !!selectedKey &&
+    selectedKey > dateKey(today.getFullYear(), today.getMonth(), today.getDate());
   const selectedJournalEntries = selectedKey
     ? (journalByDate[selectedKey] ?? [])
     : [];
@@ -222,38 +223,43 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
     <>
       {/* ── Action rows ─────────────────────────────────────── */}
       {!dateHasJournal && !dateHasBookmark ? (
-        /* Empty date — offer to add content */
+        /* Empty date — offer to add content for this day */
         <>
-          <TouchableOpacity
-            style={[
-              styles.actionRow,
-              {
-                borderColor: theme.border,
-                backgroundColor: theme.background,
-              },
-            ]}
-            onPress={() => {
-              leaveDetails();
-              router.push("/(tabs)/journal-compose");
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="book-outline"
-              size={16}
-              color={theme.primary}
-            />
-            <Text
-              style={[styles.actionRowText, { color: theme.text }]}
+          {!selectedIsFuture && (
+            <TouchableOpacity
+              style={[
+                styles.actionRow,
+                {
+                  borderColor: theme.border,
+                  backgroundColor: theme.background,
+                },
+              ]}
+              onPress={() => {
+                leaveDetails();
+                router.push({
+                  pathname: "/(tabs)/journal-compose",
+                  params: { forDate: selectedKey ?? undefined },
+                });
+              }}
+              activeOpacity={0.7}
             >
-              Add a Journal
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={14}
-              color={theme.textSecondary}
-            />
-          </TouchableOpacity>
+              <Ionicons
+                name="book-outline"
+                size={16}
+                color={theme.primary}
+              />
+              <Text
+                style={[styles.actionRowText, { color: theme.text }]}
+              >
+                Add a Journal
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[
@@ -265,19 +271,26 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
             ]}
             onPress={() => {
               leaveDetails();
-              router.push("/(tabs)/bible-browser");
+              router.push({
+                pathname: "/(tabs)/bible-browser",
+                params: {
+                  forDate: selectedKey ?? undefined,
+                  // New id per tap, so re-opening for the same day re-arms it
+                  forDateId: Date.now().toString(),
+                },
+              });
             }}
             activeOpacity={0.7}
           >
             <Ionicons
-              name="bookmark-outline"
+              name={selectedIsFuture ? "calendar-outline" : "bookmark-outline"}
               size={16}
               color={theme.primary}
             />
             <Text
               style={[styles.actionRowText, { color: theme.text }]}
             >
-              Bookmark a Verse
+              {selectedIsFuture ? "Plan a Verse" : "Bookmark a Verse"}
             </Text>
             <Ionicons
               name="chevron-forward"

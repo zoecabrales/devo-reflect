@@ -42,6 +42,7 @@ import {
   BookSpread,
 } from "@/src/features/bible/BookSpread";
 import { styles } from "@/src/styles/bible-browser.styles";
+import { dateKeyOf, formatDateKey } from "@/src/utils/dateKey";
 import { SIDEBAR_WIDTH, useIsDesktop } from "@/src/utils/responsive";
 
 type Screen = "books" | "chapters" | "verses";
@@ -129,6 +130,8 @@ export default function BibleBrowser() {
     underline: underlineParam,
     pickMode,
     pickTarget,
+    forDate: forDateParam,
+    forDateId,
   } = useLocalSearchParams<{
     collectionId?: string;
     bookId?: string;
@@ -138,7 +141,25 @@ export default function BibleBrowser() {
     underline?: string;
     pickMode?: string; // "verse" when opened from CalendarWidget
     pickTarget?: string; // "day" | "series"
+    forDate?: string; // "YYYY-MM-DD" when opened from a Growth calendar day
+    forDateId?: string; // changes per calendar tap
   }>();
+
+  // Calendar day the next bookmark is for (set from Growth's calendar).
+  // Re-armed whenever a new forDateId arrives; cleared after one bookmark or
+  // when dismissed. State derived from params, updated during render.
+  const [planFor, setPlanFor] = useState({
+    id: forDateId,
+    date: forDateId ? (forDateParam ?? null) : null,
+  });
+  if (planFor.id !== forDateId) {
+    setPlanFor({
+      id: forDateId,
+      date: forDateId ? (forDateParam ?? null) : null,
+    });
+  }
+  const pendingForDate = planFor.date;
+  const clearPendingForDate = () => setPlanFor((p) => ({ ...p, date: null }));
 
   const isPickMode = pickMode === "verse";
   const { theme } = useAppTheme();
@@ -349,8 +370,10 @@ export default function BibleBrowser() {
       verse: drawerVerse.verse,
       text: drawerVerse.text,
       version: version.label,
+      forDate: pendingForDate,
       createdAt: now,
     });
+    clearPendingForDate();
     setBookmarked((prev) => new Set([...prev, key]));
     setDrawerVerse(null);
     const label = `${book.label} ${chapter}:${drawerVerse.verse}`;
@@ -557,6 +580,39 @@ export default function BibleBrowser() {
           <Ionicons name="chevron-down" size={11} color={theme.textSecondary} />
         </TouchableOpacity>
       </View>
+
+      {/* Bookmarking / planning for a calendar day (from Growth) */}
+      {pendingForDate && (
+        <View
+          style={[
+            styles.planBanner,
+            { borderColor: theme.border, backgroundColor: theme.surface },
+            bookAligned && { marginHorizontal: bookInset },
+          ]}
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={15}
+            color={theme.textSecondary}
+          />
+          <Text style={[styles.planBannerText, { color: theme.text }]}>
+            {pendingForDate > dateKeyOf(Date.now()) ? "Planning" : "Bookmarking"}{" "}
+            a verse for {formatDateKey(pendingForDate)}
+            <Text style={{ color: theme.textSecondary }}>
+              {" "}
+              · tap a verse, then Bookmark
+            </Text>
+          </Text>
+          <TouchableOpacity
+            onPress={clearPendingForDate}
+            accessibilityRole="button"
+            accessibilityLabel="Cancel"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={16} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Search Bar */}
       {screen === "verses" && searchVisible && (

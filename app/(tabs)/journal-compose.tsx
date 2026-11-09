@@ -9,6 +9,7 @@ import {
   ScriptureRef,
   updateEntry,
 } from "@/src/services/journal";
+import { formatDateKey } from "@/src/utils/dateKey";
 import { LIST_PADDING_H } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,12 +24,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type Params = { id?: string; ref?: string; text?: string };
+type Params = {
+  id?: string;
+  ref?: string;
+  text?: string;
+  /** "YYYY-MM-DD" when started from a day in Growth's calendar */
+  forDate?: string;
+};
 
 export default function JournalCompose() {
   const { theme } = useAppTheme();
   const router = useRouter();
-  const { id, ref, text } = useLocalSearchParams<Params>();
+  const { id, ref, text, forDate } = useLocalSearchParams<Params>();
 
   const uid = auth.currentUser?.uid ?? "";
 
@@ -41,6 +48,7 @@ export default function JournalCompose() {
     tags: [],
     bookId: null,
     chapter: null,
+    forDate: null,
   });
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
@@ -58,11 +66,12 @@ export default function JournalCompose() {
       tags: [],
       bookId: null,
       chapter: null,
+      forDate: null,
     };
 
     if (!id || !uid) {
-      // New entry — clear everything and stop loading
-      setDraft(empty);
+      // New entry — clear everything (keeping the calendar day, if any)
+      setDraft({ ...empty, forDate: forDate ?? null });
       setLoading(false);
       return;
     }
@@ -82,10 +91,11 @@ export default function JournalCompose() {
           tags: entry.tags,
           bookId: entry.bookId,
           chapter: entry.chapter,
+          forDate: entry.forDate,
         });
       })
       .finally(() => setLoading(false));
-  }, [id, uid]);
+  }, [id, uid, forDate]);
 
   // Prefill scripture from a verse passed via route params (e.g. from bible-browser)
   useEffect(() => {
@@ -209,6 +219,30 @@ export default function JournalCompose() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Started from a calendar day: show which day this entry is for */}
+      {!!draft.forDate && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            paddingHorizontal: LIST_PADDING_H,
+            paddingVertical: 10,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.border,
+          }}
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={14}
+            color={theme.textSecondary}
+          />
+          <Text style={{ fontSize: 13, color: theme.textSecondary }}>
+            For {formatDateKey(draft.forDate)}
+          </Text>
+        </View>
+      )}
 
       {/* Loading spinner while prefilling edit mode */}
       {loading && (

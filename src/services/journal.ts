@@ -33,6 +33,11 @@ export interface JournalEntry {
   tags: string[]; // user-defined topic tags
   bookId: string | null; // e.g. "john" — for chapter-level filtering
   chapter: number | null; // e.g. 3
+  /**
+   * Calendar day this entry is for ("YYYY-MM-DD"), when added from a specific
+   * date in Growth's calendar. null = the day it was written (createdAt).
+   */
+  forDate: string | null;
   createdAt: number; // Date.now()
   updatedAt: number; // Date.now() on every save
 }
@@ -78,6 +83,7 @@ export async function loadEntries(uid: string): Promise<JournalEntry[]> {
       tags: (data.tags as string[]) ?? [],
       bookId: (data.bookId as string | null) ?? null,
       chapter: (data.chapter as number | null) ?? null,
+      forDate: (data.forDate as string | null) ?? null,
       createdAt: data.createdAt as number,
       updatedAt: data.updatedAt as number,
     };
@@ -132,6 +138,7 @@ export async function loadEntry(
     tags: (data.tags as string[]) ?? [],
     bookId: (data.bookId as string | null) ?? null,
     chapter: (data.chapter as number | null) ?? null,
+    forDate: (data.forDate as string | null) ?? null,
     createdAt: data.createdAt as number,
     updatedAt: data.updatedAt as number,
   };

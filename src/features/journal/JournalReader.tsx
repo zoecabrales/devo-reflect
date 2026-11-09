@@ -1,6 +1,7 @@
 import { TAB_ACTIVE_COLOR, Theme } from "@/src/constants/theme";
 import { BIBLE_BOOKS } from "@/src/services/bible";
 import { JournalEntry } from "@/src/services/journal";
+import { dateKeyOf, formatDateKey } from "@/src/utils/dateKey";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -24,14 +25,19 @@ const SECTIONS: {
   { key: "prayer", letter: "P", label: "Prayer" },
 ];
 
-function fmtDate(ts: number) {
-  return new Date(ts).toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: PHT,
-  });
+function fmtDate(ts: number, short = false) {
+  return new Date(ts).toLocaleDateString(
+    "en-US",
+    short
+      ? { month: "long", day: "numeric", timeZone: PHT }
+      : {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          timeZone: PHT,
+        },
+  );
 }
 
 /**
@@ -46,6 +52,9 @@ export function JournalReader({ entry, theme, onEdit, onDelete }: Props) {
     ? BIBLE_BOOKS.find((b) => b.id === entry.bookId)
     : undefined;
   const edited = entry.updatedAt - entry.createdAt > 60_000;
+  // Added from a calendar day other than the day it was written
+  const forOtherDay =
+    !!entry.forDate && entry.forDate !== dateKeyOf(entry.createdAt);
 
   return (
     <View
@@ -58,7 +67,14 @@ export function JournalReader({ entry, theme, onEdit, onDelete }: Props) {
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <View style={styles.headerText}>
           <Text style={[styles.date, { color: theme.textSecondary }]}>
-            {fmtDate(entry.createdAt)}
+            {forOtherDay
+              ? `For ${formatDateKey(entry.forDate!, {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })} · Written ${fmtDate(entry.createdAt, true)}`
+              : fmtDate(entry.createdAt)}
           </Text>
           <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
         </View>
