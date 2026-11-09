@@ -7,7 +7,12 @@ import {
 } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
-import { deleteEntry, JournalEntry, loadEntries } from "@/src/services/journal";
+import {
+  calcStreak,
+  deleteEntry,
+  JournalEntry,
+  loadEntries,
+} from "@/src/services/journal";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -28,32 +33,6 @@ const PSALM_119_11 = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-
-function getPHTDateStr(ts: number): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: PHT }).format(
-    new Date(ts),
-  );
-}
-
-/** Count consecutive days (ending today PHT) that have at least one entry. */
-function calcStreak(entries: JournalEntry[]): number {
-  if (!entries.length) return 0;
-  const unique = [...new Set(entries.map((e) => getPHTDateStr(e.createdAt)))]
-    .sort()
-    .reverse();
-  const today = getPHTDateStr(Date.now());
-  let streak = 0;
-  let cursor = today;
-  for (const date of unique) {
-    if (date === cursor) {
-      streak++;
-      const d = new Date(cursor);
-      d.setDate(d.getDate() - 1);
-      cursor = getPHTDateStr(d.getTime());
-    } else break;
-  }
-  return streak;
-}
 
 type MonthSection = { title: string; count: number; data: JournalEntry[] };
 

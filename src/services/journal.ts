@@ -142,3 +142,34 @@ export async function deleteEntry(uid: string, entryId: string): Promise<void> {
   if (!uid) return;
   await deleteDoc(doc(db, "users", uid, "journal", entryId));
 }
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+const PHT = "Asia/Manila";
+
+/** "YYYY-MM-DD" for a timestamp in Philippine Time. */
+function getPHTDateStr(ts: number): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: PHT }).format(
+    new Date(ts),
+  );
+}
+
+/** Count consecutive days (ending today PHT) that have at least one entry. */
+export function calcStreak(entries: JournalEntry[]): number {
+  if (!entries.length) return 0;
+  const unique = [...new Set(entries.map((e) => getPHTDateStr(e.createdAt)))]
+    .sort()
+    .reverse();
+  const today = getPHTDateStr(Date.now());
+  let streak = 0;
+  let cursor = today;
+  for (const date of unique) {
+    if (date === cursor) {
+      streak++;
+      const d = new Date(cursor);
+      d.setDate(d.getDate() - 1);
+      cursor = getPHTDateStr(d.getTime());
+    } else break;
+  }
+  return streak;
+}
