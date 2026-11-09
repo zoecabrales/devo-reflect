@@ -9,8 +9,11 @@ import {
     loadReadingPosition,
     ReadingPosition,
 } from "@/src/services/bible";
+import { DesktopHome } from "@/src/features/home/DesktopHome";
 import { loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
+import { loadEntries } from "@/src/services/journal";
+import { useIsDesktop } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -51,6 +54,14 @@ function getFormattedDate(): string {
     day: "numeric",
     timeZone: PHT,
   });
+}
+
+/** Midnight at the start of this week (Monday), local time. */
+function startOfWeek(): number {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.getTime();
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -430,6 +441,8 @@ export default function Home() {
     useState<ReadingPosition | null>(null);
   const [bookmarkCount, setBookmarkCount] = useState(0);
   const [showVerseGreeting, setShowVerseGreeting] = useState(false);
+  const [journalThisWeek, setJournalThisWeek] = useState<number | null>(null);
+  const isDesktop = useIsDesktop();
 
   const user = auth.currentUser;
   const displayName = user?.displayName?.split(" ")[0] ?? "Friend";
@@ -471,11 +484,36 @@ export default function Home() {
       loadBookmarks(user?.uid ?? "").then((bms) =>
         setBookmarkCount(bms.length),
       );
-    }, []),
+      // Only the desktop layout shows the weekly journal count
+      if (isDesktop && user) {
+        const since = startOfWeek();
+        loadEntries(user.uid)
+          .then((entries) =>
+            setJournalThisWeek(
+              entries.filter((e) => e.createdAt >= since).length,
+            ),
+          )
+          .catch(() => setJournalThisWeek(0));
+      }
+    }, [isDesktop]),
   );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {isDesktop ? (
+        <DesktopHome
+          theme={theme}
+          greeting={greeting}
+          displayName={displayName}
+          dateText={getFormattedDate()}
+          verse={verse}
+          loading={loading}
+          error={error}
+          onRetry={() => loadVerse()}
+          readingPosition={readingPosition}
+          journalThisWeek={journalThisWeek}
+        />
+      ) : (
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -520,6 +558,7 @@ export default function Home() {
         <BookmarkBadgeCard count={bookmarkCount} theme={theme} />
         <ConcordanceCard theme={theme} />
       </ScrollView>
+      )}
 
       {/* ── Verse Greeting Modal ─────────────────────────── */}
       <Modal

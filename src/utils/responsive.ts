@@ -1,6 +1,29 @@
-import { Dimensions, Platform } from "react-native";
+import { Dimensions, Platform, useWindowDimensions } from "react-native";
 
 const { width: SCREEN_W } = Dimensions.get("window");
+
+// ── Desktop web ────────────────────────────────────────────────────────────
+/** Web windows at least this wide get the desktop shell (top bar + sidebar). */
+export const DESKTOP_BREAKPOINT = 1024;
+/** Width of the desktop sidebar menu. */
+export const SIDEBAR_WIDTH = 240;
+/** Height of the desktop top bar. */
+export const TOP_BAR_HEIGHT = 72;
+
+const isDesktopWidth = (width: number) =>
+  Platform.OS === "web" && width >= DESKTOP_BREAKPOINT;
+
+/** Desktop shell at first load. Use useIsDesktop() in components so they react to resizing. */
+export const IS_DESKTOP_WEB = isDesktopWidth(SCREEN_W);
+
+/** True while the app is showing the desktop web shell; updates on window resize. */
+export function useIsDesktop(): boolean {
+  const { width } = useWindowDimensions();
+  return isDesktopWidth(width);
+}
+
+// Width available to screen content (the sidebar takes the rest on desktop)
+const CONTENT_AREA_W = IS_DESKTOP_WEB ? SCREEN_W - SIDEBAR_WIDTH : SCREEN_W;
 
 // ── Device detection ───────────────────────────────────────────────────────
 // iPad 11th Gen (M4) logical portrait width = 834 pt
@@ -20,7 +43,7 @@ export const CONTENT_MAX_WIDTH = 720;
  * Falls back to 20 pt on phones.
  */
 export const LIST_PADDING_H = IS_TABLET
-  ? Math.max(32, Math.round((SCREEN_W - CONTENT_MAX_WIDTH) / 2))
+  ? Math.max(32, Math.round((CONTENT_AREA_W - CONTENT_MAX_WIDTH) / 2))
   : 20;
 
 /**
@@ -28,7 +51,7 @@ export const LIST_PADDING_H = IS_TABLET
  * On tablet this matches LIST_PADDING_H so the content aligns across screens.
  */
 export const SCROLL_PADDING_H = IS_TABLET
-  ? Math.max(32, Math.round((SCREEN_W - CONTENT_MAX_WIDTH) / 2))
+  ? Math.max(32, Math.round((CONTENT_AREA_W - CONTENT_MAX_WIDTH) / 2))
   : 24;
 
 /**
