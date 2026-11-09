@@ -1,11 +1,11 @@
 import {
   AppModal,
-  BentoGrid,
   JournalListSkeleton,
   PageHeader,
   SheetHandle,
 } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
+import { JournalReader } from "@/src/features/journal/JournalReader";
 import { auth } from "@/src/services/firebase";
 import {
   calcStreak,
@@ -65,6 +65,8 @@ export default function Journal() {
   const [guideVisible, setGuideVisible] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const isDesktop = useIsDesktop();
+  // Desktop reading pane: the selected entry (defaults to the newest)
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const uid = auth.currentUser?.uid ?? "";
 
@@ -87,12 +89,17 @@ export default function Journal() {
 
   const streak = calcStreak(entries);
   const sections = groupByMonth(entries);
+  const selected = entries.find((e) => e.id === selectedId) ?? entries[0];
 
-  /** One entry card; `tile` = inside the desktop bento grid. */
-  function renderEntry(
-    item: JournalEntry,
-    { tile = false, featured = false } = {},
-  ) {
+  function openEditor(id: string) {
+    router.push({ pathname: "/(tabs)/journal-compose", params: { id } });
+  }
+
+  /**
+   * One entry card. Phones: tap opens the editor. Desktop: click selects it
+   * for the reading pane (`selected` highlights it; delete lives in the pane).
+   */
+  function renderEntry(item: JournalEntry, { selected = false } = {}) {
     const d = new Date(item.createdAt);
     const mon = new Intl.DateTimeFormat("en-US", {
       month: "short",
@@ -117,13 +124,10 @@ export default function Journal() {
             borderLeftColor: theme.primary,
             borderLeftWidth: 3,
           },
-          tile && desktopPage.tileFill,
+          selected && { borderColor: theme.text, borderLeftColor: theme.text },
         ]}
         onPress={() =>
-          router.push({
-            pathname: "/(tabs)/journal-compose",
-            params: { id: item.id },
-          })
+          isDesktop ? setSelectedId(item.id) : openEditor(item.id)
         }
         activeOpacity={0.75}
       >
@@ -165,25 +169,27 @@ export default function Journal() {
                   styles.cardPreview,
                   { color: theme.textSecondary },
                 ]}
-                numberOfLines={featured ? 5 : tile ? 3 : 2}
+                numberOfLines={2}
               >
                 {item.observation}
               </Text>
             )}
           </View>
 
-          {/* Delete */}
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            onPress={() => setDeleteTargetId(item.id)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="trash-outline"
-              size={18}
-              color={theme.textSecondary}
-            />
-          </TouchableOpacity>
+          {/* Delete (desktop: in the reading pane instead) */}
+          {!isDesktop && (
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={() => setDeleteTargetId(item.id)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="trash-outline"
+                size={18}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Verse chips */}
@@ -356,42 +362,49 @@ export default function Journal() {
           </View>
         </View>
       ) : isDesktop ? (
-        /* ── Desktop: a bento grid per month group ── */
-        <ScrollView contentContainerStyle={desktopPage.content}>
-          {sections.map((section, si) => (
-            <View key={section.title}>
-              <View style={[styles.groupHeader, styles.groupHeaderDesktop]}>
-                <Text
-                  style={[styles.groupLabel, { color: theme.textSecondary }]}
-                >
-                  {section.title}
-                </Text>
-                <Text
-                  style={[styles.groupCount, { color: theme.textSecondary }]}
-                >
-                  {section.count} {section.count === 1 ? "entry" : "entries"}
-                </Text>
+        /* ── Desktop: entry list beside a reading pane ── */
+        <View style={[desktopPage.content, styles.split]}>
+          <ScrollView
+            style={styles.splitList}
+            contentContainerStyle={styles.splitListContent}
+          >
+            {sections.map((section) => (
+              <View key={section.title}>
+                <View style={[styles.groupHeader, styles.groupHeaderDesktop]}>
+                  <Text
+                    style={[styles.groupLabel, { color: theme.textSecondary }]}
+                  >
+                    {section.title}
+                  </Text>
+                  <Text
+                    style={[styles.groupCount, { color: theme.textSecondary }]}
+                  >
+                    {section.count} {section.count === 1 ? "entry" : "entries"}
+                  </Text>
+                </View>
+                <View style={styles.splitCards}>
+                  {section.data.map((item) => (
+                    <View key={item.id}>
+                      {renderEntry(item, {
+                        selected: item.id === selected?.id,
+                      })}
+                    </View>
+                  ))}
+                </View>
               </View>
-              <BentoGrid
-                data={section.data}
-                keyExtractor={(item) => item.id}
-                spanFor={(item, index) =>
-                  (si === 0 && index === 0) ||
-                  item.observation.length > 160 ||
-                  item.scripture.length >= 3
-                    ? 2
-                    : 1
-                }
-                renderItem={(item, { index }) =>
-                  renderEntry(item, {
-                    tile: true,
-                    featured: si === 0 && index === 0,
-                  })
-                }
+            ))}
+          </ScrollView>
+          <View style={styles.splitReader}>
+            {selected && (
+              <JournalReader
+                entry={selected}
+                theme={theme}
+                onEdit={() => openEditor(selected.id)}
+                onDelete={() => setDeleteTargetId(selected.id)}
               />
-            </View>
-          ))}
-        </ScrollView>
+            )}
+          </View>
+        </View>
       ) : (
         /* ── Entry list ── */
         <SectionList

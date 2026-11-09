@@ -55,6 +55,30 @@ export const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   // Desktop bento grid: a little more room between month groups
+  // ── Desktop split view (list | reading pane) ───────────────
+  split: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 20,
+    paddingBottom: 24,
+  },
+  // Fixed share for the list; the reading pane takes the rest
+  splitList: {
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: "40%",
+  },
+  splitListContent: {
+    paddingBottom: 24,
+  },
+  splitCards: {
+    gap: 10,
+  },
+  splitReader: {
+    flex: 1,
+    minWidth: 0,
+    paddingTop: 20,
+  },
   groupHeaderDesktop: {
     paddingTop: 20,
     paddingBottom: 12,
