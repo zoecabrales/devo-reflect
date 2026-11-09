@@ -45,7 +45,7 @@ export function DesktopTopBar() {
             { backgroundColor: theme.surface, borderColor: theme.border },
           ]}
         >
-          <Ionicons name="book-outline" size={20} color={theme.text} />
+          <Ionicons name="book-outline" size={16} color={theme.text} />
         </View>
         <Text style={[styles.brandText, { color: theme.text }]}>
           Devo Reflect
@@ -61,7 +61,7 @@ export function DesktopTopBar() {
             accessibilityRole="button"
             accessibilityLabel={a.label}
           >
-            <Ionicons name={a.icon} size={24} color={theme.text} />
+            <Ionicons name={a.icon} size={20} color={theme.text} />
           </Pressable>
         ))}
       </View>
@@ -75,31 +75,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   brand: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 10,
   },
   logoTile: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
   },
   brandText: {
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.5,
   },
   actions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 4,
   },
   actionButton: {
     padding: 6,

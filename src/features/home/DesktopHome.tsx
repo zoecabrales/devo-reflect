@@ -134,7 +134,7 @@ export function DesktopHome({
             >
               <Ionicons
                 name={col.icon as keyof typeof Ionicons.glyphMap}
-                size={20}
+                size={16}
                 color={theme.text}
               />
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -160,7 +160,7 @@ export function DesktopHome({
               Read the Word
             </Text>
           </View>
-          <Ionicons name="arrow-forward" size={24} color={TAB_ACTIVE_COLOR} />
+          <Ionicons name="arrow-forward" size={20} color={TAB_ACTIVE_COLOR} />
         </HoverCard>
       </View>
     </ScrollView>
@@ -229,33 +229,33 @@ function HoverCard({
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingHorizontal: 40,
-    paddingTop: 40,
-    paddingBottom: 56,
+    paddingHorizontal: 32,
+    paddingTop: 28,
+    paddingBottom: 40,
   },
   page: {
     width: "100%",
-    maxWidth: 1240,
+    maxWidth: 1080,
     alignSelf: "center",
   },
   greeting: {
-    fontSize: 34,
+    fontSize: 26,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.3,
   },
   date: {
-    fontSize: 17,
-    marginTop: 6,
-    marginBottom: 28,
+    fontSize: 14,
+    marginTop: 4,
+    marginBottom: 20,
   },
   card: {
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 12,
+    padding: 18,
   },
   topRow: {
     flexDirection: "row",
-    gap: 18,
+    gap: 14,
   },
   verseCard: {
     flex: 3,
@@ -264,71 +264,71 @@ const styles = StyleSheet.create({
     flex: 2,
   },
   sectionLabel: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "600",
     letterSpacing: 1.1,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   verseRef: {
-    fontSize: 24,
+    fontSize: 19,
     fontWeight: "700",
-    marginBottom: 14,
+    marginBottom: 10,
   },
   verseText: {
-    fontSize: 19,
-    lineHeight: 30,
+    fontSize: 15,
+    lineHeight: 24,
     fontStyle: "italic",
   },
   link: {
-    marginTop: 20,
+    marginTop: 14,
     alignSelf: "flex-start",
   },
   linkText: {
-    fontSize: 16,
+    fontSize: 14,
     color: TAB_ACTIVE_COLOR,
   },
   walkCount: {
-    fontSize: 42,
+    fontSize: 32,
     fontWeight: "700",
-    lineHeight: 50,
+    lineHeight: 38,
   },
   walkCaption: {
-    fontSize: 16,
-    marginTop: 8,
+    fontSize: 14,
+    marginTop: 6,
   },
   walkDivider: {
     height: StyleSheet.hairlineWidth,
-    marginTop: 24,
+    marginTop: 18,
   },
   browseLabel: {
-    marginTop: 32,
+    marginTop: 24,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    rowGap: 16,
+    rowGap: 12,
   },
   sectionCard: {
-    width: "32.4%",
-    paddingVertical: 18,
-    paddingHorizontal: 18,
-    gap: 6,
+    width: "32.6%",
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 4,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "700",
-    marginTop: 6,
+    marginTop: 4,
   },
   sectionLink: {
-    fontSize: 14,
+    fontSize: 12,
   },
   quickCard: {
-    marginTop: 24,
+    marginTop: 18,
     flexDirection: "row",
     alignItems: "center",
   },
   quickTitle: {
-    fontSize: 22,
+    fontSize: 17,
   },
 });

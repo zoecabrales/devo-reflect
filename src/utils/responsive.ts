@@ -6,9 +6,14 @@ const { width: SCREEN_W } = Dimensions.get("window");
 /** Web windows at least this wide get the desktop shell (top bar + sidebar). */
 export const DESKTOP_BREAKPOINT = 1024;
 /** Width of the desktop sidebar menu. */
-export const SIDEBAR_WIDTH = 240;
+export const SIDEBAR_WIDTH = 200;
 /** Height of the desktop top bar. */
-export const TOP_BAR_HEIGHT = 72;
+export const TOP_BAR_HEIGHT = 56;
+/**
+ * Scale applied (CSS zoom) to tabs that still use their mobile layout inside
+ * the desktop shell, so they match the more compact desktop Home.
+ */
+export const DESKTOP_CONTENT_ZOOM = 0.85;
 
 const isDesktopWidth = (width: number) =>
   Platform.OS === "web" && width >= DESKTOP_BREAKPOINT;

@@ -89,7 +89,7 @@ export function DesktopSidebar({ state, navigation }: TabBarProps) {
       >
         <Ionicons
           name={active ? item.activeIcon : item.icon}
-          size={22}
+          size={18}
           color={color}
         />
         <Text
@@ -120,32 +120,32 @@ export function DesktopSidebar({ state, navigation }: TabBarProps) {
 const styles = StyleSheet.create({
   sidebar: {
     width: SIDEBAR_WIDTH,
-    paddingHorizontal: 16,
-    paddingTop: 32,
-    gap: 6,
+    paddingHorizontal: 12,
+    paddingTop: 24,
+    gap: 2,
   },
   menuLabel: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "600",
     letterSpacing: 1.2,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   item: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 12,
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 9,
+    borderRadius: 8,
   },
   itemLabel: {
-    fontSize: 17,
+    fontSize: 14,
   },
   itemLabelActive: {
-    fontWeight: "700",
+    fontWeight: "600",
   },
   spacer: {
-    height: 24,
+    height: 16,
   },
 });

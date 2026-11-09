@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
+import { IS_TABLET, LIST_PADDING_H } from "@/src/utils/responsive";
 import { useEffect, useRef } from "react";
 import { Animated, DimensionValue, StyleSheet, View } from "react-native";
 
@@ -93,7 +94,10 @@ export function VerseCardSkeleton() {
 export function JournalListSkeleton() {
   const { theme } = useAppTheme();
   return (
-    <View style={sk.list}>
+    // Match the journal list's side padding on tablet / desktop
+    <View
+      style={[sk.list, IS_TABLET && { paddingHorizontal: LIST_PADDING_H }]}
+    >
       {[0, 1, 2].map((i) => (
         <View
           key={i}

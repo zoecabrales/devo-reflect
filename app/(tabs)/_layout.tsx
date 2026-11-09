@@ -8,13 +8,16 @@ import {
     signOutUser,
 } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
-import { useIsDesktop } from "@/src/utils/responsive";
+import { DESKTOP_CONTENT_ZOOM, useIsDesktop } from "@/src/utils/responsive";
 import { hideSplashOnce } from "@/src/utils/splashGuard";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs, usePathname, useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
-import { AppState, AppStateStatus, Text, View } from "react-native";
+import { AppState, AppStateStatus, Text, View, ViewStyle } from "react-native";
+
+// Main tabs that reuse their mobile layout on desktop and get scaled down there
+const ZOOMED_DESKTOP_TABS = new Set(["journal", "growth", "bookmarks", "settings"]);
 
 type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";
 
@@ -99,6 +102,11 @@ export default function TabsLayout() {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarPosition: isDesktop ? "left" : "bottom",
+          // `zoom` is a web-only CSS property, so it isn't in ViewStyle's type
+          sceneStyle:
+            isDesktop && ZOOMED_DESKTOP_TABS.has(route.name)
+              ? ({ zoom: DESKTOP_CONTENT_ZOOM } as ViewStyle)
+              : undefined,
           tabBarActiveTintColor: TAB_ACTIVE_COLOR,
           tabBarInactiveTintColor: theme.textSecondary,
           tabBarStyle: {
