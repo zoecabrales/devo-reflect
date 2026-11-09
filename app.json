@@ -25,7 +25,8 @@
       "package": "com.jirehzoe.devoreflect"
     },
     "web": {
-      "output": "static",
+      "bundler": "metro",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [

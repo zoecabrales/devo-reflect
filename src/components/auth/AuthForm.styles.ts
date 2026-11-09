@@ -90,4 +90,92 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: "#555",
   },
+
+  // ── Wide web layout (brand panel | divider | form) ───────────────────────
+  wideRoot: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "#f2f2f2",
+  },
+  brandPanel: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 48,
+  },
+  brandTile: {
+    width: 116,
+    height: 116,
+    borderRadius: 28,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  brandTitle: {
+    fontSize: 40,
+    fontFamily: "Oswald_700Bold",
+    color: "#111",
+    letterSpacing: 0.4,
+  },
+  brandTagline: {
+    fontSize: 18,
+    color: "#555",
+    marginTop: 8,
+  },
+  wideDivider: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: "#c8c8c8",
+    marginVertical: 36,
+  },
+  formPanel: {
+    flex: 1,
+  },
+  formPanelContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 80,
+    paddingVertical: 48,
+  },
+  formColumn: {
+    width: "100%",
+    maxWidth: 472,
+    gap: 16,
+  },
+  wideHeading: {
+    fontSize: 30,
+    fontFamily: "Oswald_700Bold",
+    color: "#111",
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 2,
+  },
+  wideButton: {
+    marginTop: 8,
+  },
+  wideLinksRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  wideLink: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111",
+    textDecorationLine: "underline",
+  },
+  wideLegalText: {
+    textAlign: "left",
+    paddingHorizontal: 0,
+    marginBottom: 0,
+    marginTop: 8,
+  },
 });
