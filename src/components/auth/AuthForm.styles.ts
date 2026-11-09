@@ -94,14 +94,23 @@ export const styles = StyleSheet.create({
   // ── Wide web layout (brand panel | divider | form) ───────────────────────
   wideRoot: {
     flex: 1,
-    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#f2f2f2",
+  },
+  // Caps the layout so both halves stay grouped around the centre divider
+  wideInner: {
+    flex: 1,
+    flexDirection: "row",
+    width: "100%",
+    maxWidth: 1120,
   },
   brandPanel: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 48,
+    // Vertical only: side padding would make this half wider than the
+    // form half and push the divider off-centre.
+    paddingVertical: 48,
   },
   brandTile: {
     width: 116,
@@ -138,7 +147,8 @@ export const styles = StyleSheet.create({
   formPanelContent: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingHorizontal: 80,
+    alignItems: "center",
+    paddingHorizontal: 48,
     paddingVertical: 48,
   },
   formColumn: {

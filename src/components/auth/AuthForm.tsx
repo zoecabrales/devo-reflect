@@ -387,28 +387,30 @@ export default function AuthForm() {
   if (isWide) {
     return (
       <View style={styles.wideRoot}>
-        {/* Left: brand panel */}
-        <View style={styles.brandPanel}>
-          <View style={styles.brandTile}>
-            <Ionicons name="book" size={56} color="#111" />
+        <View style={styles.wideInner}>
+          {/* Left: brand panel */}
+          <View style={styles.brandPanel}>
+            <View style={styles.brandTile}>
+              <Ionicons name="book" size={56} color="#111" />
+            </View>
+            <Text style={styles.brandTitle}>Devo Reflect</Text>
+            <Text style={styles.brandTagline}>Read. Reflect. Pray.</Text>
           </View>
-          <Text style={styles.brandTitle}>Devo Reflect</Text>
-          <Text style={styles.brandTagline}>Read. Reflect. Pray.</Text>
+
+          <View style={styles.wideDivider} />
+
+          {/* Right: form panel */}
+          <ScrollView
+            style={styles.formPanel}
+            contentContainerStyle={styles.formPanelContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.formColumn}>
+              {form}
+              {legalFooter}
+            </View>
+          </ScrollView>
         </View>
-
-        <View style={styles.wideDivider} />
-
-        {/* Right: form panel */}
-        <ScrollView
-          style={styles.formPanel}
-          contentContainerStyle={styles.formPanelContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.formColumn}>
-            {form}
-            {legalFooter}
-          </View>
-        </ScrollView>
       </View>
     );
   }
