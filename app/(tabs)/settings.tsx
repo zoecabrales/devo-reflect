@@ -18,6 +18,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { SettingsAside } from "@/src/features/settings/SettingsAside";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
 import { styles } from "@/src/styles/settings.styles";
 import { useIsDesktop } from "@/src/utils/responsive";
@@ -108,12 +109,20 @@ export default function Settings() {
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       {/* Header */}
-      <PageHeader title="Settings" subtitle={email || undefined} />
+      {/* Desktop shows the email in the account card instead */}
+      <PageHeader
+        title="Settings"
+        subtitle={isDesktop ? undefined : email || undefined}
+      />
 
       <ScrollView
-        contentContainerStyle={[styles.content, isDesktop && desktopPage.content]}
+        contentContainerStyle={[
+          styles.content,
+          // Desktop: settings on the left, account / preview / about on the right
+          isDesktop && [desktopPage.content, styles.desktopRow],
+        ]}
       >
-        <View style={[styles.contentInner, isDesktop && desktopPage.narrow]}>
+        <View style={[styles.contentInner, isDesktop && styles.desktopMain]}>
           {/* Appearance section */}
           <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
             Appearance
@@ -316,6 +325,11 @@ export default function Settings() {
             />
           </View>
         </View>
+        {isDesktop && (
+          <View style={styles.desktopAside}>
+            <SettingsAside />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

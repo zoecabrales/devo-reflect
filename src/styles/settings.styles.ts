@@ -14,6 +14,20 @@ export const styles = StyleSheet.create({
   contentInner: {
     gap: 8,
   },
+  // ── Desktop two-column layout ──
+  desktopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 28,
+  },
+  desktopMain: {
+    flex: 3,
+    minWidth: 0,
+  },
+  desktopAside: {
+    flex: 2,
+    minWidth: 0,
+  },
 
   // ── Section ───────────────────────────────────────────────
   sectionLabel: {

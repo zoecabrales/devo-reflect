@@ -24,14 +24,6 @@ export const desktopPage = StyleSheet.create({
     paddingHorizontal: PAGE_PADDING_H,
     paddingBottom: 48,
   },
-  /**
-   * Caps form-like pages (Settings, Growth) inside `content`, keeping the
-   * same left edge as the header.
-   */
-  narrow: {
-    width: "100%",
-    maxWidth: 760,
-  },
   /** Makes a card fill its bento tile so cards in a row match heights. */
   tileFill: {
     flex: 1,
