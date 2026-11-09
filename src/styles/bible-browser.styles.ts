@@ -181,6 +181,19 @@ export const styles = StyleSheet.create({
     flex: 1,
     letterSpacing: 0.15,
   },
+  // Desktop two-page book view: serif type for an e-reader feel
+  verseTextBook: {
+    fontFamily: 'Georgia, "Iowan Old Style", "Times New Roman", serif',
+    fontSize: 16,
+    lineHeight: 26,
+    letterSpacing: 0,
+  },
+  verseNumBook: {
+    fontSize: 10,
+  },
+  verseNumColBook: {
+    paddingTop: 2,
+  },
   // ── Bookmark Confirmation Popup ───────────────────────────
   confirmOverlay: {
     flex: 1,

@@ -28,10 +28,18 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BookContents } from "@/src/features/bible/BookContents";
+import {
+  BOOK_MAX_WIDTH,
+  BOOK_SIDE_PADDING,
+  BookSpread,
+} from "@/src/features/bible/BookSpread";
 import { styles } from "@/src/styles/bible-browser.styles";
+import { SIDEBAR_WIDTH, useIsDesktop } from "@/src/utils/responsive";
 
 type Screen = "books" | "chapters" | "verses";
 
@@ -160,6 +168,18 @@ export default function BibleBrowser() {
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const verseOffsets = useRef<Map<number, number>>(new Map());
+  // Desktop book view: verse to open the spread at ("end" = last spread)
+  const [focusVerse, setFocusVerse] = useState<number | "end" | null>(null);
+  const isDesktop = useIsDesktop();
+  const { width: windowWidth } = useWindowDimensions();
+  // Desktop chapter view: left/right inset of the book, so the header and
+  // search bar line up with its edges
+  const bookInset =
+    Math.max(0, windowWidth - SIDEBAR_WIDTH - BOOK_MAX_WIDTH) / 2 +
+    BOOK_SIDE_PADDING;
+  // Book list (table of contents) and chapter (reader) use the book frame
+  const bookAligned =
+    isDesktop && (screen === "verses" || screen === "books");
 
   // Deep-link: auto-open a saved chapter when bookId+chapter params are present.
   // Depends on the params so it re-fires whenever the user navigates here from
@@ -173,12 +193,14 @@ export default function BibleBrowser() {
           (highlightParam === "true" || underlineParam === "true") && verseParam
             ? parseInt(verseParam, 10)
             : undefined;
+        const v = verseParam ? parseInt(verseParam, 10) : NaN;
         openChapter(
           found,
           ch,
           undefined,
           targetVerse,
           underlineParam === "true",
+          isNaN(v) ? null : v,
         );
       }
     }
@@ -191,6 +213,15 @@ export default function BibleBrowser() {
       setUnderlined(new Set());
     }
   }, [searchQuery]);
+
+  function handleSearchChange(text: string) {
+    setSearchQuery(text);
+    // Book view: open the spread holding the first match
+    const q = text.trim().toLowerCase();
+    if (!q) return;
+    const hit = verses.find((v) => v.text.toLowerCase().includes(q));
+    if (hit) setFocusVerse(hit.verse);
+  }
 
   function goBack() {
     setUnderlined(new Set()); // Clear temporary underlines when navigating
@@ -216,6 +247,8 @@ export default function BibleBrowser() {
     ver?: BibleVersion,
     autoHighlightVerse?: number,
     autoUnderlineVerse: boolean = false,
+    /** Desktop book view: verse to open at, or "end" for the last spread. */
+    focus: number | "end" | null = null,
   ) {
     setBook(b);
     setChapter(ch);
@@ -223,6 +256,7 @@ export default function BibleBrowser() {
     setLoading(true);
     setError(false);
     setVerses([]);
+    setFocusVerse(focus);
     setSearchVisible(false);
     setSearchQuery("");
     try {
@@ -354,6 +388,90 @@ export default function BibleBrowser() {
     });
   }
 
+  /** Previous / next chapter across book boundaries (null at either end). */
+  function neighbourChapter(dir: -1 | 1): { b: BibleBook; ch: number } | null {
+    if (!book || !chapter) return null;
+    const ch = chapter + dir;
+    if (ch >= 1 && ch <= book.chapters) return { b: book, ch };
+    const i = BIBLE_BOOKS.findIndex((x) => x.id === book.id) + dir;
+    const nb = BIBLE_BOOKS[i];
+    if (!nb) return null;
+    return { b: nb, ch: dir === 1 ? 1 : nb.chapters };
+  }
+  const prevChapter = neighbourChapter(-1);
+  const nextChapter = neighbourChapter(1);
+
+  /** One verse row; `bookMode` = desktop two-page book (serif, no scroll sync). */
+  function renderVerse(v: ChapterVerse, bookMode = false) {
+    const key = verseKey(book!.id, chapter!, v.verse);
+    const highlightColor = highlights.get(key);
+    const isBookmarked = bookmarked.has(key);
+    const isJournaled = journaled.has(key);
+    const isUnderlined = underlined.has(key);
+    return (
+      <TouchableOpacity
+        key={v.verse}
+        style={styles.verseRow}
+        onPress={() => handleVerseTap(v)}
+        onLongPress={() => handleVerseLongPress(v)}
+        delayLongPress={400}
+        activeOpacity={0.75}
+        onLayout={
+          bookMode
+            ? undefined
+            : (e) => {
+                const y = e.nativeEvent.layout.y;
+                verseOffsets.current.set(v.verse, y);
+                // If this is the deep-linked target verse, scroll to it now
+                // that we have its exact position (onLayout fires after paint)
+                if (verseParam && v.verse === parseInt(verseParam, 10)) {
+                  scrollViewRef.current?.scrollTo({ y, animated: false });
+                }
+              }
+        }
+      >
+        <View style={[styles.verseNumCol, bookMode && styles.verseNumColBook]}>
+          <Text
+            style={[
+              styles.verseNum,
+              bookMode && styles.verseNumBook,
+              { color: theme.text },
+            ]}
+          >
+            {v.verse}
+          </Text>
+          {isBookmarked && (
+            <Ionicons
+              name="bookmark"
+              size={9}
+              color={theme.primary}
+              style={styles.verseBookmarkIcon}
+            />
+          )}
+          {isJournaled && (
+            <Ionicons
+              name="book"
+              size={9}
+              color={theme.textSecondary}
+              style={styles.verseBookmarkIcon}
+            />
+          )}
+        </View>
+        <HighlightedVerseText
+          text={v.text}
+          query={searchQuery}
+          bookmarkColor={highlightColor}
+          underline={isUnderlined}
+          textStyle={[
+            styles.verseText,
+            bookMode && styles.verseTextBook,
+            { color: theme.text },
+          ]}
+        />
+      </TouchableOpacity>
+    );
+  }
+
   const headerTitle =
     screen === "books"
       ? (activeCollection?.label ?? "Bible")
@@ -385,7 +503,12 @@ export default function BibleBrowser() {
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          bookAligned && { paddingHorizontal: bookInset },
+        ]}
+      >
         <TouchableOpacity
           onPress={goBack}
           style={[styles.backBtn, { borderColor: theme.border }]}
@@ -439,6 +562,7 @@ export default function BibleBrowser() {
           style={[
             styles.searchBar,
             { borderColor: theme.border, backgroundColor: theme.surface },
+            bookAligned && { marginHorizontal: bookInset },
           ]}
         >
           <Ionicons name="search" size={15} color={theme.textSecondary} />
@@ -447,7 +571,7 @@ export default function BibleBrowser() {
             placeholder="Search in chapter…"
             placeholderTextColor={theme.textSecondary}
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={handleSearchChange}
             autoFocus
             returnKeyType="search"
             clearButtonMode="never"
@@ -709,8 +833,18 @@ export default function BibleBrowser() {
         </View>
       </AppModal>
 
-      {/* Books */}
-      {screen === "books" && (
+      {/* Books — desktop: two-column table of contents */}
+      {screen === "books" && isDesktop && (
+        <BookContents
+          sections={sections}
+          theme={theme}
+          onSelect={(b) => {
+            setBook(b);
+            setScreen("chapters");
+          }}
+        />
+      )}
+      {screen === "books" && !isDesktop && (
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
@@ -788,66 +922,48 @@ export default function BibleBrowser() {
               </Text>
             </TouchableOpacity>
           </View>
+        ) : isDesktop ? (
+          <BookSpread
+            items={verses}
+            keyOf={(v) => v.verse}
+            renderItem={(v) => renderVerse(v, true)}
+            theme={theme}
+            focus={
+              focusVerse === "end"
+                ? "end"
+                : focusVerse === null
+                  ? null
+                  : Math.max(
+                      0,
+                      verses.findIndex((v) => v.verse === focusVerse),
+                    )
+            }
+            onPrevChapter={
+              prevChapter
+                ? () =>
+                    // Turning back opens the previous chapter at its end
+                    openChapter(
+                      prevChapter.b,
+                      prevChapter.ch,
+                      undefined,
+                      undefined,
+                      false,
+                      "end",
+                    )
+                : undefined
+            }
+            onNextChapter={
+              nextChapter
+                ? () => openChapter(nextChapter.b, nextChapter.ch)
+                : undefined
+            }
+          />
         ) : (
           <ScrollView
             ref={scrollViewRef}
             contentContainerStyle={styles.versesList}
           >
-            {verses.map((v) => {
-              const key = verseKey(book!.id, chapter!, v.verse);
-              const highlightColor = highlights.get(key);
-              const isBookmarked = bookmarked.has(key);
-              const isJournaled = journaled.has(key);
-              const isUnderlined = underlined.has(key);
-              return (
-                <TouchableOpacity
-                  key={v.verse}
-                  style={styles.verseRow}
-                  onPress={() => handleVerseTap(v)}
-                  onLongPress={() => handleVerseLongPress(v)}
-                  delayLongPress={400}
-                  activeOpacity={0.75}
-                  onLayout={(e) => {
-                    const y = e.nativeEvent.layout.y;
-                    verseOffsets.current.set(v.verse, y);
-                    // If this is the deep-linked target verse, scroll to it now
-                    // that we have its exact position (onLayout fires after paint)
-                    if (verseParam && v.verse === parseInt(verseParam, 10)) {
-                      scrollViewRef.current?.scrollTo({ y, animated: false });
-                    }
-                  }}
-                >
-                  <View style={styles.verseNumCol}>
-                    <Text style={[styles.verseNum, { color: theme.text }]}>
-                      {v.verse}
-                    </Text>
-                    {isBookmarked && (
-                      <Ionicons
-                        name="bookmark"
-                        size={9}
-                        color={theme.primary}
-                        style={styles.verseBookmarkIcon}
-                      />
-                    )}
-                    {isJournaled && (
-                      <Ionicons
-                        name="book"
-                        size={9}
-                        color={theme.textSecondary}
-                        style={styles.verseBookmarkIcon}
-                      />
-                    )}
-                  </View>
-                  <HighlightedVerseText
-                    text={v.text}
-                    query={searchQuery}
-                    bookmarkColor={highlightColor}
-                    underline={isUnderlined}
-                    textStyle={[styles.verseText, { color: theme.text }]}
-                  />
-                </TouchableOpacity>
-              );
-            })}
+            {verses.map((v) => renderVerse(v))}
           </ScrollView>
         ))}
     </SafeAreaView>
