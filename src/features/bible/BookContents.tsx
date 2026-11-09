@@ -103,6 +103,72 @@ export function BookContents({ sections, theme, onSelect }: Props) {
   );
 }
 
+/**
+ * Desktop chapter picker for one book, on the same book frame as the table
+ * of contents: compact chapter numbers in left-aligned rows.
+ */
+export function ChapterContents({
+  book,
+  theme,
+  onSelect,
+}: {
+  book: BibleBook;
+  theme: Theme;
+  onSelect: (chapter: number) => void;
+}) {
+  const chapters = Array.from({ length: book.chapters }, (_, i) => i + 1);
+  return (
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <View style={bookFrame.outer}>
+        <View
+          style={[
+            bookFrame.book,
+            styles.book,
+            styles.chapterPage,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+          ]}
+        >
+          <View style={[styles.columnHeader, styles.chapterHeader]}>
+            <Text
+              style={[bibleStyles.sectionHeaderText, { color: theme.text }]}
+            >
+              Chapters
+            </Text>
+            <Text
+              style={[bibleStyles.sectionHeaderText, { color: theme.text }]}
+            >
+              {book.chapters}
+            </Text>
+          </View>
+          <View style={styles.chapterGrid}>
+            {chapters.map((ch) => (
+              <Pressable
+                key={ch}
+                onPress={() => onSelect(ch)}
+                accessibilityRole="link"
+                accessibilityLabel={`${book.label} chapter ${ch}`}
+                style={({ hovered }: { hovered?: boolean }) => [
+                  styles.chapterBtn,
+                  {
+                    borderColor: hovered ? theme.textSecondary : theme.border,
+                    backgroundColor: hovered
+                      ? theme.background
+                      : "transparent",
+                  },
+                ]}
+              >
+                <Text style={[styles.chapterNum, { color: theme.text }]}>
+                  {ch}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
@@ -139,6 +205,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderStyle: "dotted",
     opacity: 0.5,
+  },
+  // ── Chapter picker ──
+  chapterPage: {
+    flexDirection: "column",
+    paddingHorizontal: 44,
+    paddingTop: 32,
+    paddingBottom: 36,
+  },
+  chapterHeader: {
+    paddingHorizontal: 0,
+  },
+  chapterGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  chapterBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 9,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chapterNum: {
+    fontSize: 13,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
   },
   count: {
     fontVariant: ["tabular-nums"],

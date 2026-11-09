@@ -32,7 +32,10 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BookContents } from "@/src/features/bible/BookContents";
+import {
+  BookContents,
+  ChapterContents,
+} from "@/src/features/bible/BookContents";
 import {
   BOOK_MAX_WIDTH,
   BOOK_SIDE_PADDING,
@@ -177,9 +180,8 @@ export default function BibleBrowser() {
   const bookInset =
     Math.max(0, windowWidth - SIDEBAR_WIDTH - BOOK_MAX_WIDTH) / 2 +
     BOOK_SIDE_PADDING;
-  // Book list (table of contents) and chapter (reader) use the book frame
-  const bookAligned =
-    isDesktop && (screen === "verses" || screen === "books");
+  // Desktop: book list, chapter picker and reader all use the book frame
+  const bookAligned = isDesktop;
 
   // Deep-link: auto-open a saved chapter when bookId+chapter params are present.
   // Depends on the params so it re-fires whenever the user navigates here from
@@ -882,8 +884,15 @@ export default function BibleBrowser() {
         />
       )}
 
-      {/* Chapters */}
-      {screen === "chapters" && book && (
+      {/* Chapters — desktop: compact picker on the book frame */}
+      {screen === "chapters" && book && isDesktop && (
+        <ChapterContents
+          book={book}
+          theme={theme}
+          onSelect={(ch) => openChapter(book, ch)}
+        />
+      )}
+      {screen === "chapters" && book && !isDesktop && (
         <ScrollView contentContainerStyle={styles.chapterGrid}>
           {Array.from({ length: book.chapters }, (_, i) => i + 1).map((ch) => (
             <TouchableOpacity
