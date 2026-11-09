@@ -1,5 +1,6 @@
-import { VerseCardSkeleton } from "@/src/components";
+import { PageHeader, VerseCardSkeleton } from "@/src/components";
 import { TAB_ACTIVE_COLOR, Theme } from "@/src/constants/theme";
+import { desktopPage } from "@/src/styles/desktopPage.styles";
 import {
   BIBLE_COLLECTIONS,
   BibleVerse,
@@ -41,19 +42,9 @@ export function DesktopHome({
   const card = { backgroundColor: theme.surface, borderColor: theme.border };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={styles.scroll}
-    >
-      <View style={styles.page}>
-        {/* ── Greeting ── */}
-        <Text style={[styles.greeting, { color: theme.text }]}>
-          {greeting}, {displayName}
-        </Text>
-        <Text style={[styles.date, { color: theme.textSecondary }]}>
-          {dateText}
-        </Text>
-
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <PageHeader title={`${greeting}, ${displayName}`} subtitle={dateText} />
+      <ScrollView contentContainerStyle={desktopPage.content}>
         {/* ── Verse of the day + daily walk ── */}
         <View style={styles.topRow}>
           <View style={[styles.card, styles.verseCard, card]}>
@@ -134,7 +125,7 @@ export function DesktopHome({
             >
               <Ionicons
                 name={col.icon as keyof typeof Ionicons.glyphMap}
-                size={16}
+                size={19}
                 color={theme.text}
               />
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -160,10 +151,10 @@ export function DesktopHome({
               Read the Word
             </Text>
           </View>
-          <Ionicons name="arrow-forward" size={20} color={TAB_ACTIVE_COLOR} />
+          <Ionicons name="arrow-forward" size={24} color={TAB_ACTIVE_COLOR} />
         </HoverCard>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -228,34 +219,14 @@ function HoverCard({
 // ── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  scroll: {
-    paddingHorizontal: 32,
-    paddingTop: 28,
-    paddingBottom: 40,
-  },
-  page: {
-    width: "100%",
-    maxWidth: 1080,
-    alignSelf: "center",
-  },
-  greeting: {
-    fontSize: 26,
-    fontFamily: "Oswald_700Bold",
-    letterSpacing: 0.3,
-  },
-  date: {
-    fontSize: 14,
-    marginTop: 4,
-    marginBottom: 20,
-  },
   card: {
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 18,
+    borderRadius: 14,
+    padding: 21,
   },
   topRow: {
     flexDirection: "row",
-    gap: 14,
+    gap: 16,
   },
   verseCard: {
     flex: 3,
@@ -264,71 +235,71 @@ const styles = StyleSheet.create({
     flex: 2,
   },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "600",
     letterSpacing: 1.1,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   verseRef: {
-    fontSize: 19,
+    fontSize: 22,
     fontWeight: "700",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   verseText: {
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 18,
+    lineHeight: 28,
     fontStyle: "italic",
   },
   link: {
-    marginTop: 14,
+    marginTop: 16,
     alignSelf: "flex-start",
   },
   linkText: {
-    fontSize: 14,
+    fontSize: 16,
     color: TAB_ACTIVE_COLOR,
   },
   walkCount: {
-    fontSize: 32,
+    fontSize: 38,
     fontWeight: "700",
-    lineHeight: 38,
+    lineHeight: 45,
   },
   walkCaption: {
-    fontSize: 14,
-    marginTop: 6,
+    fontSize: 16,
+    marginTop: 7,
   },
   walkDivider: {
     height: StyleSheet.hairlineWidth,
-    marginTop: 18,
+    marginTop: 21,
   },
   browseLabel: {
-    marginTop: 24,
+    marginTop: 28,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    rowGap: 12,
+    rowGap: 14,
   },
   sectionCard: {
     width: "32.6%",
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    gap: 4,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 5,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: "700",
-    marginTop: 4,
+    marginTop: 5,
   },
   sectionLink: {
-    fontSize: 12,
+    fontSize: 14,
   },
   quickCard: {
-    marginTop: 18,
+    marginTop: 21,
     flexDirection: "row",
     alignItems: "center",
   },
   quickTitle: {
-    fontSize: 17,
+    fontSize: 20,
   },
 });

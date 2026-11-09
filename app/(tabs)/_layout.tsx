@@ -16,8 +16,15 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus, Text, View, ViewStyle } from "react-native";
 
-// Main tabs that reuse their mobile layout on desktop and get scaled down there
-const ZOOMED_DESKTOP_TABS = new Set(["journal", "growth", "bookmarks", "settings"]);
+// Main tabs rendered at the shared desktop scale, so headers and content
+// sizes match across tabs
+const ZOOMED_DESKTOP_TABS = new Set([
+  "home",
+  "journal",
+  "growth",
+  "bookmarks",
+  "settings",
+]);
 
 type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";
 

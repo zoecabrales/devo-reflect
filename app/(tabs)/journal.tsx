@@ -2,6 +2,7 @@ import {
   AppModal,
   BentoGrid,
   JournalListSkeleton,
+  PageHeader,
   SheetHandle,
 } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
@@ -266,21 +267,14 @@ export default function Journal() {
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      {/* ── Header ── */}
-      <View style={[styles.header, isDesktop && desktopPage.header]}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>
-              Journal
-            </Text>
-            <Text
-              style={[styles.headerSubtitle, { color: theme.textSecondary }]}
-            >
-              {entries.length > 0
-                ? `${entries.length} entr${entries.length === 1 ? "y" : "ies"}`
-                : "Start your first SOAP entry"}
-            </Text>
-          </View>
+      <PageHeader
+        title="Journal"
+        subtitle={
+          entries.length > 0
+            ? `${entries.length} entr${entries.length === 1 ? "y" : "ies"}`
+            : "Start your first SOAP entry"
+        }
+        right={
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={[styles.helpBtn, { borderColor: theme.border }]}
@@ -329,8 +323,8 @@ export default function Journal() {
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+        }
+      />
 
       {/* ── Body ── */}
       {loading ? (

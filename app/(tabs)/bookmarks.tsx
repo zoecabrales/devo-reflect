@@ -1,4 +1,4 @@
-import { AppModal, BentoGrid } from "@/src/components";
+import { AppModal, BentoGrid, PageHeader } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BookmarkedVerse,
@@ -115,17 +115,14 @@ export default function Bookmarks() {
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      {/* Header */}
-      <View style={[styles.header, isDesktop && desktopPage.header]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Bookmarks
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-          {bookmarks.length > 0
+      <PageHeader
+        title="Bookmarks"
+        subtitle={
+          bookmarks.length > 0
             ? `${bookmarks.length} saved verse${bookmarks.length === 1 ? "" : "s"}`
-            : "Highlight any verse to bookmark it"}
-        </Text>
-      </View>
+            : "Highlight any verse to bookmark it"
+        }
+      />
 
       {bookmarks.length === 0 ? (
         <View style={styles.empty}>

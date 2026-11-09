@@ -1,4 +1,4 @@
-import { fs, LIST_PADDING_H, MODAL_MAX_WIDTH } from "@/src/utils/responsive";
+import { LIST_PADDING_H, MODAL_MAX_WIDTH } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -7,31 +7,10 @@ export const styles = StyleSheet.create({
   },
 
   // ── Header ───────────────────────────────────────────────
-  header: {
-    paddingHorizontal: LIST_PADDING_H,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-  },
-  headerTitle: {
-    fontSize: fs(26),
-    fontFamily: "Oswald_700Bold",
-    letterSpacing: 0.4,
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    opacity: 0.5,
-    letterSpacing: 0.3,
-    marginTop: 2,
   },
 
   // ── Streak Badge ─────────────────────────────────────────
@@ -70,13 +49,13 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: LIST_PADDING_H,
+    // Sits inside the list's padding; 4 matches Settings' section labels
+    paddingHorizontal: 4,
     paddingTop: 16,
     paddingBottom: 8,
   },
-  // Desktop bento grid: the page container already provides side padding
+  // Desktop bento grid: a little more room between month groups
   groupHeaderDesktop: {
-    paddingHorizontal: 0,
     paddingTop: 20,
     paddingBottom: 12,
   },

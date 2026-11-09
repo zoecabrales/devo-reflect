@@ -6,28 +6,12 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── Header ───────────────────────────────────────────────
-  header: {
-    paddingHorizontal: LIST_PADDING_H,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 26,
-    fontFamily: "Oswald_700Bold",
-    letterSpacing: 0.4,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    opacity: 0.5,
-    letterSpacing: 0.3,
-    marginTop: 2,
-  },
-
   // ── Scroll Content ────────────────────────────────────────
   content: {
     paddingHorizontal: LIST_PADDING_H,
     paddingBottom: 48,
+  },
+  contentInner: {
     gap: 8,
   },
 

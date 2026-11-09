@@ -4,7 +4,7 @@ import {
     THEME_PRESETS,
     ThemeName,
 } from "@/src/constants/theme";
-import { showAlert } from "@/src/components";
+import { PageHeader, showAlert } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { signOutUser } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
@@ -18,7 +18,9 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { desktopPage } from "@/src/styles/desktopPage.styles";
 import { styles } from "@/src/styles/settings.styles";
+import { useIsDesktop } from "@/src/utils/responsive";
 
 const SUPPORT_EMAIL = "jirehzoe@gmail.com";
 
@@ -87,6 +89,7 @@ export default function Settings() {
   const router = useRouter();
   const { theme, themeName, colorMode, setThemeName, setColorMode } =
     useAppTheme();
+  const isDesktop = useIsDesktop();
 
   const email = auth.currentUser?.email ?? "";
 
@@ -105,218 +108,213 @@ export default function Settings() {
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Settings
-        </Text>
-        {!!email && (
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-            {email}
+      <PageHeader title="Settings" subtitle={email || undefined} />
+
+      <ScrollView
+        contentContainerStyle={[styles.content, isDesktop && desktopPage.content]}
+      >
+        <View style={[styles.contentInner, isDesktop && desktopPage.narrow]}>
+          {/* Appearance section */}
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+            Appearance
           </Text>
-        )}
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Appearance section */}
-        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-          Appearance
-        </Text>
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}
-        >
-          {/* Color mode toggle */}
-          <View style={styles.pickerBlock}>
-            <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>
-              Mode
-            </Text>
-            <View style={styles.modeRow}>
-              {(["system", "light", "dark"] as ColorMode[]).map((m) => {
-                const active = colorMode === m;
-                const icons: Record<ColorMode, keyof typeof Ionicons.glyphMap> =
-                  {
-                    system: "phone-portrait-outline",
-                    light: "sunny-outline",
-                    dark: "moon-outline",
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            {/* Color mode toggle */}
+            <View style={styles.pickerBlock}>
+              <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>
+                Mode
+              </Text>
+              <View style={styles.modeRow}>
+                {(["system", "light", "dark"] as ColorMode[]).map((m) => {
+                  const active = colorMode === m;
+                  const icons: Record<ColorMode, keyof typeof Ionicons.glyphMap> =
+                    {
+                      system: "phone-portrait-outline",
+                      light: "sunny-outline",
+                      dark: "moon-outline",
+                    };
+                  const labels: Record<ColorMode, string> = {
+                    system: "System",
+                    light: "Light",
+                    dark: "Dark",
                   };
-                const labels: Record<ColorMode, string> = {
-                  system: "System",
-                  light: "Light",
-                  dark: "Dark",
-                };
-                return (
-                  <TouchableOpacity
-                    key={m}
-                    style={[
-                      styles.modeBtn,
-                      {
-                        backgroundColor: active
-                          ? theme.primary
-                          : theme.background,
-                        borderColor: active ? theme.primary : theme.border,
-                      },
-                    ]}
-                    onPress={() => setColorMode(m)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name={icons[m]}
-                      size={16}
-                      color={active ? theme.primaryText : theme.textSecondary}
-                    />
-                    <Text
+                  return (
+                    <TouchableOpacity
+                      key={m}
                       style={[
-                        styles.modeBtnText,
+                        styles.modeBtn,
                         {
-                          color: active
-                            ? theme.primaryText
-                            : theme.textSecondary,
+                          backgroundColor: active
+                            ? theme.primary
+                            : theme.background,
+                          borderColor: active ? theme.primary : theme.border,
                         },
                       ]}
+                      onPress={() => setColorMode(m)}
+                      activeOpacity={0.7}
                     >
-                      {labels[m]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-          {/* Theme swatches */}
-          <View style={styles.pickerBlock}>
-            <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>
-              Theme
-            </Text>
-            <View style={styles.swatchRow}>
-              {(Object.keys(THEME_PRESETS) as ThemeName[]).map((name) => {
-                const preset = THEME_PRESETS[name];
-                const active = themeName === name;
-                return (
-                  <TouchableOpacity
-                    key={name}
-                    style={[
-                      styles.swatchBtn,
-                      {
-                        borderColor: active ? theme.primary : theme.border,
-                        backgroundColor: active
-                          ? theme.surface
-                          : theme.background,
-                      },
-                    ]}
-                    onPress={() => setThemeName(name)}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.swatch,
-                        { backgroundColor: preset.swatch },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.swatchLabel,
-                        {
-                          color: active ? theme.text : theme.textSecondary,
-                          fontWeight: active ? "700" : "400",
-                        },
-                      ]}
-                    >
-                      {preset.label}
-                    </Text>
-                    {active && (
                       <Ionicons
-                        name="checkmark"
-                        size={13}
-                        color={theme.primary}
+                        name={icons[m]}
+                        size={16}
+                        color={active ? theme.primaryText : theme.textSecondary}
                       />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
+                      <Text
+                        style={[
+                          styles.modeBtnText,
+                          {
+                            color: active
+                              ? theme.primaryText
+                              : theme.textSecondary,
+                          },
+                        ]}
+                      >
+                        {labels[m]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+            {/* Theme swatches */}
+            <View style={styles.pickerBlock}>
+              <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>
+                Theme
+              </Text>
+              <View style={styles.swatchRow}>
+                {(Object.keys(THEME_PRESETS) as ThemeName[]).map((name) => {
+                  const preset = THEME_PRESETS[name];
+                  const active = themeName === name;
+                  return (
+                    <TouchableOpacity
+                      key={name}
+                      style={[
+                        styles.swatchBtn,
+                        {
+                          borderColor: active ? theme.primary : theme.border,
+                          backgroundColor: active
+                            ? theme.surface
+                            : theme.background,
+                        },
+                      ]}
+                      onPress={() => setThemeName(name)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.swatch,
+                          { backgroundColor: preset.swatch },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.swatchLabel,
+                          {
+                            color: active ? theme.text : theme.textSecondary,
+                            fontWeight: active ? "700" : "400",
+                          },
+                        ]}
+                      >
+                        {preset.label}
+                      </Text>
+                      {active && (
+                        <Ionicons
+                          name="checkmark"
+                          size={13}
+                          color={theme.primary}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Feedback section */}
-        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-          Feedback
-        </Text>
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}
-        >
-          <SettingRow
-            icon="mail-outline"
-            label="Send Feedback"
-            onPress={() => openMailTo("App%20Feedback")}
-            theme={theme}
-          />
-          {/* <SettingRow
-            icon="star-outline"
-            label="Rate the App"
-            onPress={() =>
-              Linking.openURL("https://apps.apple.com/app/idYOUR_APP_ID")
-            }
-            theme={theme}
-          /> */}
-          <SettingRow
-            icon="bug-outline"
-            label="Report a Bug"
-            onPress={() => openMailTo("Bug%20Report")}
-            theme={theme}
-            hideDivider
-          />
-        </View>
+          {/* Feedback section */}
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+            Feedback
+          </Text>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            <SettingRow
+              icon="mail-outline"
+              label="Send Feedback"
+              onPress={() => openMailTo("App%20Feedback")}
+              theme={theme}
+            />
+            {/* <SettingRow
+              icon="star-outline"
+              label="Rate the App"
+              onPress={() =>
+                Linking.openURL("https://apps.apple.com/app/idYOUR_APP_ID")
+              }
+              theme={theme}
+            /> */}
+            <SettingRow
+              icon="bug-outline"
+              label="Report a Bug"
+              onPress={() => openMailTo("Bug%20Report")}
+              theme={theme}
+              hideDivider
+            />
+          </View>
 
-        {/* Account section */}
-        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-          Account
-        </Text>
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}
-        >
-          <SettingRow
-            icon="lock-closed-outline"
-            label="Change Password"
-            onPress={() => router.push("/(auth)/change-password")}
-            theme={theme}
-          />
-          <SettingRow
-            icon="log-out-outline"
-            label="Sign Out"
-            onPress={handleSignOut}
-            theme={theme}
-            hideDivider
-          />
-        </View>
+          {/* Account section */}
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+            Account
+          </Text>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            <SettingRow
+              icon="lock-closed-outline"
+              label="Change Password"
+              onPress={() => router.push("/(auth)/change-password")}
+              theme={theme}
+            />
+            <SettingRow
+              icon="log-out-outline"
+              label="Sign Out"
+              onPress={handleSignOut}
+              theme={theme}
+              hideDivider
+            />
+          </View>
 
-        {/* Danger section */}
-        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-          Danger Zone
-        </Text>
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}
-        >
-          <SettingRow
-            icon="trash-outline"
-            label="Delete Account"
-            onPress={() => router.push("/(auth)/delete-account")}
-            danger
-            theme={theme}
-            hideDivider
-          />
+          {/* Danger section */}
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+            Danger Zone
+          </Text>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            <SettingRow
+              icon="trash-outline"
+              label="Delete Account"
+              onPress={() => router.push("/(auth)/delete-account")}
+              danger
+              theme={theme}
+              hideDivider
+            />
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

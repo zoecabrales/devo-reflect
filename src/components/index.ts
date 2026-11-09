@@ -2,6 +2,7 @@
 export { AppAlertHost, showAlert } from "./AppAlert";
 export { AppModal, SheetHandle } from "./AppModal";
 export { BentoGrid } from "./BentoGrid";
+export { PageHeader } from "./PageHeader";
 export type { BentoSpan } from "./BentoGrid";
 export {
     ChapterSkeleton,

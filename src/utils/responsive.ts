@@ -10,8 +10,8 @@ export const SIDEBAR_WIDTH = 200;
 /** Height of the desktop top bar. */
 export const TOP_BAR_HEIGHT = 56;
 /**
- * Scale applied (CSS zoom) to tabs that still use their mobile layout inside
- * the desktop shell, so they match the more compact desktop Home.
+ * Scale (CSS zoom) applied to every main tab and to popups on desktop web,
+ * so headers and content render at one consistent, compact size.
  */
 export const DESKTOP_CONTENT_ZOOM = 0.85;
 

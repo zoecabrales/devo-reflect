@@ -1,12 +1,14 @@
 import { StyleSheet } from "react-native";
 
-/** Widest the bento-grid pages (Bookmarks, Journal) get on desktop. */
+/** Widest any main tab's content gets on desktop. */
 const PAGE_MAX_WIDTH = 1200;
 const PAGE_PADDING_H = 32;
 
 /**
- * Desktop overrides for list tabs that switch to a bento grid. Applied on top
- * of each screen's own header / list styles so the header and grid line up.
+ * The shared desktop page frame: every main tab's header (PageHeader) and
+ * content use the same max width and side padding, so titles and content
+ * start at the same left edge on every tab. Values are in zoomed layout
+ * units (tabs render at DESKTOP_CONTENT_ZOOM).
  */
 export const desktopPage = StyleSheet.create({
   header: {
@@ -21,6 +23,14 @@ export const desktopPage = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: PAGE_PADDING_H,
     paddingBottom: 48,
+  },
+  /**
+   * Caps form-like pages (Settings, Growth) inside `content`, keeping the
+   * same left edge as the header.
+   */
+  narrow: {
+    width: "100%",
+    maxWidth: 760,
   },
   /** Makes a card fill its bento tile so cards in a row match heights. */
   tileFill: {
