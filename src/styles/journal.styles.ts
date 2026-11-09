@@ -74,6 +74,12 @@ export const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
+  // Desktop bento grid: the page container already provides side padding
+  groupHeaderDesktop: {
+    paddingHorizontal: 0,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
   groupLabel: {
     fontSize: 10,
     fontWeight: "700",

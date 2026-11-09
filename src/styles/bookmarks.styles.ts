@@ -56,6 +56,12 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.1,
     opacity: 0.72,
   },
+  // Newest bookmark in the desktop bento grid
+  rowTextFeatured: {
+    fontSize: 19,
+    lineHeight: 29,
+    opacity: 0.9,
+  },
   rowVersion: {
     fontSize: 10,
     fontWeight: "700",

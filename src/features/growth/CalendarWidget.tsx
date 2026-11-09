@@ -1,3 +1,4 @@
+import { AppModal } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { BookmarkedVerse, loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
@@ -7,12 +8,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    Modal,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    TouchableWithoutFeedback,
     View,
 } from "react-native";
 
@@ -305,223 +304,213 @@ export function CalendarWidget() {
       </View>
 
       {/* ── Journal entries modal ─────────────────────────────────────────── */}
-      <Modal
+      <AppModal
         visible={showModal}
-        transparent
-        animationType="fade"
-        onRequestClose={closeModal}
+        onClose={closeModal}
+        overlayStyle={styles.overlay}
+        cardStyle={[
+          styles.modalCard,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
       >
-        <TouchableWithoutFeedback onPress={closeModal}>
-          <View style={styles.overlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.modalCard,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}
+        <Text
+          style={[styles.modalLabel, { color: theme.textSecondary }]}
+        >
+          {selectedDay ? fmtDay(selectedDay) : ""}
+        </Text>
+        {/* ── Action rows ─────────────────────────────────────── */}
+        {!dateHasJournal && !dateHasBookmark ? (
+          /* Empty date — offer to add content */
+          <>
+            <TouchableOpacity
+              style={[
+                styles.actionRow,
+                {
+                  borderColor: theme.border,
+                  backgroundColor: theme.background,
+                },
+              ]}
+              onPress={() => {
+                closeModal();
+                router.push("/(tabs)/journal-compose");
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="book-outline"
+                size={16}
+                color={theme.primary}
+              />
+              <Text
+                style={[styles.actionRowText, { color: theme.text }]}
               >
+                Add a Journal
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.actionRow,
+                {
+                  borderColor: theme.border,
+                  backgroundColor: theme.background,
+                },
+              ]}
+              onPress={() => {
+                closeModal();
+                router.push("/(tabs)/bible-browser");
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="bookmark-outline"
+                size={16}
+                color={theme.primary}
+              />
+              <Text
+                style={[styles.actionRowText, { color: theme.text }]}
+              >
+                Bookmark a Verse
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+          </>
+        ) : (
+          /* Populated date — show entries filtered to this date */
+          <ScrollView
+            style={styles.contentList}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* ── Journal entries ── */}
+            {dateHasJournal && (
+              <>
                 <Text
-                  style={[styles.modalLabel, { color: theme.textSecondary }]}
+                  style={[
+                    styles.sectionSubLabel,
+                    { color: theme.textSecondary },
+                  ]}
                 >
-                  {selectedDay ? fmtDay(selectedDay) : ""}
+                  Journal
                 </Text>
-                {/* ── Action rows ─────────────────────────────────────── */}
-                {!dateHasJournal && !dateHasBookmark ? (
-                  /* Empty date — offer to add content */
-                  <>
-                    <TouchableOpacity
-                      style={[
-                        styles.actionRow,
-                        {
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      onPress={() => {
-                        closeModal();
-                        router.push("/(tabs)/journal-compose");
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name="book-outline"
-                        size={16}
-                        color={theme.primary}
-                      />
-                      <Text
-                        style={[styles.actionRowText, { color: theme.text }]}
-                      >
-                        Add a Journal
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={14}
-                        color={theme.textSecondary}
-                      />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.actionRow,
-                        {
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      onPress={() => {
-                        closeModal();
-                        router.push("/(tabs)/bible-browser");
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name="bookmark-outline"
-                        size={16}
-                        color={theme.primary}
-                      />
-                      <Text
-                        style={[styles.actionRowText, { color: theme.text }]}
-                      >
-                        Bookmark a Verse
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={14}
-                        color={theme.textSecondary}
-                      />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  /* Populated date — show entries filtered to this date */
-                  <ScrollView
-                    style={styles.contentList}
-                    showsVerticalScrollIndicator={false}
-                  >
-                    {/* ── Journal entries ── */}
-                    {dateHasJournal && (
-                      <>
-                        <Text
-                          style={[
-                            styles.sectionSubLabel,
-                            { color: theme.textSecondary },
-                          ]}
-                        >
-                          Journal
-                        </Text>
-                        {selectedJournalEntries.map((entry) => (
-                          <TouchableOpacity
-                            key={entry.id}
-                            style={[
-                              styles.entryCard,
-                              {
-                                borderColor: theme.border,
-                                backgroundColor: theme.background,
-                                borderLeftColor: theme.primary,
-                              },
-                            ]}
-                            onPress={() => {
-                              closeModal();
-                              router.push({
-                                pathname: "/(tabs)/journal-compose",
-                                params: { id: entry.id },
-                              });
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={[styles.entryTitle, { color: theme.text }]}
-                              numberOfLines={1}
-                            >
-                              {entry.title ||
-                                entry.observation.split("\n")[0] ||
-                                "Untitled"}
-                            </Text>
-                            {entry.scripture.length > 0 && (
-                              <Text
-                                style={[
-                                  styles.entryRef,
-                                  { color: theme.primary },
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {entry.scripture[0].ref}
-                                {entry.scripture.length > 1
-                                  ? ` +${entry.scripture.length - 1} more`
-                                  : ""}
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </>
-                    )}
-
-                    {/* ── Bookmarks ── */}
-                    {dateHasBookmark && (
-                      <>
-                        <Text
-                          style={[
-                            styles.sectionSubLabel,
-                            {
-                              color: theme.textSecondary,
-                              marginTop: dateHasJournal ? 12 : 0,
-                            },
-                          ]}
-                        >
-                          Bookmarks
-                        </Text>
-                        {selectedBookmarks.map((bm) => (
-                          <View
-                            key={bm.id}
-                            style={[
-                              styles.entryCard,
-                              {
-                                borderColor: theme.border,
-                                backgroundColor: theme.background,
-                                borderLeftColor: theme.primary,
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.entryRef,
-                                { color: theme.primary },
-                              ]}
-                            >
-                              {bm.bookLabel} {bm.chapter}:{bm.verse} ·{" "}
-                              {bm.version}
-                            </Text>
-                            <Text
-                              style={[styles.entryTitle, { color: theme.text }]}
-                            >
-                              {bm.text}
-                            </Text>
-                          </View>
-                        ))}
-                      </>
-                    )}
-                  </ScrollView>
-                )}
-
-                {/* ── Close ───────────────────────────────────────────── */}
-                <TouchableOpacity
-                  style={[styles.closeBtn, { borderColor: theme.border }]}
-                  onPress={closeModal}
-                  activeOpacity={0.7}
-                >
-                  <Text
+                {selectedJournalEntries.map((entry) => (
+                  <TouchableOpacity
+                    key={entry.id}
                     style={[
-                      styles.closeBtnText,
-                      { color: theme.textSecondary },
+                      styles.entryCard,
+                      {
+                        borderColor: theme.border,
+                        backgroundColor: theme.background,
+                        borderLeftColor: theme.primary,
+                      },
+                    ]}
+                    onPress={() => {
+                      closeModal();
+                      router.push({
+                        pathname: "/(tabs)/journal-compose",
+                        params: { id: entry.id },
+                      });
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[styles.entryTitle, { color: theme.text }]}
+                      numberOfLines={1}
+                    >
+                      {entry.title ||
+                        entry.observation.split("\n")[0] ||
+                        "Untitled"}
+                    </Text>
+                    {entry.scripture.length > 0 && (
+                      <Text
+                        style={[
+                          styles.entryRef,
+                          { color: theme.primary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {entry.scripture[0].ref}
+                        {entry.scripture.length > 1
+                          ? ` +${entry.scripture.length - 1} more`
+                          : ""}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
+
+            {/* ── Bookmarks ── */}
+            {dateHasBookmark && (
+              <>
+                <Text
+                  style={[
+                    styles.sectionSubLabel,
+                    {
+                      color: theme.textSecondary,
+                      marginTop: dateHasJournal ? 12 : 0,
+                    },
+                  ]}
+                >
+                  Bookmarks
+                </Text>
+                {selectedBookmarks.map((bm) => (
+                  <View
+                    key={bm.id}
+                    style={[
+                      styles.entryCard,
+                      {
+                        borderColor: theme.border,
+                        backgroundColor: theme.background,
+                        borderLeftColor: theme.primary,
+                      },
                     ]}
                   >
-                    Close
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+                    <Text
+                      style={[
+                        styles.entryRef,
+                        { color: theme.primary },
+                      ]}
+                    >
+                      {bm.bookLabel} {bm.chapter}:{bm.verse} ·{" "}
+                      {bm.version}
+                    </Text>
+                    <Text
+                      style={[styles.entryTitle, { color: theme.text }]}
+                    >
+                      {bm.text}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            )}
+          </ScrollView>
+        )}
+
+        {/* ── Close ───────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={[styles.closeBtn, { borderColor: theme.border }]}
+          onPress={closeModal}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.closeBtnText,
+              { color: theme.textSecondary },
+            ]}
+          >
+            Close
+          </Text>
+        </TouchableOpacity>
+      </AppModal>
     </>
   );
 }

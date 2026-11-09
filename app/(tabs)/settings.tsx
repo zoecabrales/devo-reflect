@@ -4,13 +4,13 @@ import {
     THEME_PRESETS,
     ThemeName,
 } from "@/src/constants/theme";
+import { showAlert } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { signOutUser } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
-    Alert,
     Linking,
     ScrollView,
     Text,
@@ -28,10 +28,9 @@ async function openMailTo(subject: string) {
   if (supported) {
     await Linking.openURL(url);
   } else {
-    Alert.alert(
+    showAlert(
       "No Mail App Found",
       `Please email us directly at:\n\n${SUPPORT_EMAIL}`,
-      [{ text: "OK" }],
     );
   }
 }
@@ -96,7 +95,7 @@ export default function Settings() {
       await signOutUser();
       router.replace("/(auth)/sign-in");
     } catch (error: any) {
-      Alert.alert("Error", error?.message ?? "Could not sign out.");
+      showAlert("Error", error?.message ?? "Could not sign out.");
     }
   }
 

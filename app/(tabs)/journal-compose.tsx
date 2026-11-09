@@ -1,3 +1,4 @@
+import { showAlert } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
 import {
@@ -14,7 +15,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   Text,
   TextInput,
@@ -114,7 +114,7 @@ export default function JournalCompose() {
       draft.prayer.trim();
 
     if (!hasContent) {
-      Alert.alert(
+      showAlert(
         "Nothing to save",
         "Write at least one SOAP field before saving.",
       );
@@ -142,7 +142,7 @@ export default function JournalCompose() {
       router.replace("/(tabs)/journal");
     } catch (err) {
       console.error(err);
-      Alert.alert("Unable to save", "Please try again in a moment.");
+      showAlert("Unable to save", "Please try again in a moment.");
     } finally {
       setSaving(false);
     }

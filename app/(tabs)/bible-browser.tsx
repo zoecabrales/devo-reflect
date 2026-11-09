@@ -1,4 +1,4 @@
-import { ChapterSkeleton } from "@/src/components";
+import { AppModal, ChapterSkeleton, SheetHandle } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BIBLE_BOOKS,
@@ -22,14 +22,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    Modal,
     ScrollView,
     SectionList,
     Share,
     Text,
     TextInput,
     TouchableOpacity,
-    TouchableWithoutFeedback,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -470,282 +468,246 @@ export default function BibleBrowser() {
       )}
 
       {/* Version Picker Modal */}
-      <Modal
+      <AppModal
         visible={pickerVisible}
-        transparent
+        onClose={() => setPickerVisible(false)}
         animationType="slide"
-        onRequestClose={() => setPickerVisible(false)}
+        overlayStyle={styles.drawerOverlay}
+        cardStyle={[
+          styles.drawerSheet,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
       >
-        <TouchableWithoutFeedback onPress={() => setPickerVisible(false)}>
-          <View style={styles.drawerOverlay}>
-            <TouchableWithoutFeedback>
-              <View
+        <SheetHandle style={styles.drawerHandle} />
+        <Text style={[styles.drawerTitle, { color: theme.text }]}>
+          Bible Version
+        </Text>
+        {BIBLE_VERSIONS.map((v) => {
+          const active = v.id === version.id;
+          return (
+            <TouchableOpacity
+              key={v.id}
+              style={styles.versionOption}
+              activeOpacity={0.7}
+              onPress={() => {
+                setPickerVisible(false);
+                setVersion(v);
+                // Re-fetch current chapter in the new version
+                if (screen === "verses" && book && chapter) {
+                  openChapter(book, chapter, v);
+                }
+              }}
+            >
+              <Text
                 style={[
-                  styles.drawerSheet,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
+                  styles.versionOptionLabel,
+                  {
+                    color: active ? theme.primary : theme.text,
+                  },
                 ]}
               >
-                <View style={styles.drawerHandle} />
-                <Text style={[styles.drawerTitle, { color: theme.text }]}>
-                  Bible Version
-                </Text>
-                {BIBLE_VERSIONS.map((v) => {
-                  const active = v.id === version.id;
-                  return (
-                    <TouchableOpacity
-                      key={v.id}
-                      style={styles.versionOption}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        setPickerVisible(false);
-                        setVersion(v);
-                        // Re-fetch current chapter in the new version
-                        if (screen === "verses" && book && chapter) {
-                          openChapter(book, chapter, v);
-                        }
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.versionOptionLabel,
-                          {
-                            color: active ? theme.primary : theme.text,
-                          },
-                        ]}
-                      >
-                        {v.label}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.versionOptionDesc,
-                          { color: theme.textSecondary },
-                        ]}
-                      >
-                        {v.description}
-                      </Text>
-                      {active && (
-                        <Ionicons
-                          name="checkmark"
-                          size={16}
-                          color={theme.primary}
-                        />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+                {v.label}
+              </Text>
+              <Text
+                style={[
+                  styles.versionOptionDesc,
+                  { color: theme.textSecondary },
+                ]}
+              >
+                {v.description}
+              </Text>
+              {active && (
+                <Ionicons
+                  name="checkmark"
+                  size={16}
+                  color={theme.primary}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </AppModal>
 
       {/* Share modal */}
-      <Modal
+      <AppModal
         visible={shareVerse !== null}
-        transparent
+        onClose={() => setShareVerse(null)}
         animationType="slide"
-        onRequestClose={() => setShareVerse(null)}
+        overlayStyle={styles.drawerOverlay}
+        cardStyle={[
+          styles.drawerSheet,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
       >
-        <TouchableWithoutFeedback onPress={() => setShareVerse(null)}>
-          <View style={styles.drawerOverlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.drawerSheet,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}
-              >
-                <View style={styles.drawerHandle} />
-                <Text style={[styles.drawerTitle, { color: theme.text }]}>
-                  {shareVerse
-                    ? `${book?.label ?? ""} ${chapter}:${shareVerse.verse}`
-                    : ""}
-                </Text>
+        <SheetHandle style={styles.drawerHandle} />
+        <Text style={[styles.drawerTitle, { color: theme.text }]}>
+          {shareVerse
+            ? `${book?.label ?? ""} ${chapter}:${shareVerse.verse}`
+            : ""}
+        </Text>
 
-                {/* Verse preview */}
-                {shareVerse && (
-                  <Text
-                    style={[
-                      styles.shareVersePreview,
-                      { color: theme.textSecondary },
-                    ]}
-                    numberOfLines={4}
-                  >
-                    "{shareVerse.text}"
-                  </Text>
-                )}
+        {/* Verse preview */}
+        {shareVerse && (
+          <Text
+            style={[
+              styles.shareVersePreview,
+              { color: theme.textSecondary },
+            ]}
+            numberOfLines={4}
+          >
+            "{shareVerse.text}"
+          </Text>
+        )}
 
-                {/* Share button */}
-                <TouchableOpacity
-                  style={[
-                    styles.drawerBookmarkBtn,
-                    { backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleShare}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="share-outline" size={18} color="#fff" />
-                  <Text style={styles.drawerBookmarkBtnText}>Share Verse</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        {/* Share button */}
+        <TouchableOpacity
+          style={[
+            styles.drawerBookmarkBtn,
+            { backgroundColor: theme.primary },
+          ]}
+          onPress={handleShare}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="share-outline" size={18} color="#fff" />
+          <Text style={styles.drawerBookmarkBtnText}>Share Verse</Text>
+        </TouchableOpacity>
+      </AppModal>
 
       {/* Highlight / Bookmark drawer */}
-      <Modal
+      <AppModal
         visible={drawerVerse !== null}
-        transparent
+        onClose={() => setDrawerVerse(null)}
         animationType="slide"
-        onRequestClose={() => setDrawerVerse(null)}
+        overlayStyle={styles.drawerOverlay}
+        cardStyle={[
+          styles.drawerSheet,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
       >
-        <TouchableWithoutFeedback onPress={() => setDrawerVerse(null)}>
-          <View style={styles.drawerOverlay}>
-            <TouchableWithoutFeedback>
-              <View
+        <SheetHandle style={styles.drawerHandle} />
+        <Text style={[styles.drawerTitle, { color: theme.text }]}>
+          {drawerVerse
+            ? `${book?.label ?? ""} ${chapter}:${drawerVerse.verse}`
+            : ""}
+        </Text>
+
+        {/* Color swatches */}
+        <Text
+          style={[styles.drawerLabel, { color: theme.textSecondary }]}
+        >
+          Highlight
+        </Text>
+        <View style={styles.swatchRow}>
+          {HIGHLIGHT_COLORS.map((c) => {
+            const activeKey = drawerVerse
+              ? verseKey(book!.id, chapter!, drawerVerse.verse)
+              : null;
+            const isActive = activeKey
+              ? highlights.get(activeKey) === c
+              : false;
+            return (
+              <TouchableOpacity
+                key={c}
                 style={[
-                  styles.drawerSheet,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
+                  styles.swatch,
+                  { backgroundColor: c },
+                  isActive && styles.swatchActive,
                 ]}
-              >
-                <View style={styles.drawerHandle} />
-                <Text style={[styles.drawerTitle, { color: theme.text }]}>
-                  {drawerVerse
-                    ? `${book?.label ?? ""} ${chapter}:${drawerVerse.verse}`
-                    : ""}
-                </Text>
+                onPress={() => handleHighlight(c)}
+                activeOpacity={0.8}
+              />
+            );
+          })}
+        </View>
 
-                {/* Color swatches */}
-                <Text
-                  style={[styles.drawerLabel, { color: theme.textSecondary }]}
-                >
-                  Highlight
-                </Text>
-                <View style={styles.swatchRow}>
-                  {HIGHLIGHT_COLORS.map((c) => {
-                    const activeKey = drawerVerse
-                      ? verseKey(book!.id, chapter!, drawerVerse.verse)
-                      : null;
-                    const isActive = activeKey
-                      ? highlights.get(activeKey) === c
-                      : false;
-                    return (
-                      <TouchableOpacity
-                        key={c}
-                        style={[
-                          styles.swatch,
-                          { backgroundColor: c },
-                          isActive && styles.swatchActive,
-                        ]}
-                        onPress={() => handleHighlight(c)}
-                        activeOpacity={0.8}
-                      />
-                    );
-                  })}
-                </View>
+        {/* Bookmark button */}
+        <TouchableOpacity
+          style={[
+            styles.drawerBookmarkBtn,
+            { backgroundColor: theme.primary },
+          ]}
+          onPress={handleDrawerBookmark}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="bookmark-outline" size={18} color="#fff" />
+          <Text style={styles.drawerBookmarkBtnText}>
+            Add to Bookmarks
+          </Text>
+        </TouchableOpacity>
 
-                {/* Bookmark button */}
-                <TouchableOpacity
-                  style={[
-                    styles.drawerBookmarkBtn,
-                    { backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleDrawerBookmark}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="bookmark-outline" size={18} color="#fff" />
-                  <Text style={styles.drawerBookmarkBtnText}>
-                    Add to Bookmarks
-                  </Text>
-                </TouchableOpacity>
+        {/* Add to Journal button */}
+        <TouchableOpacity
+          style={[
+            styles.drawerBookmarkBtn,
+            {
+              marginTop: 10,
+              backgroundColor: theme.surface,
+              borderWidth: 1,
+              borderColor: theme.border,
+            },
+          ]}
+          onPress={handleDrawerJournal}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="book-outline" size={18} color={theme.text} />
+          <Text
+            style={[
+              styles.drawerBookmarkBtnText,
+              { color: theme.text },
+            ]}
+          >
+            Add to Journal
+          </Text>
+        </TouchableOpacity>
 
-                {/* Add to Journal button */}
-                <TouchableOpacity
-                  style={[
-                    styles.drawerBookmarkBtn,
-                    {
-                      marginTop: 10,
-                      backgroundColor: theme.surface,
-                      borderWidth: 1,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                  onPress={handleDrawerJournal}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="book-outline" size={18} color={theme.text} />
-                  <Text
-                    style={[
-                      styles.drawerBookmarkBtnText,
-                      { color: theme.text },
-                    ]}
-                  >
-                    Add to Journal
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Use this Verse — only shown when opened from CalendarWidget */}
-                {isPickMode && (
-                  <TouchableOpacity
-                    style={[
-                      styles.drawerBookmarkBtn,
-                      { marginTop: 10, backgroundColor: theme.primary },
-                    ]}
-                    onPress={handlePickVerse}
-                    activeOpacity={0.85}
-                  >
-                    <Ionicons
-                      name="checkmark-circle-outline"
-                      size={18}
-                      color={theme.primaryText}
-                    />
-                    <Text
-                      style={[
-                        styles.drawerBookmarkBtnText,
-                        { color: theme.primaryText },
-                      ]}
-                    >
-                      Use this Verse
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Bookmark confirmation popup */}
-      <Modal
-        visible={bookmarkConfirm !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setBookmarkConfirm(null)}
-      >
-        <TouchableWithoutFeedback onPress={() => setBookmarkConfirm(null)}>
-          <View style={styles.confirmOverlay}>
-            <View
+        {/* Use this Verse — only shown when opened from CalendarWidget */}
+        {isPickMode && (
+          <TouchableOpacity
+            style={[
+              styles.drawerBookmarkBtn,
+              { marginTop: 10, backgroundColor: theme.primary },
+            ]}
+            onPress={handlePickVerse}
+            activeOpacity={0.85}
+          >
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={18}
+              color={theme.primaryText}
+            />
+            <Text
               style={[
-                styles.confirmCard,
-                { backgroundColor: theme.surface, borderColor: theme.border },
+                styles.drawerBookmarkBtnText,
+                { color: theme.primaryText },
               ]}
             >
-              <Ionicons name="bookmark" size={22} color={theme.primary} />
-              <View style={styles.confirmTextWrap}>
-                <Text style={[styles.confirmTitle, { color: theme.text }]}>
-                  Verse Bookmarked
-                </Text>
-                <Text
-                  style={[styles.confirmRef, { color: theme.textSecondary }]}
-                >
-                  {bookmarkConfirm} saved to Bookmarks
-                </Text>
-              </View>
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+              Use this Verse
+            </Text>
+          </TouchableOpacity>
+        )}
+      </AppModal>
+
+      {/* Bookmark confirmation popup */}
+      <AppModal
+        visible={bookmarkConfirm !== null}
+        onClose={() => setBookmarkConfirm(null)}
+        closeOnCardPress
+        overlayStyle={styles.confirmOverlay}
+        cardStyle={[
+          styles.confirmCard,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
+      >
+        <Ionicons name="bookmark" size={22} color={theme.primary} />
+        <View style={styles.confirmTextWrap}>
+          <Text style={[styles.confirmTitle, { color: theme.text }]}>
+            Verse Bookmarked
+          </Text>
+          <Text style={[styles.confirmRef, { color: theme.textSecondary }]}>
+            {bookmarkConfirm} saved to Bookmarks
+          </Text>
+        </View>
+      </AppModal>
 
       {/* Books */}
       {screen === "books" && (

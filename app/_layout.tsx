@@ -1,3 +1,4 @@
+import { AppAlertHost } from "@/src/components/AppAlert";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
 import { Oswald_700Bold, useFonts } from "@expo-google-fonts/oswald";
 import { Stack } from "expo-router";
@@ -20,6 +21,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
       </Stack>
+      <AppAlertHost />
     </ThemeProvider>
   );
 }

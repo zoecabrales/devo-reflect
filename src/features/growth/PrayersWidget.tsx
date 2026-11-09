@@ -1,4 +1,4 @@
-import { PrayerListSkeleton } from "@/src/components";
+import { AppModal, PrayerListSkeleton } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
 import {
@@ -15,12 +15,10 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
-    Modal,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    TouchableWithoutFeedback,
     View,
 } from "react-native";
 
@@ -338,177 +336,147 @@ export function PrayersWidget() {
       </View>
 
       {/* ── Delete confirmation modal ───────────────────────────────────────── */}
-      <Modal
+      <AppModal
         visible={deleteTargetId !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDeleteTargetId(null)}
+        onClose={() => setDeleteTargetId(null)}
+        overlayStyle={styles.overlay}
+        cardStyle={[
+          styles.modalCard,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
       >
-        <TouchableWithoutFeedback onPress={() => setDeleteTargetId(null)}>
-          <View style={styles.overlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.modalCard,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}
-              >
-                <Text style={[styles.modalTitle, { color: theme.text }]}>
-                  Delete Prayer
-                </Text>
-                <Text
-                  style={[styles.modalBody, { color: theme.textSecondary }]}
-                >
-                  This prayer request will be permanently removed. This cannot
-                  be undone.
-                </Text>
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[styles.cancelBtn, { borderColor: theme.border }]}
-                    onPress={() => setDeleteTargetId(null)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.cancelText,
-                        { color: theme.textSecondary },
-                      ]}
-                    >
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.confirmBtn, { backgroundColor: "#e53e3e" }]}
-                    onPress={confirmDelete}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={[styles.confirmText, { color: "#fff" }]}>
-                      Delete
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        <Text style={[styles.modalTitle, { color: theme.text }]}>
+          Delete Prayer
+        </Text>
+        <Text
+          style={[styles.modalBody, { color: theme.textSecondary }]}
+        >
+          This prayer request will be permanently removed. This cannot
+          be undone.
+        </Text>
+        <View style={styles.modalActions}>
+          <TouchableOpacity
+            style={[styles.cancelBtn, { borderColor: theme.border }]}
+            onPress={() => setDeleteTargetId(null)}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.cancelText,
+                { color: theme.textSecondary },
+              ]}
+            >
+              Cancel
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.confirmBtn, { backgroundColor: "#e53e3e" }]}
+            onPress={confirmDelete}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.confirmText, { color: "#fff" }]}>
+              Delete
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </AppModal>
 
       {/* ── Edit prayer modal ───────────────────────────────────────────────── */}
-      <Modal
+      <AppModal
         visible={!!editingPrayer}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setEditingPrayer(null)}
+        onClose={() => setEditingPrayer(null)}
+        overlayStyle={styles.overlay}
+        cardStyle={[
+          styles.modalCard,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
       >
-        <TouchableWithoutFeedback onPress={() => setEditingPrayer(null)}>
-          <View style={styles.overlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.modalCard,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}
+        <Text
+          style={[styles.modalLabel, { color: theme.textSecondary }]}
+        >
+          Edit Prayer
+        </Text>
+        <TextInput
+          style={[
+            styles.editInput,
+            {
+              color: theme.text,
+              borderColor: theme.border,
+              backgroundColor: theme.background,
+            },
+          ]}
+          value={editText}
+          onChangeText={setEditText}
+          multiline
+          autoFocus
+          placeholderTextColor={theme.textSecondary}
+          placeholder="Update your prayer…"
+        />
+        <View style={styles.modalActions}>
+          <TouchableOpacity
+            style={[styles.cancelBtn, { borderColor: theme.border }]}
+            onPress={() => setEditingPrayer(null)}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.cancelText,
+                { color: theme.textSecondary },
+              ]}
+            >
+              Cancel
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.saveBtn, { backgroundColor: theme.primary }]}
+            onPress={handleSaveEdit}
+            activeOpacity={0.8}
+            disabled={saving || !editText.trim()}
+          >
+            {saving ? (
+              <ActivityIndicator
+                size="small"
+                color={theme.primaryText}
+              />
+            ) : (
+              <Text
+                style={[styles.saveText, { color: theme.primaryText }]}
               >
-                <Text
-                  style={[styles.modalLabel, { color: theme.textSecondary }]}
-                >
-                  Edit Prayer
-                </Text>
-                <TextInput
-                  style={[
-                    styles.editInput,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={editText}
-                  onChangeText={setEditText}
-                  multiline
-                  autoFocus
-                  placeholderTextColor={theme.textSecondary}
-                  placeholder="Update your prayer…"
-                />
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[styles.cancelBtn, { borderColor: theme.border }]}
-                    onPress={() => setEditingPrayer(null)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.cancelText,
-                        { color: theme.textSecondary },
-                      ]}
-                    >
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.saveBtn, { backgroundColor: theme.primary }]}
-                    onPress={handleSaveEdit}
-                    activeOpacity={0.8}
-                    disabled={saving || !editText.trim()}
-                  >
-                    {saving ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={theme.primaryText}
-                      />
-                    ) : (
-                      <Text
-                        style={[styles.saveText, { color: theme.primaryText }]}
-                      >
-                        Save
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+                Save
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </AppModal>
 
       {/* ── Encouragement modal (shown after delete) ────────────────────────── */}
-      <Modal
+      <AppModal
         visible={showVerseModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowVerseModal(false)}
+        onClose={() => setShowVerseModal(false)}
+        overlayStyle={styles.overlay}
+        cardStyle={[
+          styles.modalCard,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
       >
-        <TouchableWithoutFeedback onPress={() => setShowVerseModal(false)}>
-          <View style={styles.overlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.modalCard,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}
-              >
-                <Text
-                  style={[styles.modalLabel, { color: theme.textSecondary }]}
-                >
-                  Philippians 4:6–7
-                </Text>
-                {PHIL_4_6_7.map((v) => (
-                  <View key={v.verse} style={styles.lordsPrayerRow}>
-                    <Text
-                      style={[styles.verseNum, { color: theme.textSecondary }]}
-                    >
-                      {v.verse}
-                    </Text>
-                    <Text style={[styles.verseText, { color: theme.text }]}>
-                      {v.text}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </TouchableWithoutFeedback>
+        <Text
+          style={[styles.modalLabel, { color: theme.textSecondary }]}
+        >
+          Philippians 4:6–7
+        </Text>
+        {PHIL_4_6_7.map((v) => (
+          <View key={v.verse} style={styles.lordsPrayerRow}>
+            <Text
+              style={[styles.verseNum, { color: theme.textSecondary }]}
+            >
+              {v.verse}
+            </Text>
+            <Text style={[styles.verseText, { color: theme.text }]}>
+              {v.text}
+            </Text>
           </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        ))}
+      </AppModal>
     </>
   );
 }
