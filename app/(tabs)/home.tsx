@@ -13,7 +13,12 @@ import { DesktopHome } from "@/src/features/home/DesktopHome";
 import { loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { loadEntries } from "@/src/services/journal";
-import { useIsDesktop, useScrollPaddingH } from "@/src/utils/responsive";
+import {
+  pageScrollMarker,
+  useIsDesktop,
+  usePageScroll,
+  useScrollPaddingH,
+} from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -435,6 +440,8 @@ export default function Home() {
   const [journalThisWeek, setJournalThisWeek] = useState<number | null>(null);
   const isDesktop = useIsDesktop();
   const padH = useScrollPaddingH();
+  // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
+  const pageScroll = usePageScroll();
 
   const user = auth.currentUser;
   const displayName = user?.displayName?.split(" ")[0] ?? "Friend";
@@ -491,7 +498,10 @@ export default function Home() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View
+      {...pageScrollMarker(pageScroll)}
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
       {isDesktop ? (
         <DesktopHome
           theme={theme}
@@ -507,7 +517,13 @@ export default function Home() {
         />
       ) : (
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: padH }]}
+        {...pageScrollMarker(pageScroll, "pageScrollList")}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingHorizontal: padH },
+          // The top bar already clears the status bar
+          pageScroll && { paddingTop: 24 },
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

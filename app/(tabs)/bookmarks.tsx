@@ -19,7 +19,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/src/styles/bookmarks.styles";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
-import { useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
+import {
+  pageScrollMarker,
+  useIsDesktop,
+  useListPaddingH,
+  usePageScroll,
+} from "@/src/utils/responsive";
 
 const JOSHUA_1_8 = {
   ref: "Joshua 1:8",
@@ -33,6 +38,8 @@ export default function Bookmarks() {
   const [bookmarks, setBookmarks] = useState<BookmarkedVerse[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const isDesktop = useIsDesktop();
+  // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
+  const pageScroll = usePageScroll();
 
   const uid = auth.currentUser?.uid ?? "";
 
@@ -113,6 +120,7 @@ export default function Bookmarks() {
 
   return (
     <SafeAreaView
+      {...pageScrollMarker(pageScroll)}
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
@@ -160,6 +168,7 @@ export default function Bookmarks() {
         </ScrollView>
       ) : (
         <FlatList
+          {...pageScrollMarker(pageScroll, "pageScrollList")}
           data={bookmarks}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[styles.list, { paddingHorizontal: padH }]}

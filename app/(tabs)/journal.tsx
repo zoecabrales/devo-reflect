@@ -76,8 +76,8 @@ export default function Journal() {
   const isDesktop = useIsDesktop();
   // Phone / tablet web: the page scrolls, not the list (see responsive.ts)
   const pageScroll = usePageScroll();
-  // Room for the tab bar (49pt + home indicator), pinned over the page bottom
-  const tabBarHeight = 49 + useSafeAreaInsets().bottom;
+  // Page scroll: keep the last entry clear of the home indicator
+  const bottomInset = useSafeAreaInsets().bottom;
   // Desktop reading pane: the selected entry (defaults to the newest)
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -428,7 +428,7 @@ export default function Journal() {
           contentContainerStyle={[
             styles.list,
             { paddingHorizontal: padH },
-            pageScroll && { paddingBottom: tabBarHeight + 32 },
+            pageScroll && { paddingBottom: bottomInset + 32 },
           ]}
           renderSectionHeader={({ section }) => (
             <View style={styles.groupHeader}>
