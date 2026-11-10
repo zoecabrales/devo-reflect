@@ -17,8 +17,8 @@ type Stats = {
 };
 
 /**
- * Desktop Growth dashboard: a strip of at-a-glance numbers, all derived from
- * data the app already stores. Refreshes whenever the Growth tab is focused.
+ * Growth dashboard: a strip of at-a-glance numbers (2×2 on phones), all
+ * derived from data the app already stores. Refreshes whenever the Growth tab is focused.
  */
 export function GrowthStats() {
   const { theme } = useAppTheme();
@@ -99,12 +99,15 @@ export function GrowthStats() {
 }
 
 const styles = StyleSheet.create({
+  // Tiles wrap: 4 across on tablet / desktop, 2×2 on phones
   row: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 16,
   },
   tile: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 140,
     borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: 18,
