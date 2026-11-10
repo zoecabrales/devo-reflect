@@ -1,6 +1,7 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
+import { useIsDesktop } from "@/src/utils/responsive";
 import { calcStreak, loadEntries } from "@/src/services/journal";
 import { loadPrayers } from "@/src/services/prayers";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +23,8 @@ type Stats = {
  */
 export function GrowthStats() {
   const { theme } = useAppTheme();
+  // Phones / tablets: compact tiles (icon beside the label, smaller number)
+  const compact = !useIsDesktop();
   const uid = auth.currentUser?.uid ?? "";
   const [stats, setStats] = useState<Stats | null>(null);
 
@@ -63,7 +66,7 @@ export function GrowthStats() {
     {
       icon: "book-outline",
       value: stats ? String(stats.entriesThisMonth) : "–",
-      label: "Journal entries this month",
+      label: compact ? "Entries this month" : "Journal entries this month",
     },
     {
       icon: "hand-left-outline",
@@ -78,22 +81,48 @@ export function GrowthStats() {
   ];
 
   return (
-    <View style={styles.row}>
-      {tiles.map((t) => (
-        <View
-          key={t.label}
-          style={[
-            styles.tile,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}
-        >
-          <Ionicons name={t.icon} size={18} color={theme.textSecondary} />
-          <Text style={[styles.value, { color: theme.text }]}>{t.value}</Text>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>
-            {t.label}
-          </Text>
-        </View>
-      ))}
+    <View style={[styles.row, compact && styles.rowCompact]}>
+      {tiles.map((t) =>
+        compact ? (
+          <View
+            key={t.label}
+            style={[
+              styles.tile,
+              styles.tileCompact,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            <View style={styles.labelRow}>
+              <Ionicons name={t.icon} size={14} color={theme.textSecondary} />
+              <Text
+                style={[styles.labelCompact, { color: theme.textSecondary }]}
+                numberOfLines={1}
+              >
+                {t.label}
+              </Text>
+            </View>
+            <Text style={[styles.valueCompact, { color: theme.text }]}>
+              {t.value}
+            </Text>
+          </View>
+        ) : (
+          <View
+            key={t.label}
+            style={[
+              styles.tile,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            <Ionicons name={t.icon} size={18} color={theme.textSecondary} />
+            <Text style={[styles.value, { color: theme.text }]}>
+              {t.value}
+            </Text>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>
+              {t.label}
+            </Text>
+          </View>
+        ),
+      )}
     </View>
   );
 }
@@ -122,5 +151,30 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     letterSpacing: 0.2,
+  },
+  // ── Compact (phones / tablets) ──
+  rowCompact: {
+    gap: 10,
+  },
+  tileCompact: {
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 2,
+  },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  labelCompact: {
+    flexShrink: 1,
+    fontSize: 12,
+    letterSpacing: 0.2,
+  },
+  valueCompact: {
+    fontSize: 22,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.3,
   },
 });

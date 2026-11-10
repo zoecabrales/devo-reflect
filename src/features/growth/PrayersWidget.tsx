@@ -55,6 +55,25 @@ const LORDS_PRAYER: { verse: number; text: string }[] = [
   },
 ];
 
+/** Colour for answered prayers (check, label, counts). */
+const ANSWERED = "#4CAF50";
+
+/** "today", "yesterday", "Nov 11", or "Nov 11, 2025" for other years. */
+function friendlyDate(ts: number): string {
+  const d = new Date(ts);
+  const today = new Date();
+  const startOf = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOf(today) - startOf(d)) / 86_400_000);
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(d.getFullYear() !== today.getFullYear() && { year: "numeric" }),
+  });
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function PrayersWidget() {
@@ -73,9 +92,16 @@ export function PrayersWidget() {
   const [editText, setEditText] = useState("");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  // Which list is shown: still praying, or answered
+  const [filter, setFilter] = useState<"active" | "answered">("active");
 
   const unanswered = prayers.filter((p) => !p.answeredAt);
-  const answered = prayers.filter((p) => p.answeredAt);
+  // Most recently answered first
+  const answered = prayers
+    .filter((p) => p.answeredAt)
+    .sort((a, b) => (b.answeredAt ?? 0) - (a.answeredAt ?? 0));
+  const shown = filter === "active" ? unanswered : answered;
+  const canAdd = !adding && !!inputText.trim();
 
   // Auto-close encouragement modal after 4 s
   useEffect(() => {
@@ -101,6 +127,7 @@ export function PrayersWidget() {
     try {
       const newPrayer = await addPrayer(uid, text);
       setPrayers((prev) => [newPrayer, ...prev]);
+      setFilter("active"); // show the new request
       setInputText("");
       inputRef.current?.blur();
     } finally {
@@ -162,50 +189,53 @@ export function PrayersWidget() {
       >
         {/* Widget header */}
         <View style={styles.widgetHeader}>
-          <Ionicons name="hand-left-outline" size={16} color={theme.primary} />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.widgetTitle, { color: theme.text }]}>
-              Prayers
-            </Text>
+          <View
+            style={[styles.headerIcon, { backgroundColor: theme.background }]}
+          >
+            <Ionicons name="hand-left-outline" size={15} color={theme.text} />
           </View>
-          {prayers.length > 0 && (
-            <Text style={[styles.widgetCount, { color: theme.textSecondary }]}>
-              {unanswered.length} active · {answered.length} answered
-            </Text>
-          )}
+          <Text style={[styles.widgetTitle, { color: theme.text }]}>
+            Prayers
+          </Text>
         </View>
 
-        {/* Add input */}
-        <View style={styles.inputRow}>
+        {/* Composer: input with the add button inside it */}
+        <View
+          style={[
+            styles.composer,
+            { borderColor: theme.border, backgroundColor: theme.background },
+          ]}
+        >
           <TextInput
             ref={inputRef}
-            style={[
-              styles.textInput,
-              {
-                color: theme.text,
-                borderColor: theme.border,
-                backgroundColor: theme.background,
-              },
-            ]}
-            placeholder="Add a prayer request…"
+            style={[styles.textInput, { color: theme.text }]}
+            placeholder="What would you like to pray for?"
             placeholderTextColor={theme.textSecondary}
             value={inputText}
             onChangeText={setInputText}
             multiline
+            // One line until the text wraps (web textareas default to 2 rows)
+            numberOfLines={1}
             returnKeyType="done"
             blurOnSubmit
             onSubmitEditing={handleAdd}
           />
           <TouchableOpacity
-            style={[styles.addBtn, { backgroundColor: theme.primary }]}
+            style={[
+              styles.addBtn,
+              { backgroundColor: theme.primary },
+              !canAdd && !adding && styles.addBtnDisabled,
+            ]}
             onPress={handleAdd}
             activeOpacity={0.8}
-            disabled={adding || !inputText.trim()}
+            disabled={!canAdd}
+            accessibilityRole="button"
+            accessibilityLabel="Add prayer request"
           >
             {adding ? (
               <ActivityIndicator size="small" color={theme.primaryText} />
             ) : (
-              <Ionicons name="add" size={24} color={theme.primaryText} />
+              <Ionicons name="add" size={20} color={theme.primaryText} />
             )}
           </TouchableOpacity>
         </View>
@@ -247,91 +277,162 @@ export function PrayersWidget() {
             </View>
           </View>
         ) : (
-          <View style={styles.list}>
-            {prayers.map((item) => {
-              const isAnswered = !!item.answeredAt;
-              const date = new Date(item.createdAt).toLocaleDateString(
-                "en-US",
-                { month: "short", day: "numeric", year: "numeric" },
-              );
-              return (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.row,
-                    {
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                    },
-                    isAnswered && {
-                      borderLeftColor: "#4CAF50",
-                      borderLeftWidth: 3,
-                    },
-                  ]}
-                >
+          <>
+            {/* Active / Answered switch */}
+            <View
+              style={[styles.segments, { backgroundColor: theme.background }]}
+            >
+              {(
+                [
+                  ["active", "Praying", unanswered.length],
+                  ["answered", "Answered", answered.length],
+                ] as const
+              ).map(([key, label, count]) => {
+                const on = filter === key;
+                return (
                   <TouchableOpacity
+                    key={key}
                     style={[
-                      styles.checkBtn,
-                      {
-                        borderColor: isAnswered ? "#4CAF50" : theme.border,
-                        backgroundColor: isAnswered
-                          ? "#4CAF5022"
-                          : "transparent",
-                      },
+                      styles.segment,
+                      on && [
+                        styles.segmentOn,
+                        {
+                          backgroundColor: theme.surface,
+                          borderColor: theme.border,
+                        },
+                      ],
                     ]}
-                    onPress={() => handleToggle(item)}
+                    onPress={() => setFilter(key)}
                     activeOpacity={0.7}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: on }}
                   >
-                    {isAnswered && (
-                      <Ionicons name="checkmark" size={16} color="#4CAF50" />
-                    )}
-                  </TouchableOpacity>
-                  <View style={styles.rowBody}>
                     <Text
                       style={[
-                        styles.rowText,
-                        { color: theme.text },
-                        isAnswered && styles.rowTextAnswered,
+                        styles.segmentText,
+                        { color: on ? theme.text : theme.textSecondary },
+                        on && styles.segmentTextOn,
                       ]}
                     >
-                      {item.text}
+                      {label}
                     </Text>
-                    {isAnswered ? (
-                      <Text style={styles.answeredBadge}>✓ Answered</Text>
-                    ) : (
-                      <Text
-                        style={[styles.rowDate, { color: theme.textSecondary }]}
+                    <Text
+                      style={[
+                        styles.segmentCount,
+                        {
+                          color:
+                            key === "answered" && count > 0
+                              ? ANSWERED
+                              : theme.textSecondary,
+                        },
+                      ]}
+                    >
+                      {count}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {shown.length === 0 ? (
+              <Text
+                style={[styles.listEmpty, { color: theme.textSecondary }]}
+              >
+                {filter === "active"
+                  ? "All your requests are answered. Add a new one above."
+                  : "Answered prayers will appear here. Tap the circle on a request when God answers it."}
+              </Text>
+            ) : (
+              <View style={[styles.list, { borderColor: theme.border }]}>
+                {shown.map((item, i) => {
+                  const isAnswered = !!item.answeredAt;
+                  return (
+                    <View
+                      key={item.id}
+                      style={[
+                        styles.row,
+                        i > 0 && {
+                          borderTopWidth: StyleSheet.hairlineWidth,
+                          borderTopColor: theme.border,
+                        },
+                      ]}
+                    >
+                      <TouchableOpacity
+                        style={[
+                          styles.checkBtn,
+                          {
+                            borderColor: isAnswered
+                              ? ANSWERED
+                              : theme.textSecondary,
+                            backgroundColor: isAnswered
+                              ? ANSWERED
+                              : "transparent",
+                          },
+                        ]}
+                        onPress={() => handleToggle(item)}
+                        activeOpacity={0.7}
+                        hitSlop={8}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: isAnswered }}
+                        accessibilityLabel={
+                          isAnswered ? "Mark as still praying" : "Mark as answered"
+                        }
                       >
-                        {date}
-                      </Text>
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    style={styles.iconBtn}
-                    onPress={() => openEdit(item)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name="pencil-outline"
-                      size={16}
-                      color={theme.textSecondary}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.iconBtn}
-                    onPress={() => setDeleteTargetId(item.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name="trash-outline"
-                      size={17}
-                      color={theme.textSecondary}
-                    />
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </View>
+                        {isAnswered && (
+                          <Ionicons name="checkmark" size={13} color="#fff" />
+                        )}
+                      </TouchableOpacity>
+                      <View style={styles.rowBody}>
+                        <Text style={[styles.rowText, { color: theme.text }]}>
+                          {item.text}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.rowMeta,
+                            {
+                              color: isAnswered
+                                ? ANSWERED
+                                : theme.textSecondary,
+                            },
+                          ]}
+                        >
+                          {isAnswered
+                            ? `Answered ${friendlyDate(item.answeredAt!)}`
+                            : `Added ${friendlyDate(item.createdAt)}`}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.iconBtn}
+                        onPress={() => openEdit(item)}
+                        activeOpacity={0.6}
+                        accessibilityRole="button"
+                        accessibilityLabel="Edit prayer"
+                      >
+                        <Ionicons
+                          name="create-outline"
+                          size={16}
+                          color={theme.textSecondary}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.iconBtn}
+                        onPress={() => setDeleteTargetId(item.id)}
+                        activeOpacity={0.6}
+                        accessibilityRole="button"
+                        accessibilityLabel="Delete prayer"
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={16}
+                          color={theme.textSecondary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </>
         )}
       </View>
 
@@ -484,84 +585,113 @@ export function PrayersWidget() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 14, borderWidth: 1, padding: 16 },
+  card: { borderRadius: 14, borderWidth: 1, padding: 16, gap: 14 },
   widgetHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
-    marginBottom: 14,
+    gap: 10,
   },
-  widgetTitle: {
-    fontSize: 16,
-    fontFamily: "Oswald_700Bold",
-    letterSpacing: 0.4,
-  },
-  widgetCount: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    opacity: 0.6,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: 8,
-    marginBottom: 12,
-  },
-  textInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    fontSize: 15,
-    maxHeight: 90,
-  },
-  addBtn: {
-    width: 44,
-    borderRadius: 12,
+  headerIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
   },
-  list: { gap: 8 },
+  widgetTitle: {
+    fontSize: 17,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.4,
+  },
+  // Rounded field with the add button inside it
+  composer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingLeft: 14,
+    padding: 6,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+    paddingVertical: 8,
+    minHeight: 36,
+    maxHeight: 96,
+  },
+  addBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addBtnDisabled: { opacity: 0.3 },
+  // Praying / Answered switch
+  segments: {
+    flexDirection: "row",
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  },
+  segment: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  segmentOn: {
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  segmentText: { fontSize: 13, fontWeight: "500" },
+  segmentTextOn: { fontWeight: "700" },
+  segmentCount: { fontSize: 12, fontWeight: "700" },
+  listEmpty: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  // One grouped list, rows split by hairlines
+  list: {
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 10,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
+    gap: 12,
+    paddingVertical: 12,
+    paddingLeft: 14,
+    paddingRight: 6,
   },
   checkBtn: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 1,
     flexShrink: 0,
   },
-  rowBody: { flex: 1, gap: 2 },
-  rowText: { fontSize: 14, lineHeight: 20, letterSpacing: 0.1 },
-  rowTextAnswered: { opacity: 0.4, textDecorationLine: "line-through" },
-  rowDate: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    opacity: 0.35,
-    textTransform: "uppercase",
-    marginTop: 1,
-  },
-  answeredBadge: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    color: "#4CAF50",
-    marginTop: 1,
-  },
-  iconBtn: { padding: 4, marginTop: 1 },
+  rowBody: { flex: 1, gap: 3 },
+  rowText: { fontSize: 15, lineHeight: 21 },
+  rowMeta: { fontSize: 12 },
+  iconBtn: { padding: 6, opacity: 0.7 },
   empty: { alignItems: "center", gap: 10, paddingVertical: 6 },
   emptyPrompt: {
     fontSize: 14,

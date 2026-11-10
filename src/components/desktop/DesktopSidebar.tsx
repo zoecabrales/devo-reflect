@@ -34,6 +34,18 @@ export const MAIN_ITEMS: NavItem[] = [
     icon: "bookmark-outline",
     activeIcon: "bookmark",
   },
+  {
+    name: "reading-plans",
+    label: "Reading Plans",
+    icon: "calendar-outline",
+    activeIcon: "calendar",
+  },
+  {
+    name: "memory-verses",
+    label: "Memory Verses",
+    icon: "albums-outline",
+    activeIcon: "albums",
+  },
 ];
 
 export const SETTINGS_ITEM: NavItem = {
