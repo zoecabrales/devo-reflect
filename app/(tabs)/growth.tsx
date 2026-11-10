@@ -47,6 +47,7 @@ export default function Growth() {
           </View>
         ) : (
           <View style={styles.widgets}>
+            <GrowthStats />
             <PrayersWidget />
             <CalendarWidget />
             <TopicsWidget />

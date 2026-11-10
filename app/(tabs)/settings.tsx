@@ -8,8 +8,8 @@ import {
 import { PageHeader, showAlert } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { signOutUser } from "@/src/services/auth";
-import { auth } from "@/src/services/firebase";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import {
     Linking,
@@ -19,7 +19,10 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SettingsAside } from "@/src/features/settings/SettingsAside";
+import {
+    AccountCard,
+    SettingsAside,
+} from "@/src/features/settings/SettingsAside";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
 import { styles } from "@/src/styles/settings.styles";
 import { useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
@@ -94,8 +97,6 @@ export default function Settings() {
   const isDesktop = useIsDesktop();
   const padH = useListPaddingH();
 
-  const email = auth.currentUser?.email ?? "";
-
   async function handleSignOut() {
     try {
       await signOutUser();
@@ -110,12 +111,8 @@ export default function Settings() {
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      {/* Header */}
-      {/* Desktop shows the email in the account card instead */}
-      <PageHeader
-        title="Settings"
-        subtitle={isDesktop ? undefined : email || undefined}
-      />
+      {/* Header — the account card below shows the email */}
+      <PageHeader title="Settings" />
 
       <ScrollView
         contentContainerStyle={[
@@ -126,6 +123,9 @@ export default function Settings() {
         ]}
       >
         <View style={[styles.contentInner, isDesktop && styles.desktopMain]}>
+          {/* Phone / tablet: profile summary up top (desktop has it in the side column) */}
+          {!isDesktop && <AccountCard />}
+
           {/* Appearance section */}
           <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
             Appearance
@@ -312,6 +312,37 @@ export default function Settings() {
             />
           </View>
 
+          {/* About section — desktop shows this in the side column */}
+          {!isDesktop && (
+            <>
+              <Text
+                style={[styles.sectionLabel, { color: theme.textSecondary }]}
+              >
+                About
+              </Text>
+              <View
+                style={[
+                  styles.section,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <SettingRow
+                  icon="document-text-outline"
+                  label="Terms & Conditions"
+                  onPress={() => router.push("/(auth)/terms-and-conditions")}
+                  theme={theme}
+                />
+                <SettingRow
+                  icon="shield-checkmark-outline"
+                  label="Privacy Policy"
+                  onPress={() => router.push("/(auth)/privacy-policy")}
+                  theme={theme}
+                  hideDivider
+                />
+              </View>
+            </>
+          )}
+
           {/* Danger section */}
           <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
             Danger Zone
@@ -331,6 +362,12 @@ export default function Settings() {
               hideDivider
             />
           </View>
+
+          {!isDesktop && (
+            <Text style={[styles.versionText, { color: theme.textSecondary }]}>
+              Devo Reflect · Version {Constants.expoConfig?.version ?? ""}
+            </Text>
+          )}
         </View>
         {isDesktop && (
           <View style={styles.desktopAside}>
