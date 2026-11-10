@@ -18,6 +18,53 @@ type Counts = { entries: number; bookmarks: number; prayers: number };
 export function SettingsAside() {
   const { theme } = useAppTheme();
   const router = useRouter();
+  const version = Constants.expoConfig?.version ?? "";
+  const card = { backgroundColor: theme.surface, borderColor: theme.border };
+
+  return (
+    <View style={styles.aside}>
+      {/* ── Account ── */}
+      <Label theme={theme}>Account</Label>
+      <AccountCard />
+
+      {/* ── About ── */}
+      <Label theme={theme}>About</Label>
+      <View style={[styles.card, styles.cardFlush, card]}>
+        <Row
+          theme={theme}
+          icon="information-circle-outline"
+          label="Devo Reflect"
+        >
+          <Text style={[styles.meta, { color: theme.textSecondary }]}>
+            Version {version}
+          </Text>
+        </Row>
+        <Divider theme={theme} />
+        <Row
+          theme={theme}
+          icon="document-text-outline"
+          label="Terms & Conditions"
+          onPress={() => router.push("/(auth)/terms-and-conditions")}
+        />
+        <Divider theme={theme} />
+        <Row
+          theme={theme}
+          icon="shield-checkmark-outline"
+          label="Privacy Policy"
+          onPress={() => router.push("/(auth)/privacy-policy")}
+        />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Profile summary: name, email, verified badge, member-since date and
+ * entry / bookmark / prayer counts. Used in the desktop side column and at
+ * the top of Settings on phones and tablets.
+ */
+export function AccountCard() {
+  const { theme } = useAppTheme();
   const user = auth.currentUser;
   const uid = user?.uid ?? "";
   const [counts, setCounts] = useState<Counts | null>(null);
@@ -46,86 +93,56 @@ export function SettingsAside() {
         year: "numeric",
       })
     : null;
-  const version = Constants.expoConfig?.version ?? "";
-
-  const card = { backgroundColor: theme.surface, borderColor: theme.border };
 
   return (
-    <View style={styles.aside}>
-      {/* ── Account ── */}
-      <Label theme={theme}>Account</Label>
-      <View style={[styles.card, card]}>
-        <View style={styles.profile}>
-          <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-            <Text style={[styles.avatarText, { color: theme.primaryText }]}>
-              {initial}
-            </Text>
-          </View>
-          <View style={styles.profileText}>
-            <Text
-              style={[styles.name, { color: theme.text }]}
-              numberOfLines={1}
-            >
-              {name}
-            </Text>
-            <Text
-              style={[styles.meta, { color: theme.textSecondary }]}
-              numberOfLines={1}
-            >
-              {email}
-            </Text>
-          </View>
-          {user?.emailVerified && (
-            <View style={[styles.badge, { borderColor: theme.border }]}>
-              <Ionicons
-                name="checkmark-circle"
-                size={13}
-                color={theme.textSecondary}
-              />
-              <Text style={[styles.badgeText, { color: theme.textSecondary }]}>
-                Verified
-              </Text>
-            </View>
-          )}
-        </View>
-        {created && (
-          <Text style={[styles.meta, { color: theme.textSecondary }]}>
-            Member since {created}
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+    >
+      <View style={styles.profile}>
+        <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+          <Text style={[styles.avatarText, { color: theme.primaryText }]}>
+            {initial}
           </Text>
+        </View>
+        <View style={styles.profileText}>
+          <Text
+            style={[styles.name, { color: theme.text }]}
+            numberOfLines={1}
+          >
+            {name}
+          </Text>
+          <Text
+            style={[styles.meta, { color: theme.textSecondary }]}
+            numberOfLines={1}
+          >
+            {email}
+          </Text>
+        </View>
+        {user?.emailVerified && (
+          <View style={[styles.badge, { borderColor: theme.border }]}>
+            <Ionicons
+              name="checkmark-circle"
+              size={13}
+              color={theme.textSecondary}
+            />
+            <Text style={[styles.badgeText, { color: theme.textSecondary }]}>
+              Verified
+            </Text>
+          </View>
         )}
-        <View style={[styles.stats, { borderTopColor: theme.border }]}>
-          <Stat theme={theme} value={counts?.entries} label="Entries" />
-          <Stat theme={theme} value={counts?.bookmarks} label="Bookmarks" />
-          <Stat theme={theme} value={counts?.prayers} label="Prayers" />
-        </View>
       </View>
-
-      {/* ── About ── */}
-      <Label theme={theme}>About</Label>
-      <View style={[styles.card, styles.cardFlush, card]}>
-        <Row
-          theme={theme}
-          icon="information-circle-outline"
-          label="Devo Reflect"
-        >
-          <Text style={[styles.meta, { color: theme.textSecondary }]}>
-            Version {version}
-          </Text>
-        </Row>
-        <Divider theme={theme} />
-        <Row
-          theme={theme}
-          icon="document-text-outline"
-          label="Terms & Conditions"
-          onPress={() => router.push("/(auth)/terms-and-conditions")}
-        />
-        <Divider theme={theme} />
-        <Row
-          theme={theme}
-          icon="shield-checkmark-outline"
-          label="Privacy Policy"
-          onPress={() => router.push("/(auth)/privacy-policy")}
-        />
+      {created && (
+        <Text style={[styles.meta, { color: theme.textSecondary }]}>
+          Member since {created}
+        </Text>
+      )}
+      <View style={[styles.stats, { borderTopColor: theme.border }]}>
+        <Stat theme={theme} value={counts?.entries} label="Entries" />
+        <Stat theme={theme} value={counts?.bookmarks} label="Bookmarks" />
+        <Stat theme={theme} value={counts?.prayers} label="Prayers" />
       </View>
     </View>
   );

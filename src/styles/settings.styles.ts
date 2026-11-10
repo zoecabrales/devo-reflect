@@ -44,6 +44,13 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: "hidden",
   },
+  // App version footer (phones / tablets; desktop shows it under About)
+  versionText: {
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 20,
+    opacity: 0.8,
+  },
 
   // ── Setting Row ───────────────────────────────────────────
   row: {
