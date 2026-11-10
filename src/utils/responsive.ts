@@ -30,14 +30,13 @@ export function useIsDesktop(): boolean {
 }
 
 // ── Page-scroll mode (mobile web) ──────────────────────────────────────────
-/**
- * Tabs that scroll the whole page on phone / tablet web instead of an inner
- * box, so mobile Safari can collapse its toolbars as the user scrolls.
- * Rolled out per tab; the CSS lives in public/index.html.
- */
-export const PAGE_SCROLL_ROUTES = new Set(["journal"]);
+// On phone / tablet web the main tabs scroll the whole page instead of an
+// inner box, so mobile browsers can collapse their toolbars as the user
+// scrolls, and a top bar with a ☰ menu (MobileTopBar) replaces the bottom
+// tab bar. Each such screen marks its root and its scroll view with
+// pageScrollMarker(); the CSS lives in public/index.html.
 
-/** True on phone / tablet web, where page-scroll tabs scroll the page. */
+/** True on phone / tablet web: top-bar menu and page scrolling. */
 export function usePageScrollLayout(): boolean {
   const isDesktop = useIsDesktop();
   return Platform.OS === "web" && !isDesktop;

@@ -25,7 +25,12 @@ import {
 } from "@/src/features/settings/SettingsAside";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
 import { styles } from "@/src/styles/settings.styles";
-import { useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
+import {
+  pageScrollMarker,
+  useIsDesktop,
+  useListPaddingH,
+  usePageScroll,
+} from "@/src/utils/responsive";
 
 const SUPPORT_EMAIL = "jirehzoe@gmail.com";
 
@@ -95,6 +100,8 @@ export default function Settings() {
   const { theme, themeName, colorMode, setThemeName, setColorMode } =
     useAppTheme();
   const isDesktop = useIsDesktop();
+  // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
+  const pageScroll = usePageScroll();
   const padH = useListPaddingH();
 
   async function handleSignOut() {
@@ -108,6 +115,7 @@ export default function Settings() {
 
   return (
     <SafeAreaView
+      {...pageScrollMarker(pageScroll)}
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
@@ -115,6 +123,7 @@ export default function Settings() {
       <PageHeader title="Settings" />
 
       <ScrollView
+        {...pageScrollMarker(pageScroll, "pageScrollList")}
         contentContainerStyle={[
           styles.content,
           { paddingHorizontal: padH },

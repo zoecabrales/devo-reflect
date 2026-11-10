@@ -8,18 +8,18 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 // expo-router bundles its own bottom-tabs types and doesn't export the tab
 // bar props, so derive them from <Tabs tabBar={...}>.
-type TabBarProps = Parameters<
+export type TabBarProps = Parameters<
   NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
 >[0];
 
-type Item = {
+export type NavItem = {
   name: string;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   activeIcon: keyof typeof Ionicons.glyphMap;
 };
 
-const MAIN_ITEMS: Item[] = [
+export const MAIN_ITEMS: NavItem[] = [
   { name: "home", label: "Home", icon: "home-outline", activeIcon: "home" },
   {
     name: "journal",
@@ -36,7 +36,7 @@ const MAIN_ITEMS: Item[] = [
   },
 ];
 
-const SETTINGS_ITEM: Item = {
+export const SETTINGS_ITEM: NavItem = {
   name: "settings",
   label: "Settings",
   icon: "settings-outline",
@@ -44,7 +44,7 @@ const SETTINGS_ITEM: Item = {
 };
 
 // Hidden screens highlight the menu item they belong to
-const PARENT_ITEM: Record<string, string> = {
+export const PARENT_ITEM: Record<string, string> = {
   "bible-browser": "home",
   concordance: "home",
   "journal-compose": "journal",
@@ -72,7 +72,7 @@ export function DesktopSidebar({ state, navigation }: TabBarProps) {
     }
   }
 
-  function renderItem(item: Item) {
+  function renderItem(item: NavItem) {
     const active = item.name === activeName;
     const color = active ? TAB_ACTIVE_COLOR : theme.text;
     return (

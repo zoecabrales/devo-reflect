@@ -5,17 +5,26 @@ import { GrowthStats } from "@/src/features/growth/GrowthStats";
 import { PrayersWidget } from "@/src/features/growth/PrayersWidget";
 import { TopicsWidget } from "@/src/features/growth/TopicsWidget";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
-import { LIST_PADDING_H, useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
+import {
+  LIST_PADDING_H,
+  pageScrollMarker,
+  useIsDesktop,
+  useListPaddingH,
+  usePageScroll,
+} from "@/src/utils/responsive";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Growth() {
   const { theme } = useAppTheme();
   const isDesktop = useIsDesktop();
+  // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
+  const pageScroll = usePageScroll();
   const padH = useListPaddingH();
 
   return (
     <SafeAreaView
+      {...pageScrollMarker(pageScroll)}
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
@@ -23,6 +32,7 @@ export default function Growth() {
 
       {/* ── Widgets ── */}
       <ScrollView
+        {...pageScrollMarker(pageScroll, "pageScrollList")}
         contentContainerStyle={[
           styles.scroll,
           { paddingHorizontal: padH },
