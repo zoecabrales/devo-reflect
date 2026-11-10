@@ -4,6 +4,10 @@ export const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 24,
+    // Keep the form a readable width on tablets; phones are narrower anyway
+    width: "100%",
+    maxWidth: 520,
+    alignSelf: "center",
     justifyContent: "center",
     gap: 16,
   },
