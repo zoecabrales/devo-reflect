@@ -6,7 +6,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useColorScheme } from "react-native";
+import { Platform, useColorScheme } from "react-native";
 import {
   ColorMode,
   Theme,
@@ -78,6 +78,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const preset = THEME_PRESETS[THEME_PICKER_ENABLED ? themeName : "default"];
   const theme: Theme =
     effectiveScheme === "dark" ? preset.dark : preset.light;
+
+  // Web: match the page background and browser toolbar colour to the app,
+  // so mobile Safari / Chrome don't frame it with white bars
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+    const color = theme.background;
+    document.documentElement.style.backgroundColor = color;
+    document.body.style.backgroundColor = color;
+    document.documentElement.style.colorScheme = effectiveScheme;
+    // One unconditional theme-color tag replaces the media-query defaults
+    document
+      .querySelectorAll('meta[name="theme-color"]')
+      .forEach((m) => m.remove());
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = color;
+    document.head.appendChild(meta);
+  }, [theme.background, effectiveScheme]);
 
   if (!ready) return null;
 
