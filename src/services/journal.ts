@@ -33,6 +33,11 @@ export interface JournalEntry {
   tags: string[]; // user-defined topic tags
   bookId: string | null; // e.g. "john" — for chapter-level filtering
   chapter: number | null; // e.g. 3
+  /**
+   * Calendar day this entry is for ("YYYY-MM-DD"), when added from a specific
+   * date in Growth's calendar. null = the day it was written (createdAt).
+   */
+  forDate: string | null;
   createdAt: number; // Date.now()
   updatedAt: number; // Date.now() on every save
 }
@@ -78,6 +83,7 @@ export async function loadEntries(uid: string): Promise<JournalEntry[]> {
       tags: (data.tags as string[]) ?? [],
       bookId: (data.bookId as string | null) ?? null,
       chapter: (data.chapter as number | null) ?? null,
+      forDate: (data.forDate as string | null) ?? null,
       createdAt: data.createdAt as number,
       updatedAt: data.updatedAt as number,
     };
@@ -132,6 +138,7 @@ export async function loadEntry(
     tags: (data.tags as string[]) ?? [],
     bookId: (data.bookId as string | null) ?? null,
     chapter: (data.chapter as number | null) ?? null,
+    forDate: (data.forDate as string | null) ?? null,
     createdAt: data.createdAt as number,
     updatedAt: data.updatedAt as number,
   };
@@ -141,4 +148,35 @@ export async function loadEntry(
 export async function deleteEntry(uid: string, entryId: string): Promise<void> {
   if (!uid) return;
   await deleteDoc(doc(db, "users", uid, "journal", entryId));
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+const PHT = "Asia/Manila";
+
+/** "YYYY-MM-DD" for a timestamp in Philippine Time. */
+function getPHTDateStr(ts: number): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: PHT }).format(
+    new Date(ts),
+  );
+}
+
+/** Count consecutive days (ending today PHT) that have at least one entry. */
+export function calcStreak(entries: JournalEntry[]): number {
+  if (!entries.length) return 0;
+  const unique = [...new Set(entries.map((e) => getPHTDateStr(e.createdAt)))]
+    .sort()
+    .reverse();
+  const today = getPHTDateStr(Date.now());
+  let streak = 0;
+  let cursor = today;
+  for (const date of unique) {
+    if (date === cursor) {
+      streak++;
+      const d = new Date(cursor);
+      d.setDate(d.getDate() - 1);
+      cursor = getPHTDateStr(d.getTime());
+    } else break;
+  }
+  return streak;
 }

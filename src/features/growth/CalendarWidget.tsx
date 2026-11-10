@@ -1,18 +1,18 @@
+import { AppModal } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { BookmarkedVerse, loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { JournalEntry, loadEntries } from "@/src/services/journal";
+import { dateKeyOf } from "@/src/utils/dateKey";
 import { MODAL_MAX_WIDTH } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
-    Modal,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    TouchableWithoutFeedback,
     View,
 } from "react-native";
 
@@ -52,13 +52,13 @@ function buildGrid(y: number, m: number): (number | null)[][] {
   return rows;
 }
 
-/** Converts a unix timestamp to a "YYYY-MM-DD" key using the device's local date. */
-function timestampToDateKey(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
-export function CalendarWidget() {
+/**
+ * Month calendar of journal entries and bookmarks.
+ * `inline` (desktop dashboard): the selected day's details show in a panel
+ * below the calendar instead of a modal, with today selected initially.
+ */
+export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
   const { theme } = useAppTheme();
   const router = useRouter();
   const today = new Date();
@@ -73,7 +73,9 @@ export function CalendarWidget() {
   const rows = buildGrid(year, month);
 
   // ── Selection state ──────────────────────────────────────────────────────
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(
+    inline ? today.getDate() : null,
+  );
   const [showModal, setShowModal] = useState(false);
 
   // ── Journal data — keyed "YYYY-MM-DD" ────────────────────────────────────
@@ -95,7 +97,8 @@ export function CalendarWidget() {
           // Build journal date map
           const jMap: Record<string, JournalEntry[]> = {};
           for (const entry of entries) {
-            const key = timestampToDateKey(entry.createdAt);
+            // The calendar day it was added for, else the day it was written
+            const key = entry.forDate ?? dateKeyOf(entry.createdAt);
             if (!jMap[key]) jMap[key] = [];
             jMap[key].push(entry);
           }
@@ -104,7 +107,7 @@ export function CalendarWidget() {
           // Build bookmark date map
           const bMap: Record<string, BookmarkedVerse[]> = {};
           for (const bm of bookmarks) {
-            const key = timestampToDateKey(bm.createdAt);
+            const key = bm.forDate ?? dateKeyOf(bm.createdAt);
             if (!bMap[key]) bMap[key] = [];
             bMap[key].push(bm);
           }
@@ -113,11 +116,6 @@ export function CalendarWidget() {
         .catch((err) => console.warn("Failed to load calendar data:", err));
     }, [uid]),
   );
-
-  // Reset selection when navigating months
-  useEffect(() => {
-    setSelectedDay(null);
-  }, [year, month]);
 
   // ── Visual helpers ───────────────────────────────────────────────────────
   function isToday(d: number) {
@@ -174,12 +172,15 @@ export function CalendarWidget() {
   }
 
   // ── Navigation ───────────────────────────────────────────────────────────
+  // Changing month clears the selected day
   function prevMonth() {
+    setSelectedDay(null);
     setViewDate(({ year, month }) =>
       month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 },
     );
   }
   function nextMonth() {
+    setSelectedDay(null);
     setViewDate(({ year, month }) =>
       month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 },
     );
@@ -188,7 +189,7 @@ export function CalendarWidget() {
   // ── Day tap ──────────────────────────────────────────────────────────────
   function handleDayPress(day: number) {
     setSelectedDay(day);
-    setShowModal(true);
+    if (!inline) setShowModal(true);
   }
 
   function closeModal() {
@@ -196,8 +197,17 @@ export function CalendarWidget() {
     setSelectedDay(null);
   }
 
+  /** Before navigating away from a day's details (inline keeps the selection). */
+  function leaveDetails() {
+    if (!inline) closeModal();
+  }
+
   // Content for the currently selected date
   const selectedKey = selectedDay ? dateKey(year, month, selectedDay) : null;
+  // Future days can only have a verse planned, not a journal entry
+  const selectedIsFuture =
+    !!selectedKey &&
+    selectedKey > dateKey(today.getFullYear(), today.getMonth(), today.getDate());
   const selectedJournalEntries = selectedKey
     ? (journalByDate[selectedKey] ?? [])
     : [];
@@ -206,6 +216,201 @@ export function CalendarWidget() {
     : [];
   const dateHasJournal = selectedJournalEntries.length > 0;
   const dateHasBookmark = selectedBookmarks.length > 0;
+
+  // Selected day's entries / bookmarks, or add-actions for an empty day.
+  // Shown in the modal (mobile) or the inline details panel (desktop).
+  const dayBody = (
+    <>
+      {/* ── Action rows ─────────────────────────────────────── */}
+      {!dateHasJournal && !dateHasBookmark ? (
+        /* Empty date — offer to add content for this day */
+        <>
+          {!selectedIsFuture && (
+            <TouchableOpacity
+              style={[
+                styles.actionRow,
+                {
+                  borderColor: theme.border,
+                  backgroundColor: theme.background,
+                },
+              ]}
+              onPress={() => {
+                leaveDetails();
+                router.push({
+                  pathname: "/(tabs)/journal-compose",
+                  params: { forDate: selectedKey ?? undefined },
+                });
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="book-outline"
+                size={16}
+                color={theme.primary}
+              />
+              <Text
+                style={[styles.actionRowText, { color: theme.text }]}
+              >
+                Add a Journal
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.actionRow,
+              {
+                borderColor: theme.border,
+                backgroundColor: theme.background,
+              },
+            ]}
+            onPress={() => {
+              leaveDetails();
+              router.push({
+                pathname: "/(tabs)/bible-browser",
+                params: {
+                  forDate: selectedKey ?? undefined,
+                  // New id per tap, so re-opening for the same day re-arms it
+                  forDateId: Date.now().toString(),
+                },
+              });
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={selectedIsFuture ? "calendar-outline" : "bookmark-outline"}
+              size={16}
+              color={theme.primary}
+            />
+            <Text
+              style={[styles.actionRowText, { color: theme.text }]}
+            >
+              {selectedIsFuture ? "Plan a Verse" : "Bookmark a Verse"}
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={theme.textSecondary}
+            />
+          </TouchableOpacity>
+        </>
+      ) : (
+        /* Populated date — show entries filtered to this date */
+        <ScrollView
+          style={styles.contentList}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Journal entries ── */}
+          {dateHasJournal && (
+            <>
+              <Text
+                style={[
+                  styles.sectionSubLabel,
+                  { color: theme.textSecondary },
+                ]}
+              >
+                Journal
+              </Text>
+              {selectedJournalEntries.map((entry) => (
+                <TouchableOpacity
+                  key={entry.id}
+                  style={[
+                    styles.entryCard,
+                    {
+                      borderColor: theme.border,
+                      backgroundColor: theme.background,
+                      borderLeftColor: theme.primary,
+                    },
+                  ]}
+                  onPress={() => {
+                    leaveDetails();
+                    router.push({
+                      pathname: "/(tabs)/journal-compose",
+                      params: { id: entry.id },
+                    });
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[styles.entryTitle, { color: theme.text }]}
+                    numberOfLines={1}
+                  >
+                    {entry.title ||
+                      entry.observation.split("\n")[0] ||
+                      "Untitled"}
+                  </Text>
+                  {entry.scripture.length > 0 && (
+                    <Text
+                      style={[
+                        styles.entryRef,
+                        { color: theme.primary },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {entry.scripture[0].ref}
+                      {entry.scripture.length > 1
+                        ? ` +${entry.scripture.length - 1} more`
+                        : ""}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
+          {/* ── Bookmarks ── */}
+          {dateHasBookmark && (
+            <>
+              <Text
+                style={[
+                  styles.sectionSubLabel,
+                  {
+                    color: theme.textSecondary,
+                    marginTop: dateHasJournal ? 12 : 0,
+                  },
+                ]}
+              >
+                Bookmarks
+              </Text>
+              {selectedBookmarks.map((bm) => (
+                <View
+                  key={bm.id}
+                  style={[
+                    styles.entryCard,
+                    {
+                      borderColor: theme.border,
+                      backgroundColor: theme.background,
+                      borderLeftColor: theme.primary,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.entryRef,
+                      { color: theme.primary },
+                    ]}
+                  >
+                    {bm.bookLabel} {bm.chapter}:{bm.verse} ·{" "}
+                    {bm.version}
+                  </Text>
+                  <Text
+                    style={[styles.entryTitle, { color: theme.text }]}
+                  >
+                    {bm.text}
+                  </Text>
+                </View>
+              ))}
+            </>
+          )}
+        </ScrollView>
+      )}
+    </>
+  );
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -300,228 +505,71 @@ export function CalendarWidget() {
 
         {/* Hint */}
         <Text style={[styles.hint, { color: theme.textSecondary }]}>
-          Tap a date to view or add journal entries
+          {inline
+            ? "Select a date to see what you saved that day"
+            : "Tap a date to view or add journal entries"}
         </Text>
       </View>
 
-      {/* ── Journal entries modal ─────────────────────────────────────────── */}
-      <Modal
-        visible={showModal}
-        transparent
-        animationType="fade"
-        onRequestClose={closeModal}
-      >
-        <TouchableWithoutFeedback onPress={closeModal}>
-          <View style={styles.overlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.modalCard,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}
+      {/* ── Inline day details (desktop dashboard) ── */}
+      {inline && (
+        <View
+          style={[
+            styles.card,
+            styles.detailsCard,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+          ]}
+        >
+          {selectedDay ? (
+            <>
+              <Text
+                style={[styles.modalLabel, { color: theme.textSecondary }]}
               >
-                <Text
-                  style={[styles.modalLabel, { color: theme.textSecondary }]}
-                >
-                  {selectedDay ? fmtDay(selectedDay) : ""}
-                </Text>
-                {/* ── Action rows ─────────────────────────────────────── */}
-                {!dateHasJournal && !dateHasBookmark ? (
-                  /* Empty date — offer to add content */
-                  <>
-                    <TouchableOpacity
-                      style={[
-                        styles.actionRow,
-                        {
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      onPress={() => {
-                        closeModal();
-                        router.push("/(tabs)/journal-compose");
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name="book-outline"
-                        size={16}
-                        color={theme.primary}
-                      />
-                      <Text
-                        style={[styles.actionRowText, { color: theme.text }]}
-                      >
-                        Add a Journal
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={14}
-                        color={theme.textSecondary}
-                      />
-                    </TouchableOpacity>
+                {fmtDay(selectedDay)}
+              </Text>
+              {dayBody}
+            </>
+          ) : (
+            <Text style={[styles.hint, styles.detailsEmpty, { color: theme.textSecondary }]}>
+              Select a date to see its journal entries and bookmarks
+            </Text>
+          )}
+        </View>
+      )}
 
-                    <TouchableOpacity
-                      style={[
-                        styles.actionRow,
-                        {
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      onPress={() => {
-                        closeModal();
-                        router.push("/(tabs)/bible-browser");
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name="bookmark-outline"
-                        size={16}
-                        color={theme.primary}
-                      />
-                      <Text
-                        style={[styles.actionRowText, { color: theme.text }]}
-                      >
-                        Bookmark a Verse
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={14}
-                        color={theme.textSecondary}
-                      />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  /* Populated date — show entries filtered to this date */
-                  <ScrollView
-                    style={styles.contentList}
-                    showsVerticalScrollIndicator={false}
-                  >
-                    {/* ── Journal entries ── */}
-                    {dateHasJournal && (
-                      <>
-                        <Text
-                          style={[
-                            styles.sectionSubLabel,
-                            { color: theme.textSecondary },
-                          ]}
-                        >
-                          Journal
-                        </Text>
-                        {selectedJournalEntries.map((entry) => (
-                          <TouchableOpacity
-                            key={entry.id}
-                            style={[
-                              styles.entryCard,
-                              {
-                                borderColor: theme.border,
-                                backgroundColor: theme.background,
-                                borderLeftColor: theme.primary,
-                              },
-                            ]}
-                            onPress={() => {
-                              closeModal();
-                              router.push({
-                                pathname: "/(tabs)/journal-compose",
-                                params: { id: entry.id },
-                              });
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={[styles.entryTitle, { color: theme.text }]}
-                              numberOfLines={1}
-                            >
-                              {entry.title ||
-                                entry.observation.split("\n")[0] ||
-                                "Untitled"}
-                            </Text>
-                            {entry.scripture.length > 0 && (
-                              <Text
-                                style={[
-                                  styles.entryRef,
-                                  { color: theme.primary },
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {entry.scripture[0].ref}
-                                {entry.scripture.length > 1
-                                  ? ` +${entry.scripture.length - 1} more`
-                                  : ""}
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </>
-                    )}
+      {/* ── Journal entries modal ─────────────────────────────────────────── */}
+      <AppModal
+        visible={!inline && showModal}
+        onClose={closeModal}
+        overlayStyle={styles.overlay}
+        cardStyle={[
+          styles.modalCard,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
+      >
+        <Text
+          style={[styles.modalLabel, { color: theme.textSecondary }]}
+        >
+          {selectedDay ? fmtDay(selectedDay) : ""}
+        </Text>
+        {dayBody}
 
-                    {/* ── Bookmarks ── */}
-                    {dateHasBookmark && (
-                      <>
-                        <Text
-                          style={[
-                            styles.sectionSubLabel,
-                            {
-                              color: theme.textSecondary,
-                              marginTop: dateHasJournal ? 12 : 0,
-                            },
-                          ]}
-                        >
-                          Bookmarks
-                        </Text>
-                        {selectedBookmarks.map((bm) => (
-                          <View
-                            key={bm.id}
-                            style={[
-                              styles.entryCard,
-                              {
-                                borderColor: theme.border,
-                                backgroundColor: theme.background,
-                                borderLeftColor: theme.primary,
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.entryRef,
-                                { color: theme.primary },
-                              ]}
-                            >
-                              {bm.bookLabel} {bm.chapter}:{bm.verse} ·{" "}
-                              {bm.version}
-                            </Text>
-                            <Text
-                              style={[styles.entryTitle, { color: theme.text }]}
-                            >
-                              {bm.text}
-                            </Text>
-                          </View>
-                        ))}
-                      </>
-                    )}
-                  </ScrollView>
-                )}
-
-                {/* ── Close ───────────────────────────────────────────── */}
-                <TouchableOpacity
-                  style={[styles.closeBtn, { borderColor: theme.border }]}
-                  onPress={closeModal}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.closeBtnText,
-                      { color: theme.textSecondary },
-                    ]}
-                  >
-                    Close
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        {/* ── Close ───────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={[styles.closeBtn, { borderColor: theme.border }]}
+          onPress={closeModal}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.closeBtnText,
+              { color: theme.textSecondary },
+            ]}
+          >
+            Close
+          </Text>
+        </TouchableOpacity>
+      </AppModal>
     </>
   );
 }
@@ -593,6 +641,14 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
+  },
+  // ── Inline details panel (desktop) ───────────────────────────────────────
+  detailsCard: {
+    gap: 12,
+  },
+  detailsEmpty: {
+    marginTop: 0,
+    paddingVertical: 12,
   },
   // ── Modal ────────────────────────────────────────────────────────────────
   overlay: {

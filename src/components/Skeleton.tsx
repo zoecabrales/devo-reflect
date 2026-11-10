@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
+import { useListPaddingH } from "@/src/utils/responsive";
 import { useEffect, useRef } from "react";
 import { Animated, DimensionValue, StyleSheet, View } from "react-native";
 
@@ -92,8 +93,10 @@ export function VerseCardSkeleton() {
 /** Journal list – replaces the centred ActivityIndicator */
 export function JournalListSkeleton() {
   const { theme } = useAppTheme();
+  const padH = useListPaddingH();
   return (
-    <View style={sk.list}>
+    // Match the journal list's side padding
+    <View style={[sk.list, { paddingHorizontal: padH }]}>
       {[0, 1, 2].map((i) => (
         <View
           key={i}

@@ -1,3 +1,5 @@
+import { DesktopSidebar } from "@/src/components/desktop/DesktopSidebar";
+import { DesktopTopBar } from "@/src/components/desktop/DesktopTopBar";
 import { TAB_ACTIVE_COLOR } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
@@ -6,12 +8,23 @@ import {
     signOutUser,
 } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
+import { DESKTOP_CONTENT_ZOOM, useIsDesktop } from "@/src/utils/responsive";
 import { hideSplashOnce } from "@/src/utils/splashGuard";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs, usePathname, useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
-import { AppState, AppStateStatus, Text } from "react-native";
+import { AppState, AppStateStatus, Text, View, ViewStyle } from "react-native";
+
+// Main tabs rendered at the shared desktop scale, so headers and content
+// sizes match across tabs
+const ZOOMED_DESKTOP_TABS = new Set([
+  "home",
+  "journal",
+  "growth",
+  "bookmarks",
+  "settings",
+]);
 
 type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";
 
@@ -21,6 +34,8 @@ export default function TabsLayout() {
   const pathname = usePathname();
   const appStateRef = useRef(AppState.currentState);
   const { theme } = useAppTheme();
+  // Desktop web: top bar + left sidebar instead of the bottom tab bar
+  const isDesktop = useIsDesktop();
 
   // Treat Home as the active tab when on a hidden screen launched from it
   const homeIsEffectivelyFocused =
@@ -87,78 +102,88 @@ export default function TabsLayout() {
     return <Redirect href="/(auth)/verify-email" />;
 
   return (
-    <Tabs
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: TAB_ACTIVE_COLOR,
-        tabBarInactiveTintColor: theme.textSecondary,
-        tabBarStyle: {
-          backgroundColor: theme.surface,
-          borderTopColor: theme.border,
-        },
-        tabBarIcon: ({ focused, color, size }) => {
-          const icons: Record<
-            string,
-            {
-              active: keyof typeof Ionicons.glyphMap;
-              inactive: keyof typeof Ionicons.glyphMap;
-            }
-          > = {
-            home: { active: "home", inactive: "home-outline" },
-            journal: { active: "book", inactive: "book-outline" },
-            growth: { active: "leaf", inactive: "leaf-outline" },
-            bookmarks: { active: "bookmark", inactive: "bookmark-outline" },
-            settings: { active: "settings", inactive: "settings-outline" },
-            // Hidden / auxiliary screens reuse main tab icons
-            "bible-browser": { active: "home", inactive: "home-outline" },
-            concordance: { active: "home", inactive: "home-outline" },
-            "journal-compose": { active: "book", inactive: "book-outline" },
-          };
-          const icon = icons[route.name] ?? icons.home;
-          // Keep Home/Journal highlighted when the user is inside a hidden screen
-          const isFocused =
-            focused ||
-            (route.name === "home" && homeIsEffectivelyFocused) ||
-            (route.name === "journal" && journalIsEffectivelyFocused);
-          const iconColor = isFocused ? TAB_ACTIVE_COLOR : color;
-          return (
-            <Ionicons
-              name={isFocused ? icon.active : icon.inactive}
-              size={size}
-              color={iconColor}
-            />
-          );
-        },
-        tabBarLabel: ({ focused, color, children }) => {
-          const isLabelFocused =
-            focused ||
-            (route.name === "home" && homeIsEffectivelyFocused) ||
-            (route.name === "journal" && journalIsEffectivelyFocused);
-          return (
-            <Text
-              style={{
-                color: isLabelFocused ? TAB_ACTIVE_COLOR : color,
-                fontSize: 10,
-                marginBottom: 2,
-              }}
-            >
-              {children}
-            </Text>
-          );
-        },
-      })}
-    >
-      <Tabs.Screen name="home" options={{ title: "Home" }} />
-      <Tabs.Screen name="journal" options={{ title: "Journal" }} />
-      <Tabs.Screen name="growth" options={{ title: "Growth" }} />
-      <Tabs.Screen name="bookmarks" options={{ title: "Bookmarks" }} />
-      <Tabs.Screen name="settings" options={{ title: "Settings" }} />
-      {/* Hidden screens — navigable but not shown in the tab bar */}
-      <Tabs.Screen name="bible-browser" options={{ href: null }} />
-      <Tabs.Screen name="concordance" options={{ href: null }} />
-      <Tabs.Screen name="journal-compose" options={{ href: null }} />
-      {/* Disabled tabs — files kept for git history, hidden from tab bar */}
-      <Tabs.Screen name="prayers" options={{ href: null }} />
-    </Tabs>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      {isDesktop && <DesktopTopBar />}
+      <Tabs
+        tabBar={isDesktop ? (props) => <DesktopSidebar {...props} /> : undefined}
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarPosition: isDesktop ? "left" : "bottom",
+          // `zoom` is a web-only CSS property, so it isn't in ViewStyle's type
+          sceneStyle:
+            isDesktop && ZOOMED_DESKTOP_TABS.has(route.name)
+              ? ({ zoom: DESKTOP_CONTENT_ZOOM } as ViewStyle)
+              : undefined,
+          tabBarActiveTintColor: TAB_ACTIVE_COLOR,
+          tabBarInactiveTintColor: theme.textSecondary,
+          tabBarStyle: {
+            backgroundColor: theme.surface,
+            borderTopColor: theme.border,
+          },
+          tabBarIcon: ({ focused, color, size }) => {
+            const icons: Record<
+              string,
+              {
+                active: keyof typeof Ionicons.glyphMap;
+                inactive: keyof typeof Ionicons.glyphMap;
+              }
+            > = {
+              home: { active: "home", inactive: "home-outline" },
+              journal: { active: "book", inactive: "book-outline" },
+              growth: { active: "leaf", inactive: "leaf-outline" },
+              bookmarks: { active: "bookmark", inactive: "bookmark-outline" },
+              settings: { active: "settings", inactive: "settings-outline" },
+              // Hidden / auxiliary screens reuse main tab icons
+              "bible-browser": { active: "home", inactive: "home-outline" },
+              concordance: { active: "home", inactive: "home-outline" },
+              "journal-compose": { active: "book", inactive: "book-outline" },
+            };
+            const icon = icons[route.name] ?? icons.home;
+            // Keep Home/Journal highlighted when the user is inside a hidden screen
+            const isFocused =
+              focused ||
+              (route.name === "home" && homeIsEffectivelyFocused) ||
+              (route.name === "journal" && journalIsEffectivelyFocused);
+            const iconColor = isFocused ? TAB_ACTIVE_COLOR : color;
+            return (
+              <Ionicons
+                name={isFocused ? icon.active : icon.inactive}
+                size={size}
+                color={iconColor}
+              />
+            );
+          },
+          tabBarLabel: ({ focused, color, children }) => {
+            const isLabelFocused =
+              focused ||
+              (route.name === "home" && homeIsEffectivelyFocused) ||
+              (route.name === "journal" && journalIsEffectivelyFocused);
+            return (
+              <Text
+                style={{
+                  color: isLabelFocused ? TAB_ACTIVE_COLOR : color,
+                  fontSize: 10,
+                  marginBottom: 2,
+                }}
+              >
+                {children}
+              </Text>
+            );
+          },
+        })}
+      >
+        <Tabs.Screen name="home" options={{ title: "Home" }} />
+        <Tabs.Screen name="journal" options={{ title: "Journal" }} />
+        <Tabs.Screen name="growth" options={{ title: "Growth" }} />
+        <Tabs.Screen name="bookmarks" options={{ title: "Bookmarks" }} />
+        <Tabs.Screen name="settings" options={{ title: "Settings" }} />
+        {/* Hidden screens — navigable but not shown in the tab bar */}
+        <Tabs.Screen name="bible-browser" options={{ href: null }} />
+        <Tabs.Screen name="concordance" options={{ href: null }} />
+        <Tabs.Screen name="journal-compose" options={{ href: null }} />
+        {/* Disabled tabs — files kept for git history, hidden from tab bar */}
+        <Tabs.Screen name="prayers" options={{ href: null }} />
+      </Tabs>
+    </View>
   );
 }

@@ -22,6 +22,11 @@ export interface BookmarkedVerse {
   verse: number;
   text: string;
   version: string; // translation label e.g. "ASV"
+  /**
+   * Calendar day this bookmark is for ("YYYY-MM-DD"), when added or planned
+   * from Growth's calendar. null / missing = the day it was saved.
+   */
+  forDate?: string | null;
   createdAt: number; // Date.now()
 }
 
@@ -43,6 +48,7 @@ export async function loadBookmarks(uid: string): Promise<BookmarkedVerse[]> {
       verse: data.verse as number,
       text: data.text as string,
       version: data.version as string,
+      forDate: (data.forDate as string | null) ?? null,
       createdAt: data.createdAt as number,
     };
   });
@@ -60,6 +66,7 @@ export async function addBookmark(
     verse: verse.verse,
     text: verse.text,
     version: verse.version,
+    forDate: verse.forDate ?? null,
     createdAt: verse.createdAt,
     createdAtServer: serverTimestamp(),
   });

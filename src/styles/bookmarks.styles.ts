@@ -1,27 +1,9 @@
-import { fs, LIST_PADDING_H } from "@/src/utils/responsive";
+import { LIST_PADDING_H } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-
-  // ── Header ───────────────────────────────────────────────
-  header: {
-    paddingHorizontal: LIST_PADDING_H,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: fs(26),
-    fontFamily: "Oswald_700Bold",
-    letterSpacing: 0.4,
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    opacity: 0.5,
-    letterSpacing: 0.3,
-    marginTop: 2,
   },
 
   // ── List ─────────────────────────────────────────────────
@@ -55,6 +37,12 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
     letterSpacing: 0.1,
     opacity: 0.72,
+  },
+  // Newest bookmark in the desktop bento grid
+  rowTextFeatured: {
+    fontSize: 19,
+    lineHeight: 29,
+    opacity: 0.9,
   },
   rowVersion: {
     fontSize: 10,

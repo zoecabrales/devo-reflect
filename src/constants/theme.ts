@@ -242,6 +242,13 @@ export const duskDarkTheme: Theme = {
 };
 
 // ── Lookup helpers ─────────────────────────────────────────────────────────
+/**
+ * Theme preset picker (Default / Sepia / Ocean / Forest) in Settings.
+ * Disabled for now: the picker is hidden and every user gets the Default
+ * palette. Flip to true to bring it back; saved choices are kept.
+ */
+export const THEME_PICKER_ENABLED = false;
+
 export const THEME_PRESETS: Record<
   ThemeName,
   { label: string; swatch: string; light: Theme; dark: Theme }

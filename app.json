@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "devo-reflect",
+    "name": "Devo Reflect",
     "slug": "devo-reflect",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -25,7 +25,8 @@
       "package": "com.jirehzoe.devoreflect"
     },
     "web": {
-      "output": "static",
+      "bundler": "metro",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
