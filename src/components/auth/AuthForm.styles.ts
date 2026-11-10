@@ -94,23 +94,24 @@ export const styles = StyleSheet.create({
   // ── Wide web layout (brand panel | divider | form) ───────────────────────
   wideRoot: {
     flex: 1,
-    alignItems: "center",
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#fff",
   },
-  // Caps the layout so both halves stay grouped around the centre divider
-  wideInner: {
-    flex: 1,
-    flexDirection: "row",
-    width: "100%",
-    maxWidth: 1120,
-  },
-  brandPanel: {
-    flex: 1,
+  wideRootContent: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    // Vertical only: side padding would make this half wider than the
-    // form half and push the divider off-centre.
-    paddingVertical: 48,
+    padding: 32,
+  },
+  // Sized to its content so both halves sit close to the centre divider
+  wideInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 56,
+  },
+  brandPanel: {
+    width: 340,
+    alignItems: "center",
+    justifyContent: "center",
   },
   brandTile: {
     width: 116,
@@ -136,24 +137,14 @@ export const styles = StyleSheet.create({
     color: "#555",
     marginTop: 8,
   },
+  // Short centre line, roughly the height of the brand group
   wideDivider: {
     width: StyleSheet.hairlineWidth,
+    height: 300,
     backgroundColor: "#c8c8c8",
-    marginVertical: 36,
-  },
-  formPanel: {
-    flex: 1,
-  },
-  formPanelContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 48,
-    paddingVertical: 48,
   },
   formColumn: {
-    width: "100%",
-    maxWidth: 472,
+    width: 360,
     gap: 16,
   },
   wideHeading: {
