@@ -103,9 +103,16 @@
         bottom: auto !important;
         height: auto !important;
         overflow: visible !important;
+        /*
+          Grow to at least the space left under the top bar: tabs you've
+          visited stay mounted behind the current one, and a short page
+          would otherwise let them show through below its content.
+        */
+        flex-grow: 1 !important;
       }
       [data-page-scroll="on"] {
         overflow: visible !important;
+        flex-grow: 1 !important;
       }
       [data-page-scroll="on"] [data-page-scroll-list] {
         overflow: visible !important;
