@@ -33,6 +33,8 @@ const ZOOMED_DESKTOP_TABS = new Set([
   "growth",
   "bookmarks",
   "settings",
+  "reading-plans",
+  "memory-verses",
 ]);
 
 type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";
@@ -198,6 +200,15 @@ export default function TabsLayout() {
       <Tabs.Screen name="bible-browser" options={{ href: null }} />
       <Tabs.Screen name="concordance" options={{ href: null }} />
       <Tabs.Screen name="journal-compose" options={{ href: null }} />
+      {/* Reached from the menu (web) and Home's quick access (all) */}
+      <Tabs.Screen
+        name="reading-plans"
+        options={{ href: null, title: "Reading Plans" }}
+      />
+      <Tabs.Screen
+        name="memory-verses"
+        options={{ href: null, title: "Memory Verses" }}
+      />
       {/* Disabled tabs — files kept for git history, hidden from tab bar */}
       <Tabs.Screen name="prayers" options={{ href: null }} />
     </Tabs>

@@ -3,6 +3,12 @@ import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { BookmarkedVerse, loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { JournalEntry, loadEntries } from "@/src/services/journal";
+import {
+  formatReading,
+  getPlan,
+  loadPlanProgress,
+  planSchedule,
+} from "@/src/services/readingPlans";
 import { dateKeyOf } from "@/src/utils/dateKey";
 import { MODAL_MAX_WIDTH } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
@@ -88,12 +94,39 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
     Record<string, BookmarkedVerse[]>
   >({});
 
-  // ── Reload both journal entries and bookmarks whenever the Growth tab is focused
+  // ── Reading-plan days read — keyed by the date they were read ──────────
+  const [readingsByDate, setReadingsByDate] = useState<
+    Record<string, { key: string; plan: string; day: number; reading: string }[]>
+  >({});
+
+  // ── Reload journal entries, bookmarks and plan readings on focus
   useFocusEffect(
     useCallback(() => {
       if (!uid) return;
-      Promise.all([loadEntries(uid), loadBookmarks(uid)])
-        .then(([entries, bookmarks]) => {
+      Promise.all([loadEntries(uid), loadBookmarks(uid), loadPlanProgress(uid)])
+        .then(([entries, bookmarks, plans]) => {
+          // Build reading-plan date map
+          const rMap: Record<
+            string,
+            { key: string; plan: string; day: number; reading: string }[]
+          > = {};
+          for (const p of Object.values(plans)) {
+            const plan = getPlan(p.planId);
+            if (!plan) continue;
+            const schedule = planSchedule(plan.id);
+            for (const [day, readOn] of Object.entries(p.completed)) {
+              const d = Number(day);
+              if (!rMap[readOn]) rMap[readOn] = [];
+              rMap[readOn].push({
+                key: `${plan.id}-${d}`,
+                plan: plan.title,
+                day: d + 1,
+                reading: formatReading(schedule[d] ?? []),
+              });
+            }
+          }
+          setReadingsByDate(rMap);
+
           // Build journal date map
           const jMap: Record<string, JournalEntry[]> = {};
           for (const entry of entries) {
@@ -141,10 +174,15 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
     return (bookmarksByDate[dateKey(year, month, d)]?.length ?? 0) > 0;
   }
 
-  // True when a date has content (journal OR bookmark) but is NOT selected/today
+  // True when a reading-plan day was read on this date
+  function hasReadings(d: number): boolean {
+    return (readingsByDate[dateKey(year, month, d)]?.length ?? 0) > 0;
+  }
+
+  // True when a date has content (journal, bookmark or reading) but is NOT selected/today
   function hasContentOnly(d: number): boolean {
     return (
-      (hasJournalEntries(d) || hasBookmarks(d)) &&
+      (hasJournalEntries(d) || hasBookmarks(d) || hasReadings(d)) &&
       d !== selectedDay &&
       !isToday(d)
     );
@@ -214,15 +252,19 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
   const selectedBookmarks = selectedKey
     ? (bookmarksByDate[selectedKey] ?? [])
     : [];
+  const selectedReadings = selectedKey
+    ? (readingsByDate[selectedKey] ?? [])
+    : [];
   const dateHasJournal = selectedJournalEntries.length > 0;
   const dateHasBookmark = selectedBookmarks.length > 0;
+  const dateHasReading = selectedReadings.length > 0;
 
   // Selected day's entries / bookmarks, or add-actions for an empty day.
   // Shown in the modal (mobile) or the inline details panel (desktop).
   const dayBody = (
     <>
       {/* ── Action rows ─────────────────────────────────────── */}
-      {!dateHasJournal && !dateHasBookmark ? (
+      {!dateHasJournal && !dateHasBookmark && !dateHasReading ? (
         /* Empty date — offer to add content for this day */
         <>
           {!selectedIsFuture && (
@@ -407,6 +449,43 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
               ))}
             </>
           )}
+
+          {/* ── Reading plans ── */}
+          {dateHasReading && (
+            <>
+              <Text
+                style={[
+                  styles.sectionSubLabel,
+                  {
+                    color: theme.textSecondary,
+                    marginTop: dateHasJournal || dateHasBookmark ? 12 : 0,
+                  },
+                ]}
+              >
+                Reading Plan
+              </Text>
+              {selectedReadings.map((r) => (
+                <View
+                  key={r.key}
+                  style={[
+                    styles.entryCard,
+                    {
+                      borderColor: theme.border,
+                      backgroundColor: theme.background,
+                      borderLeftColor: "#4CAF50",
+                    },
+                  ]}
+                >
+                  <Text style={[styles.entryRef, { color: theme.primary }]}>
+                    {r.plan} · Day {r.day}
+                  </Text>
+                  <Text style={[styles.entryTitle, { color: theme.text }]}>
+                    {r.reading}
+                  </Text>
+                </View>
+              ))}
+            </>
+          )}
         </ScrollView>
       )}
     </>
@@ -488,7 +567,9 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
                     </View>
 
                     {/* Dot — shown when date has journal entries or bookmarks */}
-                    {(hasJournalEntries(day) || hasBookmarks(day)) && (
+                    {(hasJournalEntries(day) ||
+                      hasBookmarks(day) ||
+                      hasReadings(day)) && (
                       <View
                         style={[
                           styles.savedDot,

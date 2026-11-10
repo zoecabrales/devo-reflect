@@ -417,6 +417,44 @@ function BrowseBibleCard({ theme }: { theme: Theme }) {
   );
 }
 
+/** Quick-access link styled like "Read the Word". */
+function QuickLinkCard({
+  theme,
+  icon,
+  title,
+  subtitle,
+  href,
+}: {
+  theme: Theme;
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle: string;
+  href: "/(tabs)/reading-plans" | "/(tabs)/memory-verses";
+}) {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      style={[
+        styles.browseCard,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+      onPress={() => router.push(href)}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.browseIconWrap, { backgroundColor: theme.primary }]}>
+        <Ionicons name={icon} size={18} color={theme.primaryText} />
+      </View>
+      <View style={styles.browseTextWrap}>
+        <Text style={[styles.browseTitle, { color: theme.text }]}>{title}</Text>
+        <Text style={[styles.browseSubtitle, { color: theme.textSecondary }]}>
+          {subtitle}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+    </TouchableOpacity>
+  );
+}
+
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 // Show the verse greeting once per cold start, not on every navigation
@@ -563,6 +601,20 @@ export default function Home() {
         {readingPosition && (
           <ResumeReadingCard position={readingPosition} theme={theme} />
         )}
+        <QuickLinkCard
+          theme={theme}
+          icon="calendar-outline"
+          title="Reading Plans"
+          subtitle="Read the Bible a little each day"
+          href="/(tabs)/reading-plans"
+        />
+        <QuickLinkCard
+          theme={theme}
+          icon="albums-outline"
+          title="Memory Verses"
+          subtitle="Practise verses with flashcards"
+          href="/(tabs)/memory-verses"
+        />
         <BookmarkBadgeCard count={bookmarkCount} theme={theme} />
         <ConcordanceCard theme={theme} />
       </ScrollView>
