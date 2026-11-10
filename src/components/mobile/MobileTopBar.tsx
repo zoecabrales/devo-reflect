@@ -70,7 +70,7 @@ export function MobileTopBar({ state, navigation, topInset }: Props) {
       >
         <Ionicons
           name={active ? item.activeIcon : item.icon}
-          size={20}
+          size={18}
           color={color}
         />
         <Text
@@ -171,11 +171,11 @@ export function MobileTopBar({ state, navigation, topInset }: Props) {
               </Text>
               <Pressable
                 onPress={() => setMenuOpen(false)}
-                style={[styles.iconButton, { backgroundColor: theme.surface }]}
+                style={[styles.closeButton, { backgroundColor: theme.surface }]}
                 accessibilityRole="button"
                 accessibilityLabel="Close menu"
               >
-                <Ionicons name="close" size={22} color={theme.text} />
+                <Ionicons name="close" size={18} color={theme.text} />
               </Pressable>
             </View>
             {MAIN_ITEMS.map(renderItem)}
@@ -237,11 +237,13 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.45)",
     alignItems: "flex-end",
   },
+  // A quarter of the screen, but wide enough for "Bookmarks" on phones
   panel: {
     height: "100%",
-    width: "78%",
-    maxWidth: 320,
-    paddingHorizontal: 12,
+    width: "25%",
+    minWidth: 168,
+    maxWidth: 280,
+    paddingHorizontal: 8,
     borderLeftWidth: StyleSheet.hairlineWidth,
     gap: 4,
   },
@@ -249,8 +251,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingLeft: 12,
-    marginBottom: 8,
+    paddingLeft: 10,
+    marginBottom: 6,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   panelTitle: {
     fontSize: 11,
@@ -260,13 +269,13 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    borderRadius: 12,
+    gap: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+    borderRadius: 10,
   },
   menuLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
   },
   menuLabelActive: {
@@ -274,7 +283,7 @@ const styles = StyleSheet.create({
   },
   panelDivider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: 8,
-    marginHorizontal: 12,
+    marginVertical: 6,
+    marginHorizontal: 10,
   },
 });
