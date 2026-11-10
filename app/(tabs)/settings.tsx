@@ -22,7 +22,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SettingsAside } from "@/src/features/settings/SettingsAside";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
 import { styles } from "@/src/styles/settings.styles";
-import { useIsDesktop } from "@/src/utils/responsive";
+import { useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
 
 const SUPPORT_EMAIL = "jirehzoe@gmail.com";
 
@@ -92,6 +92,7 @@ export default function Settings() {
   const { theme, themeName, colorMode, setThemeName, setColorMode } =
     useAppTheme();
   const isDesktop = useIsDesktop();
+  const padH = useListPaddingH();
 
   const email = auth.currentUser?.email ?? "";
 
@@ -119,6 +120,7 @@ export default function Settings() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
+          { paddingHorizontal: padH },
           // Desktop: settings on the left, account / preview / about on the right
           isDesktop && [desktopPage.content, styles.desktopRow],
         ]}

@@ -152,7 +152,7 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
   collectionScroll: {
-    marginHorizontal: -SCROLL_PADDING_H, // bleed to screen edges
+    marginHorizontal: -SCROLL_PADDING_H, // bleed; Home overrides on tablet
   },
   collectionScrollContent: {
     paddingHorizontal: SCROLL_PADDING_H,

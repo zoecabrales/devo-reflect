@@ -13,7 +13,7 @@ import { DesktopHome } from "@/src/features/home/DesktopHome";
 import { loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { loadEntries } from "@/src/services/journal";
-import { useIsDesktop } from "@/src/utils/responsive";
+import { useIsDesktop, useScrollPaddingH } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -139,6 +139,7 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
 function CollectionCards({ theme }: { theme: Theme }) {
   const router = useRouter();
   const [selected, setSelected] = useState<BibleCollection | null>(null);
+  const padH = useScrollPaddingH();
 
   return (
     <View>
@@ -148,8 +149,12 @@ function CollectionCards({ theme }: { theme: Theme }) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.collectionScroll}
-        contentContainerStyle={styles.collectionScrollContent}
+        // Bleed to the screen edges, keeping the first card aligned
+        style={[styles.collectionScroll, { marginHorizontal: -padH }]}
+        contentContainerStyle={[
+          styles.collectionScrollContent,
+          { paddingHorizontal: padH },
+        ]}
       >
         {BIBLE_COLLECTIONS.map((col) => (
           <TouchableOpacity
@@ -429,6 +434,7 @@ export default function Home() {
   const [showVerseGreeting, setShowVerseGreeting] = useState(false);
   const [journalThisWeek, setJournalThisWeek] = useState<number | null>(null);
   const isDesktop = useIsDesktop();
+  const padH = useScrollPaddingH();
 
   const user = auth.currentUser;
   const displayName = user?.displayName?.split(" ")[0] ?? "Friend";
@@ -501,7 +507,7 @@ export default function Home() {
         />
       ) : (
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: padH }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

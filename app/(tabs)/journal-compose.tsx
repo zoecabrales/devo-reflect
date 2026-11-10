@@ -10,7 +10,7 @@ import {
   updateEntry,
 } from "@/src/services/journal";
 import { formatDateKey } from "@/src/utils/dateKey";
-import { LIST_PADDING_H } from "@/src/utils/responsive";
+import { useListPaddingH } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -34,6 +34,7 @@ type Params = {
 
 export default function JournalCompose() {
   const { theme } = useAppTheme();
+  const padH = useListPaddingH();
   const router = useRouter();
   const { id, ref, text, forDate } = useLocalSearchParams<Params>();
 
@@ -169,7 +170,7 @@ export default function JournalCompose() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          paddingHorizontal: LIST_PADDING_H,
+          paddingHorizontal: padH,
           paddingVertical: 12,
           borderBottomWidth: 1,
           borderBottomColor: theme.border,
@@ -227,7 +228,7 @@ export default function JournalCompose() {
             flexDirection: "row",
             alignItems: "center",
             gap: 8,
-            paddingHorizontal: LIST_PADDING_H,
+            paddingHorizontal: padH,
             paddingVertical: 10,
             borderBottomWidth: 1,
             borderBottomColor: theme.border,
@@ -257,7 +258,7 @@ export default function JournalCompose() {
       {!loading && (
         <ScrollView
           contentContainerStyle={{
-            paddingHorizontal: LIST_PADDING_H,
+            paddingHorizontal: padH,
             paddingVertical: 16,
             gap: 16,
           }}

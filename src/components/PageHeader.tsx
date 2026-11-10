@@ -1,6 +1,6 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
-import { LIST_PADDING_H, useIsDesktop } from "@/src/utils/responsive";
+import { LIST_PADDING_H, useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
 import { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -19,11 +19,13 @@ type Props = {
 export function PageHeader({ title, subtitle, right }: Props) {
   const { theme } = useAppTheme();
   const isDesktop = useIsDesktop();
+  const padH = useListPaddingH();
 
   return (
     <View
       style={[
         styles.header,
+        { paddingHorizontal: padH },
         isDesktop && [desktopPage.header, styles.headerDesktop],
       ]}
     >

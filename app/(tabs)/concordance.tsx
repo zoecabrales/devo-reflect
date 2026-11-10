@@ -1,4 +1,5 @@
 import { ConcordanceSkeleton } from "@/src/components";
+import { useListPaddingH } from "@/src/utils/responsive";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     ConcordanceResult,
@@ -43,6 +44,7 @@ const BOOK_ID_MAP: Record<number, string> = {
 export default function Concordance() {
   const router = useRouter();
   const { theme } = useAppTheme();
+  const padH = useListPaddingH();
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ConcordanceResult[]>([]);
@@ -150,7 +152,7 @@ export default function Concordance() {
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: padH }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={[styles.backBtn, { borderColor: theme.border }]}
@@ -172,6 +174,7 @@ export default function Concordance() {
       <View
         style={[
           styles.searchWrap,
+          { marginHorizontal: padH },
           { borderColor: theme.border, backgroundColor: theme.surface },
         ]}
       >
@@ -232,7 +235,7 @@ export default function Concordance() {
           }}
           onEndReachedThreshold={0.2}
           ListHeaderComponent={
-            <Text style={[styles.resultCount, { color: theme.textSecondary }]}>
+            <Text style={[styles.resultCount, { marginHorizontal: padH }, { color: theme.textSecondary }]}>
               {results.length} verse{results.length !== 1 ? "s" : ""} found
             </Text>
           }
@@ -245,7 +248,11 @@ export default function Concordance() {
           }
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.resultRow, { borderBottomColor: theme.border }]}
+              style={[
+                styles.resultRow,
+                { paddingHorizontal: padH },
+                { borderBottomColor: theme.border },
+              ]}
               onPress={() => navigateToVerse(item)}
               activeOpacity={0.7}
             >
@@ -261,10 +268,10 @@ export default function Concordance() {
       ) : (
         /* Landing state — suggested search terms */
         <>
-          <Text style={[styles.sectionLabel, { color: theme.text }]}>
+          <Text style={[styles.sectionLabel, { marginHorizontal: padH }, { color: theme.text }]}>
             Suggested Topics
           </Text>
-          <View style={styles.suggestedWrap}>
+          <View style={[styles.suggestedWrap, { paddingHorizontal: padH }]}>
             {SUGGESTED_TERMS.map((term) => (
               <TouchableOpacity
                 key={term}

@@ -43,7 +43,11 @@ import {
 } from "@/src/features/bible/BookSpread";
 import { styles } from "@/src/styles/bible-browser.styles";
 import { dateKeyOf, formatDateKey } from "@/src/utils/dateKey";
-import { SIDEBAR_WIDTH, useIsDesktop } from "@/src/utils/responsive";
+import {
+    SIDEBAR_WIDTH,
+    useIsDesktop,
+    useListPaddingH,
+} from "@/src/utils/responsive";
 
 type Screen = "books" | "chapters" | "verses";
 
@@ -195,6 +199,7 @@ export default function BibleBrowser() {
   // Desktop book view: verse to open the spread at ("end" = last spread)
   const [focusVerse, setFocusVerse] = useState<number | "end" | null>(null);
   const isDesktop = useIsDesktop();
+  const padH = useListPaddingH();
   const { width: windowWidth } = useWindowDimensions();
   // Desktop chapter view: left/right inset of the book, so the header and
   // search bar line up with its edges
@@ -531,6 +536,7 @@ export default function BibleBrowser() {
       <View
         style={[
           styles.header,
+          { paddingHorizontal: padH },
           bookAligned && { paddingHorizontal: bookInset },
         ]}
       >
@@ -586,6 +592,7 @@ export default function BibleBrowser() {
         <View
           style={[
             styles.planBanner,
+            { marginHorizontal: padH },
             { borderColor: theme.border, backgroundColor: theme.surface },
             bookAligned && { marginHorizontal: bookInset },
           ]}
@@ -619,6 +626,7 @@ export default function BibleBrowser() {
         <View
           style={[
             styles.searchBar,
+            { marginHorizontal: padH },
             { borderColor: theme.border, backgroundColor: theme.surface },
             bookAligned && { marginHorizontal: bookInset },
           ]}
@@ -910,6 +918,7 @@ export default function BibleBrowser() {
             <View
               style={[
                 styles.sectionHeader,
+                { paddingHorizontal: padH },
                 { backgroundColor: theme.background },
               ]}
             >
@@ -920,7 +929,11 @@ export default function BibleBrowser() {
           )}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.bookItem, { borderColor: theme.border }]}
+              style={[
+                styles.bookItem,
+                { paddingHorizontal: padH },
+                { borderColor: theme.border },
+              ]}
               onPress={() => {
                 setBook(item);
                 setScreen("chapters");
@@ -1026,7 +1039,7 @@ export default function BibleBrowser() {
         ) : (
           <ScrollView
             ref={scrollViewRef}
-            contentContainerStyle={styles.versesList}
+            contentContainerStyle={[styles.versesList, { paddingHorizontal: padH }]}
           >
             {verses.map((v) => renderVerse(v))}
           </ScrollView>

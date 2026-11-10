@@ -5,13 +5,14 @@ import { GrowthStats } from "@/src/features/growth/GrowthStats";
 import { PrayersWidget } from "@/src/features/growth/PrayersWidget";
 import { TopicsWidget } from "@/src/features/growth/TopicsWidget";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
-import { LIST_PADDING_H, useIsDesktop } from "@/src/utils/responsive";
+import { LIST_PADDING_H, useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Growth() {
   const { theme } = useAppTheme();
   const isDesktop = useIsDesktop();
+  const padH = useListPaddingH();
 
   return (
     <SafeAreaView
@@ -22,7 +23,11 @@ export default function Growth() {
 
       {/* ── Widgets ── */}
       <ScrollView
-        contentContainerStyle={[styles.scroll, isDesktop && desktopPage.content]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingHorizontal: padH },
+          isDesktop && desktopPage.content,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {isDesktop ? (

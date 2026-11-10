@@ -19,7 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/src/styles/bookmarks.styles";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
-import { useIsDesktop } from "@/src/utils/responsive";
+import { useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
 
 const JOSHUA_1_8 = {
   ref: "Joshua 1:8",
@@ -28,6 +28,7 @@ const JOSHUA_1_8 = {
 
 export default function Bookmarks() {
   const { theme } = useAppTheme();
+  const padH = useListPaddingH();
   const router = useRouter();
   const [bookmarks, setBookmarks] = useState<BookmarkedVerse[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -125,7 +126,7 @@ export default function Bookmarks() {
       />
 
       {bookmarks.length === 0 ? (
-        <View style={styles.empty}>
+        <View style={[styles.empty, { paddingHorizontal: padH }]}>
           <Text style={[styles.emptyPrompt, { color: theme.textSecondary }]}>
             No bookmarks yet. Meditate on His Word:
           </Text>
@@ -161,7 +162,7 @@ export default function Bookmarks() {
         <FlatList
           data={bookmarks}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingHorizontal: padH }]}
           renderItem={({ item }) => renderBookmark(item)}
         />
       )}

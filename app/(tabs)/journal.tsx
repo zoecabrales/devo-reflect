@@ -21,7 +21,7 @@ import { ScrollView, SectionList, Text, TouchableOpacity, View } from "react-nat
 import { SafeAreaView } from "react-native-safe-area-context";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
 import { styles } from "@/src/styles/journal.styles";
-import { useIsDesktop } from "@/src/utils/responsive";
+import { useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -59,6 +59,7 @@ function groupByMonth(entries: JournalEntry[]): MonthSection[] {
 
 export default function Journal() {
   const { theme } = useAppTheme();
+  const padH = useListPaddingH();
   const router = useRouter();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -316,7 +317,7 @@ export default function Journal() {
         <JournalListSkeleton />
       ) : entries.length === 0 ? (
         /* ── Empty state ── */
-        <View style={styles.empty}>
+        <View style={[styles.empty, { paddingHorizontal: padH }]}>
           <Text style={[styles.emptyPrompt, { color: theme.textSecondary }]}>
             No entries yet. Begin your first study using the SOAP method —
             Scripture, Observation, Application, Prayer.
@@ -410,7 +411,7 @@ export default function Journal() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingHorizontal: padH }]}
           renderSectionHeader={({ section }) => (
             <View style={styles.groupHeader}>
               <Text style={[styles.groupLabel, { color: theme.textSecondary }]}>
