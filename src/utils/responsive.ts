@@ -1,3 +1,5 @@
+import { useIsFocused } from "expo-router";
+import { useEffect } from "react";
 import { Dimensions, Platform, useWindowDimensions } from "react-native";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -25,6 +27,47 @@ export const IS_DESKTOP_WEB = isDesktopWidth(SCREEN_W);
 export function useIsDesktop(): boolean {
   const { width } = useWindowDimensions();
   return isDesktopWidth(width);
+}
+
+// ── Page-scroll mode (mobile web) ──────────────────────────────────────────
+/**
+ * Tabs that scroll the whole page on phone / tablet web instead of an inner
+ * box, so mobile Safari can collapse its toolbars as the user scrolls.
+ * Rolled out per tab; the CSS lives in public/index.html.
+ */
+export const PAGE_SCROLL_ROUTES = new Set(["journal"]);
+
+/** True on phone / tablet web, where page-scroll tabs scroll the page. */
+export function usePageScrollLayout(): boolean {
+  const isDesktop = useIsDesktop();
+  return Platform.OS === "web" && !isDesktop;
+}
+
+/**
+ * For a page-scroll screen: true while it is the focused tab on phone /
+ * tablet web. Inactive tabs stay mounted, so only the focused one may mark
+ * itself, or its marker would put other tabs into page-scroll mode too.
+ * Starts each visit at the top of the page.
+ */
+export function usePageScroll(): boolean {
+  const isFocused = useIsFocused();
+  const on = usePageScrollLayout() && isFocused;
+  useEffect(() => {
+    if (on) window.scrollTo(0, 0);
+  }, [on]);
+  return on;
+}
+
+/**
+ * Marks a page-scroll screen's root view (`data-page-scroll`), or its list
+ * (`data-page-scroll-list`). `dataSet` is react-native-web only, so it isn't
+ * in the View prop types.
+ */
+export function pageScrollMarker(
+  on: boolean,
+  key: "pageScroll" | "pageScrollList" = "pageScroll",
+): object {
+  return on ? { dataSet: { [key]: "on" } } : {};
 }
 
 // ── Device detection ───────────────────────────────────────────────────────
