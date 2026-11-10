@@ -18,10 +18,18 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 // prettier-ignore
 import { ScrollView, SectionList, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
 import { styles } from "@/src/styles/journal.styles";
-import { useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
+import {
+    pageScrollMarker,
+    useIsDesktop,
+    useListPaddingH,
+    usePageScroll,
+} from "@/src/utils/responsive";
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -66,6 +74,10 @@ export default function Journal() {
   const [guideVisible, setGuideVisible] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const isDesktop = useIsDesktop();
+  // Phone / tablet web: the page scrolls, not the list (see responsive.ts)
+  const pageScroll = usePageScroll();
+  // Room for the tab bar (49pt + home indicator), pinned over the page bottom
+  const tabBarHeight = 49 + useSafeAreaInsets().bottom;
   // Desktop reading pane: the selected entry (defaults to the newest)
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -250,6 +262,7 @@ export default function Journal() {
 
   return (
     <SafeAreaView
+      {...pageScrollMarker(pageScroll)}
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
@@ -411,7 +424,12 @@ export default function Journal() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.list, { paddingHorizontal: padH }]}
+          {...pageScrollMarker(pageScroll, "pageScrollList")}
+          contentContainerStyle={[
+            styles.list,
+            { paddingHorizontal: padH },
+            pageScroll && { paddingBottom: tabBarHeight + 32 },
+          ]}
           renderSectionHeader={({ section }) => (
             <View style={styles.groupHeader}>
               <Text style={[styles.groupLabel, { color: theme.textSecondary }]}>

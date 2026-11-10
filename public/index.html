@@ -88,6 +88,30 @@
           background-color: #121212;
         }
       }
+
+      /*
+        Page-scroll mode (phones / tablets, see usePageScroll): the screen
+        marked data-page-scroll="on" scrolls the whole page instead of an
+        inner box, so mobile Safari can collapse its toolbars like on a
+        normal website. React Navigation stacks every screen as a fixed,
+        full-height, overflow-hidden box; these rules put the marked
+        screen's ancestors back into normal page flow.
+      */
+      div:has([data-page-scroll="on"]) {
+        position: relative !important;
+        top: auto !important;
+        bottom: auto !important;
+        height: auto !important;
+        min-height: 100% !important;
+        overflow: visible !important;
+      }
+      [data-page-scroll="on"] {
+        min-height: 100vh;
+        overflow: visible !important;
+      }
+      [data-page-scroll="on"] [data-page-scroll-list] {
+        overflow: visible !important;
+      }
     </style>
   </head>
 

@@ -8,7 +8,12 @@ import {
     signOutUser,
 } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
-import { DESKTOP_CONTENT_ZOOM, useIsDesktop } from "@/src/utils/responsive";
+import {
+    DESKTOP_CONTENT_ZOOM,
+    PAGE_SCROLL_ROUTES,
+    useIsDesktop,
+    usePageScrollLayout,
+} from "@/src/utils/responsive";
 import { hideSplashOnce } from "@/src/utils/splashGuard";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs, usePathname, useRouter } from "expo-router";
@@ -36,6 +41,8 @@ export default function TabsLayout() {
   const { theme } = useAppTheme();
   // Desktop web: top bar + left sidebar instead of the bottom tab bar
   const isDesktop = useIsDesktop();
+  // Phone / tablet web: some tabs scroll the whole page (see responsive.ts)
+  const pageScroll = usePageScrollLayout();
 
   // Treat Home as the active tab when on a hidden screen launched from it
   const homeIsEffectivelyFocused =
@@ -116,10 +123,17 @@ export default function TabsLayout() {
               : undefined,
           tabBarActiveTintColor: TAB_ACTIVE_COLOR,
           tabBarInactiveTintColor: theme.textSecondary,
-          tabBarStyle: {
-            backgroundColor: theme.surface,
-            borderTopColor: theme.border,
-          },
+          tabBarStyle: [
+            {
+              backgroundColor: theme.surface,
+              borderTopColor: theme.border,
+            },
+            // The page scrolls underneath, so pin the bar to the screen
+            // bottom (`fixed` is web-only, hence the cast)
+            pageScroll &&
+              PAGE_SCROLL_ROUTES.has(route.name) &&
+              ({ position: "fixed", left: 0, right: 0, bottom: 0 } as unknown as ViewStyle),
+          ],
           tabBarIcon: ({ focused, color, size }) => {
             const icons: Record<
               string,
