@@ -1,6 +1,7 @@
 import {
     ColorMode,
     Theme,
+    THEME_PICKER_ENABLED,
     THEME_PRESETS,
     ThemeName,
 } from "@/src/constants/theme";
@@ -190,61 +191,65 @@ export default function Settings() {
               </View>
             </View>
 
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            {THEME_PICKER_ENABLED && (
+              <>
+                <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-            {/* Theme swatches */}
-            <View style={styles.pickerBlock}>
-              <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>
-                Theme
-              </Text>
-              <View style={styles.swatchRow}>
-                {(Object.keys(THEME_PRESETS) as ThemeName[]).map((name) => {
-                  const preset = THEME_PRESETS[name];
-                  const active = themeName === name;
-                  return (
-                    <TouchableOpacity
-                      key={name}
-                      style={[
-                        styles.swatchBtn,
-                        {
-                          borderColor: active ? theme.primary : theme.border,
-                          backgroundColor: active
-                            ? theme.surface
-                            : theme.background,
-                        },
-                      ]}
-                      onPress={() => setThemeName(name)}
-                      activeOpacity={0.7}
-                    >
-                      <View
-                        style={[
-                          styles.swatch,
-                          { backgroundColor: preset.swatch },
-                        ]}
-                      />
-                      <Text
-                        style={[
-                          styles.swatchLabel,
-                          {
-                            color: active ? theme.text : theme.textSecondary,
-                            fontWeight: active ? "700" : "400",
-                          },
-                        ]}
-                      >
-                        {preset.label}
-                      </Text>
-                      {active && (
-                        <Ionicons
-                          name="checkmark"
-                          size={13}
-                          color={theme.primary}
-                        />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
+                {/* Theme swatches */}
+                <View style={styles.pickerBlock}>
+                  <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>
+                    Theme
+                  </Text>
+                  <View style={styles.swatchRow}>
+                    {(Object.keys(THEME_PRESETS) as ThemeName[]).map((name) => {
+                      const preset = THEME_PRESETS[name];
+                      const active = themeName === name;
+                      return (
+                        <TouchableOpacity
+                          key={name}
+                          style={[
+                            styles.swatchBtn,
+                            {
+                              borderColor: active ? theme.primary : theme.border,
+                              backgroundColor: active
+                                ? theme.surface
+                                : theme.background,
+                            },
+                          ]}
+                          onPress={() => setThemeName(name)}
+                          activeOpacity={0.7}
+                        >
+                          <View
+                            style={[
+                              styles.swatch,
+                              { backgroundColor: preset.swatch },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.swatchLabel,
+                              {
+                                color: active ? theme.text : theme.textSecondary,
+                                fontWeight: active ? "700" : "400",
+                              },
+                            ]}
+                          >
+                            {preset.label}
+                          </Text>
+                          {active && (
+                            <Ionicons
+                              name="checkmark"
+                              size={13}
+                              color={theme.primary}
+                            />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              </>
+            )}
           </View>
 
           {/* Feedback section */}

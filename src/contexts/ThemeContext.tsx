@@ -11,6 +11,7 @@ import {
   ColorMode,
   Theme,
   ThemeName,
+  THEME_PICKER_ENABLED,
   THEME_PRESETS,
 } from "@/src/constants/theme";
 
@@ -74,7 +75,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const effectiveScheme =
     colorMode === "system" ? (systemScheme ?? "light") : colorMode;
 
-  const preset = THEME_PRESETS[themeName];
+  const preset = THEME_PRESETS[THEME_PICKER_ENABLED ? themeName : "default"];
   const theme: Theme =
     effectiveScheme === "dark" ? preset.dark : preset.light;
 
