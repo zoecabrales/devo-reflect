@@ -1,4 +1,4 @@
-import { AppModal, PageHeader } from "@/src/components";
+import { AppModal, BentoGrid, PageHeader } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { BookmarkedVerse, loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
@@ -28,6 +28,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -49,6 +50,9 @@ export default function MemoryVerses() {
   const padH = useListPaddingH();
   // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
   const pageScroll = usePageScroll();
+  // Web (any width): bento grid layout; BentoGrid drops to one column on
+  // phones. The native app keeps the simple stacked list.
+  const gridLayout = Platform.OS === "web";
   const uid = auth.currentUser?.uid ?? "";
 
   const [verses, setVerses] = useState<MemoryVerse[]>([]);
@@ -115,7 +119,10 @@ export default function MemoryVerses() {
     setIndex((i) => i + 1);
   }
 
-  const card = { backgroundColor: theme.surface, borderColor: theme.border };
+  // Phones and tablets: tighter cards and type
+  const compact = !isDesktop;
+  const surface = { backgroundColor: theme.surface, borderColor: theme.border };
+  const card = [surface, compact && styles.cardCompact];
   const current =
     mode && index < queue.length
       ? verses.find((x) => x.id === queue[index])
@@ -128,7 +135,7 @@ export default function MemoryVerses() {
       return (
         <View style={[styles.card, card, styles.center]}>
           <Ionicons name="trophy-outline" size={28} color={theme.text} />
-          <Text style={[styles.title, { color: theme.text }]}>
+          <Text style={[styles.title, compact && styles.titleCompact, { color: theme.text }]}>
             Session complete
           </Text>
           <Text style={[styles.body, { color: theme.textSecondary }]}>
@@ -136,13 +143,13 @@ export default function MemoryVerses() {
           </Text>
           <View style={styles.row}>
             <TouchableOpacity
-              style={[styles.btn, styles.btnFlex, styles.btnOutline, { borderColor: theme.border }]}
+              style={[styles.btn, compact && styles.btnCompact, styles.btnFlex, styles.btnOutline, { borderColor: theme.border }]}
               onPress={() => setMode(null)}
             >
               <Text style={[styles.btnText, { color: theme.text }]}>Done</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.btn, styles.btnFlex, { backgroundColor: theme.primary }]}
+              style={[styles.btn, compact && styles.btnCompact, styles.btnFlex, { backgroundColor: theme.primary }]}
               onPress={() => startPractice(mode!)}
             >
               <Text style={[styles.btnText, { color: theme.primaryText }]}>
@@ -181,13 +188,234 @@ export default function MemoryVerses() {
     );
   }
 
+  // ── Verse card ────────────────────────────────────────────────────────────
+  function renderVerseCard(v: MemoryVerse, tile = false) {
+    const mastered = isMastered(v);
+    return (
+      <View
+        key={v.id}
+        style={[styles.card, card, styles.verseCard, tile && desktopPage.tileFill]}
+      >
+        <View style={styles.verseHead}>
+          <Text style={[styles.ref, compact && styles.refCompact, { color: theme.text }]}>
+            {verseRef(v)}
+            {!!v.version && (
+              <Text style={{ color: theme.textSecondary }}>
+                {"  "}
+                {v.version}
+              </Text>
+            )}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setRemoveTarget(v)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${verseRef(v)}`}
+          >
+            <Ionicons name="close" size={16} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
+        <Text
+          style={[
+            tile ? styles.verseTextTile : styles.verseText,
+            tile && compact && styles.verseTextTileCompact,
+            { color: theme.textSecondary },
+          ]}
+          numberOfLines={tile ? 5 : 2}
+        >
+          {v.text}
+        </Text>
+        {tile && <View style={styles.grow} />}
+        {/* Progress toward mastery */}
+        <View style={styles.dots}>
+          {Array.from({ length: MASTERY_STREAK }, (_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                {
+                  backgroundColor:
+                    i < Math.min(v.streak, MASTERY_STREAK) ? GREEN : theme.border,
+                },
+              ]}
+            />
+          ))}
+          <Text
+            style={[
+              styles.dotsLabel,
+              { color: mastered ? GREEN : theme.textSecondary },
+            ]}
+          >
+            {mastered
+              ? "Memorised"
+              : v.practiceCount === 0
+                ? "Not practised yet"
+                : `${v.streak} in a row`}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Web grid ──────────────────────────────────────────────────────────────
+  function renderGrid() {
+    const learning = verses.filter(
+      (v) => !isMastered(v) && v.practiceCount > 0,
+    ).length;
+    const fresh = verses.filter((v) => v.practiceCount === 0).length;
+    const modes: {
+      mode: Mode;
+      icon: keyof typeof Ionicons.glyphMap;
+      title: string;
+      desc: string;
+    }[] = [
+      {
+        mode: "flashcards",
+        icon: "albums-outline",
+        title: "Flashcards",
+        desc: "Say the verse from memory, then reveal it to check.",
+      },
+      {
+        mode: "fill",
+        icon: "create-outline",
+        title: "Fill in the blank",
+        desc: "Type the missing words back into the verse.",
+      },
+    ];
+
+    return (
+      <View style={compact ? styles.sectionsCompact : styles.sections}>
+        <BentoGrid
+          gap={compact ? 10 : 14}
+          data={["practice", "progress"]}
+          keyExtractor={(k) => k}
+          spanFor={(k) => (k === "practice" ? 2 : 1)}
+          renderItem={(k) =>
+            k === "practice" ? (
+              <View style={[styles.card, card, desktopPage.tileFill]}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>
+                  PRACTISE · UP TO {SESSION_SIZE} VERSES
+                </Text>
+                <View style={styles.modeRow}>
+                  {modes.map((m) => (
+                    <TouchableOpacity
+                      key={m.mode}
+                      style={[
+                        styles.modeTile, compact && styles.modeTileCompact,
+                        { backgroundColor: theme.primary },
+                      ]}
+                      onPress={() => startPractice(m.mode)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons
+                        name={m.icon}
+                        size={22}
+                        color={theme.primaryText}
+                      />
+                      <Text
+                        style={[styles.modeTitle, compact && styles.modeTitleCompact, { color: theme.primaryText }]}
+                      >
+                        {m.title}
+                      </Text>
+                      <Text
+                        style={[styles.modeDesc, compact && styles.modeDescCompact, { color: theme.primaryText }]}
+                      >
+                        {m.desc}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <View style={[styles.card, card, desktopPage.tileFill]}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>
+                  PROGRESS
+                </Text>
+                <Text style={[styles.bigNumber, compact && styles.bigNumberCompact, { color: theme.text }]}>
+                  {memorised}
+                  <Text style={[styles.bigNumberOf, compact && styles.bigNumberOfCompact, { color: theme.textSecondary }]}>
+                    {" "}/ {verses.length}
+                  </Text>
+                </Text>
+                <Text style={[styles.body, { color: theme.textSecondary }]}>
+                  memorised
+                </Text>
+                <View style={[styles.track, { backgroundColor: theme.background }]}>
+                  <View
+                    style={[
+                      styles.fill,
+                      {
+                        width: `${Math.round((memorised / verses.length) * 100)}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={styles.grow} />
+                <View style={styles.statRow}>
+                  <Text style={[styles.statText, { color: theme.textSecondary }]}>
+                    <Text style={[styles.strong, { color: theme.text }]}>
+                      {learning}
+                    </Text>{" "}
+                    learning
+                  </Text>
+                  <Text style={[styles.statText, { color: theme.textSecondary }]}>
+                    <Text style={[styles.strong, { color: theme.text }]}>
+                      {fresh}
+                    </Text>{" "}
+                    not practised
+                  </Text>
+                </View>
+              </View>
+            )
+          }
+        />
+
+        <View style={styles.stack}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            YOUR VERSES
+          </Text>
+          {/* Long verses get wide tiles; "Add" closes the grid */}
+          <BentoGrid
+            gap={compact ? 10 : 14}
+            data={[...verses, null]}
+            keyExtractor={(v) => v?.id ?? "add"}
+            spanFor={(v) => (v && v.text.length > 160 ? 2 : 1)}
+            minColumnWidth={240}
+            renderItem={(v) =>
+              v ? (
+                renderVerseCard(v, true)
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.card,
+                    styles.addTile, compact && styles.addTileCompact,
+                    desktopPage.tileFill,
+                    { borderColor: theme.border },
+                  ]}
+                  onPress={() => setPickerOpen(true)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="add-circle-outline" size={26} color={theme.textSecondary} />
+                  <Text style={[styles.link, { color: theme.text }]}>
+                    Add from bookmarks
+                  </Text>
+                </TouchableOpacity>
+              )
+            }
+          />
+        </View>
+      </View>
+    );
+  }
+
   // ── List ──────────────────────────────────────────────────────────────────
   function renderList() {
     if (verses.length === 0) {
       return (
         <View style={[styles.card, card, styles.center]}>
           <Ionicons name="albums-outline" size={28} color={theme.text} />
-          <Text style={[styles.title, { color: theme.text }]}>
+          <Text style={[styles.title, compact && styles.titleCompact, { color: theme.text }]}>
             Hide God&apos;s Word in your heart
           </Text>
           <Text style={[styles.body, styles.centerText, { color: theme.textSecondary }]}>
@@ -196,7 +424,7 @@ export default function MemoryVerses() {
           </Text>
           {bookmarks.length > 0 ? (
             <TouchableOpacity
-              style={[styles.btn, styles.btnWide, { backgroundColor: theme.primary }]}
+              style={[styles.btn, compact && styles.btnCompact, styles.btnWide, { backgroundColor: theme.primary }]}
               onPress={() => setPickerOpen(true)}
             >
               <Text style={[styles.btnText, { color: theme.primaryText }]}>
@@ -205,7 +433,7 @@ export default function MemoryVerses() {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.btn, styles.btnWide, { backgroundColor: theme.primary }]}
+              style={[styles.btn, compact && styles.btnCompact, styles.btnWide, { backgroundColor: theme.primary }]}
               onPress={() => router.push("/(tabs)/bible-browser")}
             >
               <Text style={[styles.btnText, { color: theme.primaryText }]}>
@@ -216,6 +444,8 @@ export default function MemoryVerses() {
         </View>
       );
     }
+
+    if (gridLayout) return renderGrid();
 
     return (
       <View style={styles.stack}>
@@ -229,7 +459,7 @@ export default function MemoryVerses() {
           </Text>
           <View style={styles.row}>
             <TouchableOpacity
-              style={[styles.btn, styles.btnFlex, { backgroundColor: theme.primary }]}
+              style={[styles.btn, compact && styles.btnCompact, styles.btnFlex, { backgroundColor: theme.primary }]}
               onPress={() => startPractice("flashcards")}
             >
               <Ionicons name="albums-outline" size={16} color={theme.primaryText} />
@@ -238,7 +468,7 @@ export default function MemoryVerses() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.btn, styles.btnFlex, { backgroundColor: theme.primary }]}
+              style={[styles.btn, compact && styles.btnCompact, styles.btnFlex, { backgroundColor: theme.primary }]}
               onPress={() => startPractice("fill")}
             >
               <Ionicons name="create-outline" size={16} color={theme.primaryText} />
@@ -263,71 +493,7 @@ export default function MemoryVerses() {
           </TouchableOpacity>
         </View>
 
-        {verses.map((v) => {
-          const mastered = isMastered(v);
-          return (
-            <View key={v.id} style={[styles.card, card, styles.verseCard]}>
-              <View style={styles.verseHead}>
-                <Text style={[styles.ref, { color: theme.text }]}>
-                  {verseRef(v)}
-                  {!!v.version && (
-                    <Text style={{ color: theme.textSecondary }}>
-                      {"  "}
-                      {v.version}
-                    </Text>
-                  )}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setRemoveTarget(v)}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remove ${verseRef(v)}`}
-                >
-                  <Ionicons
-                    name="close"
-                    size={16}
-                    color={theme.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
-              <Text
-                style={[styles.verseText, { color: theme.textSecondary }]}
-                numberOfLines={2}
-              >
-                {v.text}
-              </Text>
-              {/* Progress toward mastery */}
-              <View style={styles.dots}>
-                {Array.from({ length: MASTERY_STREAK }, (_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.dot,
-                      {
-                        backgroundColor:
-                          i < Math.min(v.streak, MASTERY_STREAK)
-                            ? "#4CAF50"
-                            : theme.border,
-                      },
-                    ]}
-                  />
-                ))}
-                <Text
-                  style={[
-                    styles.dotsLabel,
-                    { color: mastered ? "#4CAF50" : theme.textSecondary },
-                  ]}
-                >
-                  {mastered
-                    ? "Memorised"
-                    : v.practiceCount === 0
-                      ? "Not practised yet"
-                      : `${v.streak} in a row`}
-                </Text>
-              </View>
-            </View>
-          );
-        })}
+        {verses.map((v) => renderVerseCard(v))}
       </View>
     );
   }
@@ -351,8 +517,15 @@ export default function MemoryVerses() {
           isDesktop && desktopPage.content,
         ]}
       >
-        {/* Desktop: a readable column, left-aligned under the page title */}
-        <View style={isDesktop && styles.desktopColumn}>
+        {/* Desktop: practice and the empty state keep a readable column,
+            left-aligned under the page title; the grid uses the full width */}
+        <View
+          style={
+            isDesktop &&
+            (mode || verses.length === 0 || !gridLayout) &&
+            styles.desktopColumn
+          }
+        >
         {loading ? (
           <ActivityIndicator color={theme.textSecondary} style={styles.loader} />
         ) : mode ? (
@@ -368,10 +541,10 @@ export default function MemoryVerses() {
         visible={pickerOpen}
         onClose={() => setPickerOpen(false)}
         overlayStyle={styles.overlay}
-        cardStyle={[styles.modalCard, card]}
+        cardStyle={[styles.modalCard, surface]}
       >
         <View style={styles.listHead}>
-          <Text style={[styles.title, { color: theme.text }]}>
+          <Text style={[styles.title, compact && styles.titleCompact, { color: theme.text }]}>
             Add from bookmarks
           </Text>
           <TouchableOpacity onPress={() => setPickerOpen(false)} hitSlop={8}>
@@ -392,7 +565,7 @@ export default function MemoryVerses() {
                 style={[styles.pickRow, { borderBottomColor: theme.border }]}
               >
                 <View style={styles.flex}>
-                  <Text style={[styles.ref, { color: theme.text }]}>
+                  <Text style={[styles.ref, compact && styles.refCompact, { color: theme.text }]}>
                     {b.bookLabel} {b.chapter}:{b.verse}
                   </Text>
                   <Text
@@ -421,9 +594,9 @@ export default function MemoryVerses() {
         visible={!!removeTarget}
         onClose={() => setRemoveTarget(null)}
         overlayStyle={styles.overlay}
-        cardStyle={[styles.modalCard, card]}
+        cardStyle={[styles.modalCard, surface]}
       >
-        <Text style={[styles.title, { color: theme.text }]}>
+        <Text style={[styles.title, compact && styles.titleCompact, { color: theme.text }]}>
           Remove {removeTarget ? verseRef(removeTarget) : ""}?
         </Text>
         <Text style={[styles.body, { color: theme.textSecondary }]}>
@@ -431,13 +604,13 @@ export default function MemoryVerses() {
         </Text>
         <View style={styles.row}>
           <TouchableOpacity
-            style={[styles.btn, styles.btnFlex, styles.btnOutline, { borderColor: theme.border }]}
+            style={[styles.btn, compact && styles.btnCompact, styles.btnFlex, styles.btnOutline, { borderColor: theme.border }]}
             onPress={() => setRemoveTarget(null)}
           >
             <Text style={[styles.btnText, { color: theme.text }]}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.btn, styles.btnFlex, { backgroundColor: "#e53e3e" }]}
+            style={[styles.btn, compact && styles.btnCompact, styles.btnFlex, { backgroundColor: "#e53e3e" }]}
             onPress={() => removeTarget && handleRemove(removeTarget)}
           >
             <Text style={[styles.btnText, { color: "#fff" }]}>Remove</Text>
@@ -610,12 +783,60 @@ function FillBlank({
   );
 }
 
+const GREEN = "#4CAF50";
+
 const styles = StyleSheet.create({
+  // ── Phones and tablets (compact) ──
+  cardCompact: { padding: 12, gap: 8, borderRadius: 12 },
+  sectionsCompact: { gap: 20 },
+  modeTileCompact: { padding: 12, minHeight: 92, gap: 4, borderRadius: 10 },
+  modeTitleCompact: { fontSize: 15 },
+  modeDescCompact: { fontSize: 12, lineHeight: 16 },
+  bigNumberCompact: { fontSize: 30, lineHeight: 36 },
+  bigNumberOfCompact: { fontSize: 17 },
+  addTileCompact: { minHeight: 84 },
+  refCompact: { fontSize: 14 },
+  titleCompact: { fontSize: 15 },
+  btnCompact: { paddingVertical: 9 },
+  verseTextTileCompact: { fontSize: 13, lineHeight: 19 },
+
   container: { flex: 1 },
   content: { paddingBottom: 48 },
   desktopColumn: { width: "100%", maxWidth: 760 },
   flex: { flex: 1 },
+  grow: { flexGrow: 1 },
   stack: { gap: 12 },
+  sections: { gap: 28 },
+  modeRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, flexGrow: 1 },
+  modeTile: {
+    flexGrow: 1,
+    flexBasis: 200,
+    borderRadius: 12,
+    padding: 18,
+    gap: 6,
+    justifyContent: "flex-end",
+    minHeight: 130,
+  },
+  modeTitle: { fontSize: 18, fontFamily: "Oswald_700Bold", letterSpacing: 0.3 },
+  modeDesc: { fontSize: 13, lineHeight: 18, opacity: 0.85 },
+  bigNumber: {
+    fontSize: 40,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.3,
+    lineHeight: 48,
+  },
+  bigNumberOf: { fontSize: 22 },
+  track: { height: 6, borderRadius: 3, overflow: "hidden" },
+  fill: { height: "100%", borderRadius: 3, backgroundColor: GREEN },
+  statRow: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
+  statText: { fontSize: 13 },
+  verseTextTile: { fontSize: 14, lineHeight: 21, fontStyle: "italic" },
+  addTile: {
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 120,
+  },
   loader: { marginTop: 40 },
   center: { alignItems: "center" },
   centerText: { textAlign: "center" },

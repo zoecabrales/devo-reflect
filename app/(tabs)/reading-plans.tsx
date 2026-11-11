@@ -1,7 +1,8 @@
-import { AppModal, PageHeader } from "@/src/components";
+import { AppModal, BentoGrid, PageHeader } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
 import {
+  chapterKey,
   daysBehind,
   formatReading,
   getPlan,
@@ -17,7 +18,7 @@ import {
   stopPlan,
 } from "@/src/services/readingPlans";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
-import { formatDateKey } from "@/src/utils/dateKey";
+import { dateKeyOf, formatDateKey } from "@/src/utils/dateKey";
 import {
   MODAL_MAX_WIDTH,
   pageScrollMarker,
@@ -30,6 +31,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -45,12 +47,22 @@ export default function ReadingPlans() {
   const padH = useListPaddingH();
   // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
   const pageScroll = usePageScroll();
+  // Web (any width): bento grid layout; BentoGrid drops to one column on
+  // phones. The native app keeps the simple stacked list.
+  const gridLayout = Platform.OS === "web";
   const uid = auth.currentUser?.uid ?? "";
   const { plan: planParam } = useLocalSearchParams<{ plan?: string }>();
 
   const [progress, setProgress] = useState<Record<string, PlanProgress>>({});
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(planParam ?? null);
+  // Coming back from the Bible with ?plan= reopens that plan, even if this
+  // screen stayed mounted. State derived from params, updated during render.
+  const [lastPlanParam, setLastPlanParam] = useState(planParam);
+  if (lastPlanParam !== planParam) {
+    setLastPlanParam(planParam);
+    if (planParam) setOpenId(planParam);
+  }
   const [busyDay, setBusyDay] = useState<number | null>(null);
   const [confirmStop, setConfirmStop] = useState(false);
 
@@ -82,9 +94,18 @@ export default function ReadingPlans() {
       const readOn = await setDayComplete(uid, plan.id, day, done);
       setProgress((prev) => {
         const completed = { ...prev[plan.id].completed };
+        const chaptersRead = { ...prev[plan.id].chaptersRead };
         if (readOn) completed[day] = readOn;
-        else delete completed[day];
-        return { ...prev, [plan.id]: { ...prev[plan.id], completed } };
+        else {
+          delete completed[day];
+          for (const c of planSchedule(plan.id)[day]) {
+            delete chaptersRead[chapterKey(c.bookId, c.chapter)];
+          }
+        }
+        return {
+          ...prev,
+          [plan.id]: { ...prev[plan.id], completed, chaptersRead },
+        };
       });
     } finally {
       setBusyDay(null);
@@ -102,75 +123,237 @@ export default function ReadingPlans() {
     setOpenId(null);
   }
 
-  function openChapter(c: PlanChapter) {
+  function openChapter(plan: ReadingPlan, c: PlanChapter) {
+    const returnTo = encodeURIComponent(
+      `/(tabs)/reading-plans?plan=${plan.id}`,
+    );
     router.push(
-      `/(tabs)/bible-browser?bookId=${c.bookId}&chapter=${c.chapter}`,
+      `/(tabs)/bible-browser?bookId=${c.bookId}&chapter=${c.chapter}&returnTo=${returnTo}`,
     );
   }
 
-  const card = { backgroundColor: theme.surface, borderColor: theme.border };
+  // Phones and tablets: tighter cards and type
+  const compact = !isDesktop;
+  const surface = { backgroundColor: theme.surface, borderColor: theme.border };
+  const card = [surface, compact && styles.cardCompact];
+  const active = READING_PLANS.filter((plan) => progress[plan.id]);
+
+  // ── Shared pieces ─────────────────────────────────────────────────────────
+  /** Next day's chapters (ticked once opened) and the mark-as-read button. */
+  function renderNextReading(plan: ReadingPlan, p: PlanProgress, next: number) {
+    const schedule = planSchedule(plan.id);
+    return (
+      <>
+        <View style={styles.chips}>
+          {schedule[next].map((c) => {
+            const read = !!p.chaptersRead[chapterKey(c.bookId, c.chapter)];
+            return (
+              <TouchableOpacity
+                key={`${c.bookId}-${c.chapter}`}
+                style={[
+                  styles.chip, compact && styles.chipCompact,
+                  {
+                    borderColor: read ? GREEN : theme.border,
+                    backgroundColor: theme.background,
+                  },
+                ]}
+                onPress={() => openChapter(plan, c)}
+                activeOpacity={0.7}
+                accessibilityRole="link"
+                accessibilityLabel={`Read ${c.bookLabel} ${c.chapter}${read ? " (read)" : ""}`}
+              >
+                <Ionicons
+                  name={read ? "checkmark-circle" : "book-outline"}
+                  size={13}
+                  color={read ? GREEN : theme.textSecondary}
+                />
+                <Text style={[styles.chipText, compact && styles.chipTextCompact, { color: theme.text }]}>
+                  {c.bookLabel} {c.chapter}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={[styles.meta, { color: theme.textSecondary }]}>
+          Chapters you open in the Bible are ticked off, and the day is marked
+          read once you&apos;ve opened them all.
+        </Text>
+        <View style={styles.grow} />
+        <TouchableOpacity
+          style={[styles.startBtn, compact && styles.startBtnCompact, { backgroundColor: theme.primary }]}
+          onPress={() => handleToggleDay(plan, next)}
+          activeOpacity={0.85}
+          disabled={busyDay !== null}
+        >
+          {busyDay === next ? (
+            <ActivityIndicator size="small" color={theme.primaryText} />
+          ) : (
+            <Text style={[styles.startText, compact && styles.startTextCompact, { color: theme.primaryText }]}>
+              Mark day {next + 1} as read
+            </Text>
+          )}
+        </TouchableOpacity>
+      </>
+    );
+  }
+
+  /** A plan's card in the list: progress if started, otherwise Start. */
+  function renderPlanCard(plan: ReadingPlan, tile = false) {
+    const p = progress[plan.id];
+    const done = p ? Object.keys(p.completed).length : 0;
+    const next = p ? nextDay(plan, p) : 0;
+    return (
+      <TouchableOpacity
+        key={plan.id}
+        style={[styles.card, card, tile && desktopPage.tileFill]}
+        onPress={() => (p ? setOpenId(plan.id) : handleStart(plan))}
+        activeOpacity={0.8}
+      >
+        <View style={styles.cardHead}>
+          <View style={[styles.planIcon, compact && styles.planIconCompact, { backgroundColor: theme.background }]}>
+            <Ionicons name={plan.icon} size={18} color={theme.text} />
+          </View>
+          <View style={styles.flex}>
+            <Text style={[styles.planTitle, compact && styles.planTitleCompact, { color: theme.text }]}>
+              {plan.title}
+            </Text>
+            <Text style={[styles.planDesc, compact && styles.planDescCompact, { color: theme.textSecondary }]}>
+              {plan.description}
+            </Text>
+          </View>
+        </View>
+
+        {/* Tiles: push the footer to the bottom so a row lines up */}
+        {tile && <View style={styles.grow} />}
+        {p ? (
+          <>
+            <ProgressBar value={done / plan.days} />
+            <View style={styles.cardFoot}>
+              <Text style={[styles.meta, { color: theme.textSecondary }]}>
+                {next === null
+                  ? "Plan complete 🎉"
+                  : `Next: Day ${next + 1} · ${formatReading(planSchedule(plan.id)[next])}`}
+              </Text>
+              <Text style={[styles.metaStrong, { color: theme.text }]}>
+                {Math.round((done / plan.days) * 100)}%
+              </Text>
+            </View>
+          </>
+        ) : (
+          <View style={[styles.startBtn, compact && styles.startBtnCompact, { backgroundColor: theme.primary }]}>
+            <Text style={[styles.startText, compact && styles.startTextCompact, { color: theme.primaryText }]}>
+              Start plan
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  }
 
   // ── Plan list ─────────────────────────────────────────────────────────────
   function renderList() {
-    return (
-      <View style={styles.stack}>
-        {READING_PLANS.map((plan) => {
-          const p = progress[plan.id];
-          const done = p ? Object.keys(p.completed).length : 0;
-          const next = p ? nextDay(plan, p) : 0;
-          return (
-            <TouchableOpacity
-              key={plan.id}
-              style={[styles.card, card]}
-              onPress={() => (p ? setOpenId(plan.id) : handleStart(plan))}
-              activeOpacity={0.8}
-            >
-              <View style={styles.cardHead}>
-                <View
-                  style={[styles.planIcon, { backgroundColor: theme.background }]}
-                >
-                  <Ionicons name={plan.icon} size={18} color={theme.text} />
-                </View>
-                <View style={styles.flex}>
-                  <Text style={[styles.planTitle, { color: theme.text }]}>
-                    {plan.title}
-                  </Text>
-                  <Text
-                    style={[styles.planDesc, { color: theme.textSecondary }]}
-                  >
-                    {plan.description}
-                  </Text>
-                </View>
-              </View>
+    if (!gridLayout) {
+      return (
+        <View style={styles.stack}>
+          {READING_PLANS.map((plan) => renderPlanCard(plan))}
+        </View>
+      );
+    }
 
-              {p ? (
-                <>
-                  <ProgressBar value={done / plan.days} />
-                  <View style={styles.cardFoot}>
-                    <Text
-                      style={[styles.meta, { color: theme.textSecondary }]}
-                    >
-                      {next === null
-                        ? "Plan complete 🎉"
-                        : `Next: Day ${next + 1} · ${formatReading(planSchedule(plan.id)[next])}`}
+    // Web: a "continue reading" tile and stats above the plans grid
+    const current = active.find((plan) => nextDay(plan, progress[plan.id]) !== null);
+    const daysRead = active.reduce(
+      (n, plan) => n + Object.keys(progress[plan.id].completed).length,
+      0,
+    );
+    const topTiles = [
+      ...(current ? ["continue"] : []),
+      ...(active.length > 0 ? ["stats"] : []),
+    ];
+
+    return (
+      <View style={compact ? styles.sectionsCompact : styles.sections}>
+        {topTiles.length > 0 && (
+          <BentoGrid
+            gap={compact ? 10 : 14}
+            data={topTiles}
+            keyExtractor={(k) => k}
+            spanFor={(k) => (k === "continue" ? 2 : 1)}
+            renderItem={(k) =>
+              k === "continue" && current
+                ? renderContinue(current)
+                : (
+                  <View style={[styles.card, card, desktopPage.tileFill]}>
+                    <Text style={[styles.label, { color: theme.textSecondary }]}>
+                      YOUR READING
                     </Text>
-                    <Text style={[styles.metaStrong, { color: theme.text }]}>
-                      {Math.round((done / plan.days) * 100)}%
-                    </Text>
+                    <Stat
+                      icon="flame-outline"
+                      value={readingStreak(progress)}
+                      label="Day streak"
+                    />
+                    <Stat
+                      icon="checkmark-done-outline"
+                      value={daysRead}
+                      label={daysRead === 1 ? "Day read" : "Days read"}
+                    />
+                    <Stat
+                      icon="library-outline"
+                      value={active.length}
+                      label={active.length === 1 ? "Active plan" : "Active plans"}
+                    />
                   </View>
-                </>
-              ) : (
-                <View
-                  style={[styles.startBtn, { backgroundColor: theme.primary }]}
-                >
-                  <Text style={[styles.startText, { color: theme.primaryText }]}>
-                    Start plan
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+                )
+            }
+          />
+        )}
+
+        <View style={styles.stack}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            {active.length > 0 ? "ALL PLANS" : "CHOOSE A PLAN"}
+          </Text>
+          <BentoGrid
+            gap={compact ? 10 : 14}
+            data={READING_PLANS}
+            keyExtractor={(plan) => plan.id}
+            spanFor={() => 1}
+            minColumnWidth={240}
+            renderItem={(plan) => renderPlanCard(plan, true)}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  /** Web list: the next reading in your first unfinished plan. */
+  function renderContinue(plan: ReadingPlan) {
+    const p = progress[plan.id];
+    const next = nextDay(plan, p)!;
+    const done = Object.keys(p.completed).length;
+    return (
+      <View style={[styles.card, card, desktopPage.tileFill]}>
+        <View style={styles.cardFoot}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            CONTINUE · DAY {next + 1} OF {plan.days}
+          </Text>
+          <TouchableOpacity onPress={() => setOpenId(plan.id)} hitSlop={8}>
+            <Text style={[styles.metaStrong, { color: theme.text }]}>
+              Open plan ›
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={[styles.heroTitle, compact && styles.heroTitleCompact, { color: theme.text }]}>
+          {formatReading(planSchedule(plan.id)[next])}
+        </Text>
+        <View style={styles.heroProgress}>
+          <View style={styles.flex}>
+            <ProgressBar value={done / plan.days} />
+          </View>
+          <Text style={[styles.meta, { color: theme.textSecondary }]}>
+            {plan.title} · {Math.round((done / plan.days) * 100)}%
+          </Text>
+        </View>
+        {renderNextReading(plan, p, next)}
       </View>
     );
   }
@@ -182,18 +365,18 @@ export default function ReadingPlans() {
       // Opened via link but not started yet
       return (
         <View style={[styles.card, card]}>
-          <Text style={[styles.planTitle, { color: theme.text }]}>
+          <Text style={[styles.planTitle, compact && styles.planTitleCompact, { color: theme.text }]}>
             {plan.title}
           </Text>
-          <Text style={[styles.planDesc, { color: theme.textSecondary }]}>
+          <Text style={[styles.planDesc, compact && styles.planDescCompact, { color: theme.textSecondary }]}>
             {plan.description}
           </Text>
           <TouchableOpacity
-            style={[styles.startBtn, { backgroundColor: theme.primary }]}
+            style={[styles.startBtn, compact && styles.startBtnCompact, { backgroundColor: theme.primary }]}
             onPress={() => handleStart(plan)}
             activeOpacity={0.85}
           >
-            <Text style={[styles.startText, { color: theme.primaryText }]}>
+            <Text style={[styles.startText, compact && styles.startTextCompact, { color: theme.primaryText }]}>
               Start plan
             </Text>
           </TouchableOpacity>
@@ -206,141 +389,182 @@ export default function ReadingPlans() {
     const next = nextDay(plan, p);
     const behind = daysBehind(plan, p);
 
-    return (
-      <View style={styles.stack}>
-        {/* Summary */}
-        <View style={[styles.card, card]}>
-          <Text style={[styles.planTitle, { color: theme.text }]}>
+    const summary = (
+      <View style={[styles.card, card, gridLayout && desktopPage.tileFill]}>
+        <View style={styles.cardHead}>
+          <View style={[styles.planIcon, compact && styles.planIconCompact, { backgroundColor: theme.background }]}>
+            <Ionicons name={plan.icon} size={18} color={theme.text} />
+          </View>
+          <Text style={[styles.planTitle, compact && styles.planTitleCompact, styles.flex, { color: theme.text }]}>
             {plan.title}
           </Text>
-          <ProgressBar value={done / plan.days} />
-          <View style={styles.cardFoot}>
-            <Text style={[styles.meta, { color: theme.textSecondary }]}>
-              {done} of {plan.days} days read · started{" "}
-              {formatDateKey(p.startedOn, { month: "short", day: "numeric" })}
-            </Text>
-            <Text
-              style={[
-                styles.metaStrong,
-                { color: behind > 0 ? theme.textSecondary : "#4CAF50" },
-              ]}
-            >
-              {next === null
-                ? "Complete"
-                : behind > 0
-                  ? `${behind} day${behind === 1 ? "" : "s"} behind`
-                  : "On track"}
-            </Text>
-          </View>
         </View>
-
-        {/* Next reading */}
-        {next !== null && (
-          <View style={[styles.card, card]}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>
-              DAY {next + 1} · NEXT READING
-            </Text>
-            <View style={styles.chips}>
-              {schedule[next].map((c) => (
-                <TouchableOpacity
-                  key={`${c.bookId}-${c.chapter}`}
-                  style={[
-                    styles.chip,
-                    {
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  onPress={() => openChapter(c)}
-                  activeOpacity={0.7}
-                  accessibilityRole="link"
-                  accessibilityLabel={`Read ${c.bookLabel} ${c.chapter}`}
-                >
-                  <Ionicons
-                    name="book-outline"
-                    size={13}
-                    color={theme.textSecondary}
-                  />
-                  <Text style={[styles.chipText, { color: theme.text }]}>
-                    {c.bookLabel} {c.chapter}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity
-              style={[styles.startBtn, { backgroundColor: theme.primary }]}
-              onPress={() => handleToggleDay(plan, next)}
-              activeOpacity={0.85}
-              disabled={busyDay !== null}
-            >
-              {busyDay === next ? (
-                <ActivityIndicator size="small" color={theme.primaryText} />
-              ) : (
-                <Text style={[styles.startText, { color: theme.primaryText }]}>
-                  Mark day {next + 1} as read
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
+        {gridLayout && (
+          <Text style={[styles.bigNumber, compact && styles.bigNumberCompact, { color: theme.text }]}>
+            {Math.round((done / plan.days) * 100)}%
+          </Text>
         )}
+        {gridLayout && <View style={styles.grow} />}
+        <ProgressBar value={done / plan.days} />
+        <View style={styles.cardFoot}>
+          <Text style={[styles.meta, { color: theme.textSecondary }]}>
+            {done} of {plan.days} days read · started{" "}
+            {formatDateKey(p.startedOn, { month: "short", day: "numeric" })}
+          </Text>
+          <Text
+            style={[
+              styles.metaStrong,
+              { color: behind > 0 ? theme.textSecondary : GREEN },
+            ]}
+          >
+            {next === null
+              ? "Complete"
+              : behind > 0
+                ? `${behind} day${behind === 1 ? "" : "s"} behind`
+                : "On track"}
+          </Text>
+        </View>
+      </View>
+    );
 
-        {/* All days */}
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
-          ALL DAYS
-        </Text>
-        <View style={[styles.dayList, { borderColor: theme.border }]}>
-          {schedule.map((chapters, day) => {
-            const readOn = p.completed[day];
-            return (
-              <View
-                key={day}
-                style={[
+    const nextCard =
+      next === null ? null : (
+        <View style={[styles.card, card, gridLayout && desktopPage.tileFill]}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            DAY {next + 1} · NEXT READING
+          </Text>
+          {gridLayout && (
+            <Text style={[styles.heroTitle, compact && styles.heroTitleCompact, { color: theme.text }]}>
+              {formatReading(schedule[next])}
+            </Text>
+          )}
+          {renderNextReading(plan, p, next)}
+        </View>
+      );
+
+    function renderDay(chapters: PlanChapter[], day: number, tile: boolean) {
+      const readOn = p.completed[day];
+      return (
+        <View
+          key={day}
+          style={
+            tile
+              ? [
+                  styles.dayTile, compact && styles.dayTileCompact,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: readOn ? GREEN : theme.border,
+                  },
+                  day === next && { borderColor: theme.text },
+                ]
+              : [
                   styles.dayRow,
                   { backgroundColor: theme.surface },
                   day > 0 && {
                     borderTopWidth: StyleSheet.hairlineWidth,
                     borderTopColor: theme.border,
                   },
-                ]}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.check,
-                    {
-                      borderColor: readOn ? "#4CAF50" : theme.textSecondary,
-                      backgroundColor: readOn ? "#4CAF50" : "transparent",
-                    },
-                  ]}
-                  onPress={() => handleToggleDay(plan, day)}
-                  hitSlop={8}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: !!readOn }}
-                  accessibilityLabel={`Day ${day + 1}`}
+                ]
+          }
+        >
+          <TouchableOpacity
+            style={[
+              styles.check,
+              {
+                borderColor: readOn ? GREEN : theme.textSecondary,
+                backgroundColor: readOn ? GREEN : "transparent",
+              },
+            ]}
+            onPress={() => handleToggleDay(plan, day)}
+            hitSlop={8}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: !!readOn }}
+            accessibilityLabel={`Day ${day + 1}`}
+          >
+            {readOn && <Ionicons name="checkmark" size={12} color="#fff" />}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.flex}
+            onPress={() => openChapter(plan, chapters[0])}
+            activeOpacity={0.6}
+          >
+            {tile ? (
+              <>
+                <Text style={[styles.dayLabel, { color: theme.textSecondary }]}>
+                  DAY {day + 1}
+                  {readOn
+                    ? ` · READ ${formatDateKey(readOn, { month: "short", day: "numeric" }).toUpperCase()}`
+                    : day === next
+                      ? " · NEXT"
+                      : ""}
+                </Text>
+                <Text
+                  style={[styles.dayTitle, { color: theme.text }]}
+                  numberOfLines={2}
                 >
-                  {readOn && <Ionicons name="checkmark" size={12} color="#fff" />}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.flex}
-                  onPress={() => openChapter(chapters[0])}
-                  activeOpacity={0.6}
-                >
-                  <Text style={[styles.dayTitle, { color: theme.text }]}>
-                    <Text style={{ color: theme.textSecondary }}>
-                      Day {day + 1}
-                      {"  "}
-                    </Text>
-                    {formatReading(chapters)}
+                  {formatReading(chapters)}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.dayTitle, { color: theme.text }]}>
+                  <Text style={{ color: theme.textSecondary }}>
+                    Day {day + 1}
+                    {"  "}
                   </Text>
-                  {readOn && (
-                    <Text style={[styles.dayMeta, { color: "#4CAF50" }]}>
-                      Read{" "}
-                      {formatDateKey(readOn, { month: "short", day: "numeric" })}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            );
-          })}
+                  {formatReading(chapters)}
+                </Text>
+                {readOn && (
+                  <Text style={[styles.dayMeta, { color: GREEN }]}>
+                    Read{" "}
+                    {formatDateKey(readOn, { month: "short", day: "numeric" })}
+                  </Text>
+                )}
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={gridLayout ? compact ? styles.sectionsCompact : styles.sections : styles.stack}>
+        {gridLayout ? (
+          /* Web: summary beside the next reading */
+          <BentoGrid
+            gap={compact ? 10 : 14}
+            data={nextCard ? ["summary", "next"] : ["summary"]}
+            keyExtractor={(k) => k}
+            spanFor={(k) => (k === "next" ? 2 : 1)}
+            renderItem={(k) => (k === "next" ? nextCard : summary)}
+          />
+        ) : (
+          <>
+            {summary}
+            {nextCard}
+          </>
+        )}
+
+        <View style={styles.stack}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            ALL DAYS
+          </Text>
+          {gridLayout ? (
+            /* Web: days as a grid of small tiles */
+            <BentoGrid
+              data={schedule.map((chapters, day) => ({ chapters, day }))}
+              keyExtractor={({ day }) => String(day)}
+              spanFor={() => 1}
+              gap={compact ? 8 : 10}
+              minColumnWidth={210}
+              maxColumns={4}
+              renderItem={({ chapters, day }) => renderDay(chapters, day, true)}
+            />
+          ) : (
+            <View style={[styles.dayList, { borderColor: theme.border }]}>
+              {schedule.map((chapters, day) => renderDay(chapters, day, false))}
+            </View>
+          )}
         </View>
 
         <TouchableOpacity
@@ -357,12 +581,12 @@ export default function ReadingPlans() {
           visible={confirmStop}
           onClose={() => setConfirmStop(false)}
           overlayStyle={styles.overlay}
-          cardStyle={[styles.modalCard, card]}
+          cardStyle={[styles.modalCard, surface]}
         >
-          <Text style={[styles.planTitle, { color: theme.text }]}>
+          <Text style={[styles.planTitle, compact && styles.planTitleCompact, { color: theme.text }]}>
             Stop {plan.title}?
           </Text>
-          <Text style={[styles.planDesc, { color: theme.textSecondary }]}>
+          <Text style={[styles.planDesc, compact && styles.planDescCompact, { color: theme.textSecondary }]}>
             Your progress on this plan will be cleared. You can start it again
             any time.
           </Text>
@@ -407,8 +631,6 @@ export default function ReadingPlans() {
           isDesktop && desktopPage.content,
         ]}
       >
-        {/* Desktop: a readable column, left-aligned under the page title */}
-        <View style={isDesktop && styles.desktopColumn}>
         {openPlan && (
           <TouchableOpacity
             style={styles.back}
@@ -428,9 +650,46 @@ export default function ReadingPlans() {
         ) : (
           renderList()
         )}
-        </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+const GREEN = "#4CAF50";
+
+/** Consecutive days, ending today or yesterday, with any plan reading. */
+function readingStreak(progress: Record<string, PlanProgress>): number {
+  const dates = new Set<string>();
+  for (const p of Object.values(progress)) {
+    Object.values(p.completed).forEach((d) => dates.add(d));
+    Object.values(p.chaptersRead).forEach((d) => dates.add(d));
+  }
+  const day = new Date();
+  if (!dates.has(dateKeyOf(day.getTime()))) day.setDate(day.getDate() - 1);
+  let streak = 0;
+  while (dates.has(dateKeyOf(day.getTime()))) {
+    streak++;
+    day.setDate(day.getDate() - 1);
+  }
+  return streak;
+}
+
+function Stat({
+  icon,
+  value,
+  label,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  value: number;
+  label: string;
+}) {
+  const { theme } = useAppTheme();
+  return (
+    <View style={styles.stat}>
+      <Ionicons name={icon} size={18} color={theme.textSecondary} />
+      <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
+      <Text style={[styles.meta, { color: theme.textSecondary }]}>{label}</Text>
+    </View>
   );
 }
 
@@ -449,11 +708,56 @@ function ProgressBar({ value }: { value: number }) {
 }
 
 const styles = StyleSheet.create({
+  // ── Phones and tablets (compact) ──
+  cardCompact: { padding: 12, gap: 8, borderRadius: 12 },
+  sectionsCompact: { gap: 20 },
+  heroTitleCompact: { fontSize: 19 },
+  bigNumberCompact: { fontSize: 30, lineHeight: 36 },
+  planTitleCompact: { fontSize: 15 },
+  planDescCompact: { fontSize: 12, lineHeight: 17 },
+  dayTileCompact: { paddingHorizontal: 11, paddingVertical: 9, gap: 10, borderRadius: 10 },
+  chipCompact: { paddingHorizontal: 10, paddingVertical: 5 },
+  chipTextCompact: { fontSize: 12 },
+  startBtnCompact: { paddingVertical: 9 },
+  startTextCompact: { fontSize: 13 },
+  planIconCompact: { width: 30, height: 30, borderRadius: 8 },
+
   container: { flex: 1 },
   content: { paddingBottom: 48 },
-  desktopColumn: { width: "100%", maxWidth: 760 },
   flex: { flex: 1 },
+  grow: { flexGrow: 1 },
   stack: { gap: 12 },
+  sections: { gap: 28 },
+  heroTitle: {
+    fontSize: 24,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.3,
+  },
+  heroProgress: { flexDirection: "row", alignItems: "center", gap: 12 },
+  bigNumber: {
+    fontSize: 40,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.3,
+    lineHeight: 48,
+  },
+  stat: { flexDirection: "row", alignItems: "center", gap: 10 },
+  statValue: {
+    fontSize: 22,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.3,
+    minWidth: 28,
+  },
+  dayTile: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  dayLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1, marginBottom: 2 },
   loader: { marginTop: 40 },
   back: {
     flexDirection: "row",

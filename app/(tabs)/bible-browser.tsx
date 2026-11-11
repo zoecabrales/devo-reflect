@@ -18,10 +18,12 @@ import {
     saveHighlight,
 } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
+import { recordChapterRead } from "@/src/services/readingPlans";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+    BackHandler,
     ScrollView,
     SectionList,
     Share,
@@ -136,6 +138,7 @@ export default function BibleBrowser() {
     pickTarget,
     forDate: forDateParam,
     forDateId,
+    returnTo,
   } = useLocalSearchParams<{
     collectionId?: string;
     bookId?: string;
@@ -147,6 +150,7 @@ export default function BibleBrowser() {
     pickTarget?: string; // "day" | "series"
     forDate?: string; // "YYYY-MM-DD" when opened from a Growth calendar day
     forDateId?: string; // changes per calendar tap
+    returnTo?: string; // screen to go back to, e.g. a reading plan
   }>();
 
   // Calendar day the next bookmark is for (set from Growth's calendar).
@@ -253,7 +257,11 @@ export default function BibleBrowser() {
 
   function goBack() {
     setUnderlined(new Set()); // Clear temporary underlines when navigating
-    if (screen === "verses") {
+    if (returnTo) {
+      // Opened from another screen (e.g. a reading plan): go straight back
+      // there, not up through the chapter list or to the first tab
+      router.navigate(returnTo as never);
+    } else if (screen === "verses") {
       setScreen("chapters");
       setVerses([]);
       setSearchVisible(false);
@@ -263,6 +271,18 @@ export default function BibleBrowser() {
       setBook(null);
     } else router.back();
   }
+
+  // Android back button follows the same rule when there's a screen to return to
+  useFocusEffect(
+    useCallback(() => {
+      if (!returnTo) return;
+      const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+        router.navigate(returnTo as never);
+        return true;
+      });
+      return () => sub.remove();
+    }, [returnTo, router]),
+  );
 
   /** Stable key identifying a verse independent of translation. */
   function verseKey(bookId: string, ch: number, verseNum: number) {
@@ -316,6 +336,8 @@ export default function BibleBrowser() {
       } else {
         setUnderlined(new Set());
       }
+      // Tick the chapter off in any reading plan (runs in the background)
+      recordChapterRead(uid, b.id, ch);
       // Persist reading position so Home can show "Resume Reading"
       await saveReadingPosition({
         bookId: b.id,
