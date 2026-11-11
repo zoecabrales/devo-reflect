@@ -140,7 +140,18 @@ export interface PlanProgress {
   startedOn: string;
   /** Completed days: day index (0-based) → date it was read ("YYYY-MM-DD"). */
   completed: Record<number, string>;
+  /** Chapters opened in the Bible: chapterKey → date it was read. */
+  chaptersRead: Record<string, string>;
 }
+
+/** Key of a chapter in `chaptersRead`, e.g. "genesis-1". */
+export function chapterKey(bookId: string, chapter: number): string {
+  return `${bookId}-${chapter}`;
+}
+
+// Chapter reads recorded from the Bible are written in the background; plan
+// loads wait for them so a plan opened right after reading is up to date.
+let pendingRecord: Promise<void> = Promise.resolve();
 
 function plansCol(uid: string) {
   return collection(db, "users", uid, "reading-plans");
@@ -151,6 +162,13 @@ export async function loadPlanProgress(
   uid: string,
 ): Promise<Record<string, PlanProgress>> {
   if (!uid) return {};
+  await pendingRecord;
+  return fetchPlanProgress(uid);
+}
+
+async function fetchPlanProgress(
+  uid: string,
+): Promise<Record<string, PlanProgress>> {
   const snapshot = await getDocs(plansCol(uid));
   const result: Record<string, PlanProgress> = {};
   for (const d of snapshot.docs) {
@@ -165,6 +183,7 @@ export async function loadPlanProgress(
       planId: d.id,
       startedOn: data.startedOn as string,
       completed,
+      chaptersRead: (data.chaptersRead as Record<string, string>) ?? {},
     };
   }
   return result;
@@ -178,13 +197,17 @@ export async function startPlan(
   await setDoc(doc(plansCol(uid), planId), {
     startedOn,
     completed: {},
+    chaptersRead: {},
     updatedAt: Date.now(),
     updatedAtServer: serverTimestamp(),
   });
-  return { planId, startedOn, completed: {} };
+  return { planId, startedOn, completed: {}, chaptersRead: {} };
 }
 
-/** Marks a day read (today's date) or unread. */
+/**
+ * Marks a day read (today's date) or unread. Unmarking also forgets that
+ * day's chapters, so opening one of them again doesn't re-complete it.
+ */
 export async function setDayComplete(
   uid: string,
   planId: string,
@@ -192,16 +215,77 @@ export async function setDayComplete(
   done: boolean,
 ): Promise<string | null> {
   const readOn = done ? dateKeyOf(Date.now()) : null;
+  const chaptersRead: Record<string, ReturnType<typeof deleteField>> = {};
+  if (!done) {
+    for (const c of planSchedule(planId)[dayIndex] ?? []) {
+      chaptersRead[chapterKey(c.bookId, c.chapter)] = deleteField();
+    }
+  }
   await setDoc(
     doc(plansCol(uid), planId),
     {
       completed: { [dayIndex]: done ? readOn : deleteField() },
+      ...(done ? {} : { chaptersRead }),
       updatedAt: Date.now(),
       updatedAtServer: serverTimestamp(),
     },
     { merge: true },
   );
   return readOn;
+}
+
+/**
+ * Records that a chapter was opened in the Bible. In every started plan where
+ * it's part of an unfinished day, the chapter is ticked off, and the day is
+ * marked read once all its chapters have been opened.
+ */
+export function recordChapterRead(
+  uid: string,
+  bookId: string,
+  chapter: number,
+): Promise<void> {
+  if (!uid) return Promise.resolve();
+  const run = async () => {
+    const all = await fetchPlanProgress(uid);
+    const key = chapterKey(bookId, chapter);
+    const today = dateKeyOf(Date.now());
+    await Promise.all(
+      Object.values(all).map(async (p) => {
+        const schedule = planSchedule(p.planId);
+        const days = schedule
+          .map((chapters, day) => ({ chapters, day }))
+          .filter(
+            ({ chapters, day }) =>
+              !p.completed[day] &&
+              chapters.some((c) => c.bookId === bookId && c.chapter === chapter),
+          );
+        if (days.length === 0) return;
+        const read = { ...p.chaptersRead, [key]: p.chaptersRead[key] ?? today };
+        const completed: Record<number, string> = {};
+        for (const { chapters, day } of days) {
+          if (chapters.every((c) => read[chapterKey(c.bookId, c.chapter)])) {
+            completed[day] = today;
+          }
+        }
+        if (p.chaptersRead[key] && Object.keys(completed).length === 0) return;
+        await setDoc(
+          doc(plansCol(uid), p.planId),
+          {
+            chaptersRead: { [key]: read[key] },
+            completed,
+            updatedAt: Date.now(),
+            updatedAtServer: serverTimestamp(),
+          },
+          { merge: true },
+        );
+      }),
+    );
+  };
+  // One at a time, so quick chapter flips don't overwrite each other
+  pendingRecord = pendingRecord
+    .then(run)
+    .catch((err) => console.warn("Failed to record chapter read:", err));
+  return pendingRecord;
 }
 
 /** Leaves a plan and clears its progress. */
