@@ -1,4 +1,4 @@
-import { PageHeader } from "@/src/components";
+import { BentoGrid, PageHeader } from "@/src/components";
 import { BRETHREN_ENABLED } from "@/src/constants/features";
 import { Theme } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
@@ -31,12 +31,15 @@ import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import { ReactNode, useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
+  StyleProp,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -141,6 +144,140 @@ function Brethren() {
     }
   }
 
+  // Web: bento grids like the other main tabs (Memory Verses, Reading Plans);
+  // BentoGrid drops to one column on phones. The native app stacks the same
+  // cards.
+  const gridLayout = Platform.OS === "web";
+  // Phones and tablets: tighter cards and type
+  const compact = !isDesktop;
+  const card = [
+    styles.card,
+    compact && styles.cardCompact,
+    { backgroundColor: theme.surface, borderColor: theme.border },
+  ];
+  const gap = compact ? 10 : 14;
+
+  /** Small uppercase heading above a section, as on the other tabs. */
+  const label = (text: string) => (
+    <Text
+      style={[styles.label, styles.sectionLabel, { color: theme.textSecondary }]}
+    >
+      {text}
+    </Text>
+  );
+
+  // ── Top: add + overview ────────────────────────────────────────────────
+  const addCard = (
+    <View style={[card, desktopPage.tileFill]}>
+      <Text style={[styles.label, { color: theme.textSecondary }]}>
+        ADD BRETHREN
+      </Text>
+      <Text style={[styles.body, { color: theme.textSecondary }]}>
+        Connect with your Brethren in Christ by email. Once they accept,
+        you&apos;ll each see the verses the other shares on Home. Your journal,
+        prayers and bookmarks stay private.
+      </Text>
+      <View style={styles.form}>
+        <TextInput
+          value={email}
+          onChangeText={(t) => {
+            setEmail(t);
+            if (formMessage) setFormMessage(null);
+          }}
+          placeholder="Their email address"
+          placeholderTextColor={theme.textSecondary}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          returnKeyType="send"
+          onSubmitEditing={handleSend}
+          style={[
+            styles.input,
+            compact && styles.inputCompact,
+            {
+              color: theme.text,
+              borderColor: theme.border,
+              backgroundColor: theme.background,
+            },
+          ]}
+        />
+        <TouchableOpacity
+          onPress={handleSend}
+          disabled={sending || !email.trim()}
+          style={[
+            styles.btn,
+            compact && styles.btnCompact,
+            styles.sendBtn,
+            compact && styles.sendBtnCompact,
+            { backgroundColor: theme.primary },
+            (sending || !email.trim()) && styles.disabled,
+          ]}
+          activeOpacity={0.85}
+        >
+          {sending ? (
+            <ActivityIndicator color={theme.primaryText} />
+          ) : (
+            <Text style={[styles.btnText, { color: theme.primaryText }]}>
+              Send Request
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+      {formMessage && (
+        <Text
+          style={[
+            styles.small,
+            { color: formMessage.error ? "#e53e3e" : theme.textSecondary },
+          ]}
+        >
+          {formMessage.text}
+        </Text>
+      )}
+    </View>
+  );
+
+  const overviewCard = (
+    <View style={[card, desktopPage.tileFill]}>
+      <Text style={[styles.label, { color: theme.textSecondary }]}>
+        OVERVIEW
+      </Text>
+      <Text
+        style={[
+          styles.bigNumber,
+          compact && styles.bigNumberCompact,
+          { color: theme.text },
+        ]}
+      >
+        {connections.length}
+      </Text>
+      <Text style={[styles.body, { color: theme.textSecondary }]}>
+        {connections.length === 1 ? "brother or sister" : "brethren"}
+      </Text>
+      <View style={styles.grow} />
+      <View style={styles.statRow}>
+        <Text style={[styles.statText, { color: theme.textSecondary }]}>
+          <Text style={[styles.strong, { color: theme.text }]}>
+            {incoming.length}
+          </Text>{" "}
+          {incoming.length === 1 ? "request" : "requests"}
+        </Text>
+        <Text style={[styles.statText, { color: theme.textSecondary }]}>
+          <Text style={[styles.strong, { color: theme.text }]}>
+            {myShares.length}
+          </Text>{" "}
+          shared
+        </Text>
+      </View>
+    </View>
+  );
+
+  const emptyCard = (text: string) => (
+    <View style={card}>
+      <Text style={[styles.body, { color: theme.textSecondary }]}>{text}</Text>
+    </View>
+  );
+
   return (
     <SafeAreaView
       {...pageScrollMarker(pageScroll)}
@@ -158,7 +295,7 @@ function Brethren() {
             hitSlop={10}
             activeOpacity={0.7}
           >
-            <Ionicons name="close" size={24} color={theme.textSecondary} />
+            <Ionicons name="close" size={22} color={theme.textSecondary} />
           </TouchableOpacity>
         }
       />
@@ -171,428 +308,455 @@ function Brethren() {
           isDesktop && desktopPage.content,
         ]}
       >
-        {/* Desktop: a readable column, left-aligned under the page title */}
-        <View style={[styles.inner, isDesktop && styles.innerDesktop]}>
-        <Text style={[styles.intro, { color: theme.textSecondary }]}>
-          Connect with your Brethren in Christ by email. Once they
-          accept, you&apos;ll each see the verses the other shares on Home.
-          Your journal, prayers and bookmarks stay private.
-        </Text>
-
-        {/* Add */}
-        <Section theme={theme} title="Add Brethren">
-          <View style={styles.form}>
-            <TextInput
-              value={email}
-              onChangeText={(t) => {
-                setEmail(t);
-                if (formMessage) setFormMessage(null);
-              }}
-              placeholder="Their email address"
-              placeholderTextColor={theme.textSecondary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              returnKeyType="send"
-              onSubmitEditing={handleSend}
-              style={[
-                styles.input,
-                {
-                  color: theme.text,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                },
-              ]}
-            />
-            <TouchableOpacity
-              onPress={handleSend}
-              disabled={sending || !email.trim()}
-              style={[
-                styles.primaryBtn,
-                { backgroundColor: theme.primary },
-                (sending || !email.trim()) && styles.disabled,
-              ]}
-              activeOpacity={0.85}
-            >
-              {sending ? (
-                <ActivityIndicator color={theme.primaryText} />
-              ) : (
-                <Text
-                  style={[styles.primaryBtnText, { color: theme.primaryText }]}
-                >
-                  Send Request
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-          {formMessage && (
-            <Text
-              style={[
-                styles.formMessage,
-                { color: formMessage.error ? "#e53e3e" : theme.textSecondary },
-              ]}
-            >
-              {formMessage.text}
-            </Text>
-          )}
-        </Section>
-
         {loading ? (
-          <ActivityIndicator color={theme.textSecondary} style={styles.spinner} />
+          <ActivityIndicator color={theme.textSecondary} style={styles.loader} />
         ) : loadError ? (
           <TouchableOpacity onPress={load} activeOpacity={0.7}>
-            <Text style={[styles.empty, { color: theme.textSecondary }]}>
+            <Text style={[styles.body, styles.loadError, { color: theme.textSecondary }]}>
               Could not load. Tap to try again.
             </Text>
           </TouchableOpacity>
         ) : (
-          <>
-            {/* Incoming requests */}
-            {incoming.length > 0 && (
-              <Section theme={theme} title={`Requests (${incoming.length})`}>
-                {incoming.map((r, i) => (
-                  <Row
-                    key={r.id}
-                    theme={theme}
-                    first={i === 0}
-                    title={r.fromName}
-                    subtitle={r.fromEmail}
-                    busy={busyId === r.id}
-                  >
-                    <SmallBtn
-                      theme={theme}
-                      label="Decline"
-                      onPress={() => run(r.id, () => deleteRequest(r))}
-                    />
-                    <SmallBtn
-                      theme={theme}
-                      label="Accept"
-                      primary
-                      onPress={() => run(r.id, () => acceptRequest(r))}
-                    />
-                  </Row>
-                ))}
-              </Section>
+          <View style={compact ? styles.sectionsCompact : styles.sections}>
+            {/* Add + overview */}
+            {gridLayout ? (
+              <BentoGrid
+                gap={gap}
+                data={["add", "overview"]}
+                keyExtractor={(k) => k}
+                spanFor={(k) => (k === "add" ? 2 : 1)}
+                renderItem={(k) => (k === "add" ? addCard : overviewCard)}
+              />
+            ) : (
+              <View style={styles.stack}>
+                {addCard}
+                {overviewCard}
+              </View>
             )}
 
-            {/* Connections */}
-            <Section
-              theme={theme}
-              title={`Your Brethren (${connections.length})`}
-            >
-              {connections.length === 0 ? (
-                <Text style={[styles.empty, { color: theme.textSecondary }]}>
-                  No one yet. Send a request above to get started.
-                </Text>
+            {/* Requests waiting for you */}
+            <View style={styles.stack}>
+              {label(incoming.length > 0 ? `REQUESTS · ${incoming.length}` : "REQUESTS")}
+              {incoming.length === 0 ? (
+                emptyCard(
+                  "No requests waiting. When someone adds you as Brethren, their request shows up here.",
+                )
               ) : (
-                connections.map((c, i) => (
-                  <Row
-                    key={c.id}
-                    theme={theme}
-                    first={i === 0}
-                    title={c.name}
-                    subtitle={`Connected ${new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
-                    busy={busyId === c.id}
-                  >
-                    {confirmRemove === c.id ? (
-                      <>
-                        <SmallBtn
-                          theme={theme}
-                          label="Cancel"
-                          onPress={() => setConfirmRemove(null)}
-                        />
-                        <SmallBtn
-                          theme={theme}
-                          label="Remove"
-                          danger
-                          onPress={() => run(c.id, () => removeConnection(c))}
-                        />
-                      </>
-                    ) : (
-                      <SmallBtn
+                <Grid
+                  gridLayout={gridLayout}
+                  gap={gap}
+                  data={incoming}
+                  keyOf={(r) => r.id}
+                  render={(r) => (
+                    <PersonCard
+                      theme={theme}
+                      card={card}
+                      compact={compact}
+                      title={r.fromName}
+                      subtitle={r.fromEmail}
+                      busy={busyId === r.id}
+                    >
+                      <Btn
                         theme={theme}
-                        label="Remove"
-                        onPress={() => setConfirmRemove(c.id)}
+                        compact={compact}
+                        text="Decline"
+                        onPress={() => run(r.id, () => deleteRequest(r))}
                       />
-                    )}
-                  </Row>
-                ))
+                      <Btn
+                        theme={theme}
+                        compact={compact}
+                        text="Accept"
+                        kind="primary"
+                        onPress={() => run(r.id, () => acceptRequest(r))}
+                      />
+                    </PersonCard>
+                  )}
+                />
+              )}
+            </View>
+
+            {/* Your Brethren */}
+            <View style={styles.stack}>
+              {label(
+                connections.length > 0
+                  ? `YOUR BRETHREN · ${connections.length}`
+                  : "YOUR BRETHREN",
+              )}
+              {connections.length === 0 ? (
+                emptyCard("No one yet. Send a request above to get started.")
+              ) : (
+                <Grid
+                  gridLayout={gridLayout}
+                  gap={gap}
+                  data={connections}
+                  keyOf={(c) => c.id}
+                  render={(c) => (
+                    <PersonCard
+                      theme={theme}
+                      card={card}
+                      compact={compact}
+                      title={c.name}
+                      subtitle={`Connected ${new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                      busy={busyId === c.id}
+                    >
+                      {confirmRemove === c.id ? (
+                        <>
+                          <Btn
+                            theme={theme}
+                            compact={compact}
+                            text="Cancel"
+                            onPress={() => setConfirmRemove(null)}
+                          />
+                          <Btn
+                            theme={theme}
+                            compact={compact}
+                            text="Remove"
+                            kind="danger"
+                            onPress={() => run(c.id, () => removeConnection(c))}
+                          />
+                        </>
+                      ) : (
+                        <Btn
+                          theme={theme}
+                          compact={compact}
+                          text="Remove"
+                          onPress={() => setConfirmRemove(c.id)}
+                        />
+                      )}
+                    </PersonCard>
+                  )}
+                />
               )}
               {confirmRemove && (
-                <Text style={[styles.note, { color: theme.textSecondary }]}>
-                  You&apos;ll both stop seeing each other&apos;s shared verses.
+                <Text style={[styles.small, { color: theme.textSecondary }]}>
+                  Removing someone means you&apos;ll both stop seeing each
+                  other&apos;s shared verses.
                 </Text>
               )}
-            </Section>
+            </View>
 
             {/* Sent requests */}
-            {sent.length > 0 && (
-              <Section theme={theme} title="Sent requests">
-                {sent.map((r, i) => (
-                  <Row
-                    key={r.id}
-                    theme={theme}
-                    first={i === 0}
-                    title={r.toEmail}
-                    subtitle="Waiting for a reply"
-                    busy={busyId === r.id}
-                  >
-                    <SmallBtn
+            <View style={styles.stack}>
+              {label(sent.length > 0 ? `SENT REQUESTS · ${sent.length}` : "SENT REQUESTS")}
+              {sent.length === 0 ? (
+                emptyCard(
+                  "No requests waiting for a reply.",
+                )
+              ) : (
+                <Grid
+                  gridLayout={gridLayout}
+                  gap={gap}
+                  data={sent}
+                  keyOf={(r) => r.id}
+                  render={(r) => (
+                    <PersonCard
                       theme={theme}
-                      label="Cancel"
-                      onPress={() => run(r.id, () => deleteRequest(r))}
-                    />
-                  </Row>
-                ))}
-              </Section>
-            )}
+                      card={card}
+                      compact={compact}
+                      title={r.toEmail}
+                      subtitle="Waiting for a reply"
+                      busy={busyId === r.id}
+                    >
+                      <Btn
+                        theme={theme}
+                        compact={compact}
+                        text="Cancel request"
+                        onPress={() => run(r.id, () => deleteRequest(r))}
+                      />
+                    </PersonCard>
+                  )}
+                />
+              )}
+            </View>
 
-            {/* Your shares */}
+            {/* Verses you shared */}
+            <View style={styles.stack}>
+              {label(myShares.length > 0 ? `VERSES YOU SHARED · ${myShares.length}` : "VERSES YOU SHARED")}
+              {myShares.length === 0 ? (
+                emptyCard(
+                  "Nothing shared yet. To share a verse, double-tap it in the Bible and choose Share with Brethren.",
+                )
+              ) : (
+                <Grid
+                  gridLayout={gridLayout}
+                  gap={gap}
+                  data={myShares}
+                  keyOf={(v) => v.id}
+                  render={(v) => (
+                    <View style={[card, desktopPage.tileFill, styles.verseCard]}>
+                      <Text
+                        style={[styles.ref, compact && styles.refCompact, { color: theme.text }]}
+                      >
+                        {bookmarkRef(v)}{" "}
+                        <Text style={[styles.version, { color: theme.textSecondary }]}>
+                          {v.version}
+                        </Text>
+                      </Text>
+                      {!!v.note && (
+                        <Text style={[styles.note, { color: theme.text }]}>
+                          {v.note}
+                        </Text>
+                      )}
+                      <Text
+                        style={[styles.verseText, { color: theme.textSecondary }]}
+                        numberOfLines={4}
+                      >
+                        {v.text}
+                      </Text>
+                      <View style={styles.grow} />
+                      {busyId === v.id ? (
+                        <ActivityIndicator color={theme.textSecondary} />
+                      ) : (
+                        <View style={styles.row}>
+                          <Btn
+                            theme={theme}
+                            compact={compact}
+                            text="Delete"
+                            onPress={() => run(v.id, () => deleteShare(v.id))}
+                          />
+                        </View>
+                      )}
+                    </View>
+                  )}
+                />
+              )}
+            </View>
+
             {myShares.length > 0 && (
-              <Section theme={theme} title="Verses you shared">
-                {myShares.map((s, i) => (
-                  <Row
-                    key={s.id}
-                    theme={theme}
-                    first={i === 0}
-                    title={bookmarkRef(s)}
-                    subtitle={s.note || s.text}
-                    busy={busyId === s.id}
-                  >
-                    <SmallBtn
-                      theme={theme}
-                      label="Delete"
-                      onPress={() => run(s.id, () => deleteShare(s.id))}
-                    />
-                  </Row>
-                ))}
-              </Section>
+              <Text style={[styles.small, { color: theme.textSecondary }]}>
+                To share a verse, double-tap it in the Bible and choose Share
+                with Brethren.
+              </Text>
             )}
-          </>
+          </View>
         )}
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Section({
-  theme,
-  title,
-  children,
+/** A grid of item cards (web) or a stack (native). */
+function Grid<T>({
+  data,
+  keyOf,
+  render,
+  span,
+  gridLayout,
+  gap,
 }: {
-  theme: Theme;
-  title: string;
-  children: ReactNode;
+  data: T[];
+  keyOf: (item: T) => string;
+  render: (item: T) => ReactNode;
+  span?: (item: T) => 1 | 2;
+  gridLayout: boolean;
+  gap: number;
 }) {
-  return (
-    <View style={styles.sectionWrap}>
-      <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-        {title}
-      </Text>
-      <View
-        style={[
-          styles.section,
-          { backgroundColor: theme.surface, borderColor: theme.border },
-        ]}
-      >
-        {children}
+  if (!gridLayout) {
+    return (
+      <View style={styles.stack}>
+        {data.map((item) => (
+          <View key={keyOf(item)}>{render(item)}</View>
+        ))}
       </View>
-    </View>
+    );
+  }
+  return (
+    <BentoGrid
+      gap={gap}
+      data={data}
+      keyExtractor={keyOf}
+      spanFor={span ?? (() => 1)}
+      minColumnWidth={240}
+      // Item cards keep their size; a lone last card doesn't stretch
+      fillRows={false}
+      renderItem={(item) => render(item)}
+    />
   );
 }
 
-function Row({
+/** A person (request, connection, sent request) as its own small card. */
+function PersonCard({
   theme,
-  first,
+  card,
+  compact,
   title,
   subtitle,
   busy,
   children,
 }: {
   theme: Theme;
-  first: boolean;
+  card: StyleProp<ViewStyle>;
+  compact: boolean;
   title: string;
   subtitle: string;
   busy: boolean;
   children: ReactNode;
 }) {
   return (
-    <View
-      style={[
-        styles.row,
-        !first && {
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: theme.border,
-        },
-      ]}
-    >
-      <View style={styles.rowText}>
-        <Text style={[styles.rowTitle, { color: theme.text }]} numberOfLines={1}>
-          {title}
-        </Text>
-        <Text
-          style={[styles.rowSubtitle, { color: theme.textSecondary }]}
-          numberOfLines={1}
-        >
-          {subtitle}
-        </Text>
+    <View style={[card, desktopPage.tileFill]}>
+      <View style={styles.person}>
+        <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+          <Text style={[styles.avatarText, { color: theme.primaryText }]}>
+            {title.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+        <View style={styles.flex}>
+          <Text
+            style={[
+              styles.title,
+              compact && styles.titleCompact,
+              { color: theme.text },
+            ]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          <Text
+            style={[styles.small, { color: theme.textSecondary }]}
+            numberOfLines={1}
+          >
+            {subtitle}
+          </Text>
+        </View>
       </View>
+      <View style={styles.grow} />
       {busy ? (
         <ActivityIndicator color={theme.textSecondary} />
       ) : (
-        <View style={styles.rowActions}>{children}</View>
+        <View style={styles.row}>{children}</View>
       )}
     </View>
   );
 }
 
-function SmallBtn({
+function Btn({
   theme,
-  label,
+  compact,
+  text,
   onPress,
-  primary,
-  danger,
+  kind = "outline",
 }: {
   theme: Theme;
-  label: string;
+  compact: boolean;
+  text: string;
   onPress: () => void;
-  primary?: boolean;
-  danger?: boolean;
+  kind?: "primary" | "outline" | "danger";
 }) {
+  const bg =
+    kind === "primary"
+      ? theme.primary
+      : kind === "danger"
+        ? "#e53e3e"
+        : "transparent";
+  const fg =
+    kind === "primary"
+      ? theme.primaryText
+      : kind === "danger"
+        ? "#fff"
+        : theme.text;
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
       style={[
-        styles.smallBtn,
-        primary
-          ? { backgroundColor: theme.primary, borderColor: theme.primary }
-          : danger
-            ? { backgroundColor: "#e53e3e", borderColor: "#e53e3e" }
-            : { borderColor: theme.border },
+        styles.btn,
+        compact && styles.btnCompact,
+        styles.btnFlex,
+        kind === "outline" && [styles.btnOutline, { borderColor: theme.border }],
+        { backgroundColor: bg },
       ]}
     >
-      <Text
-        style={[
-          styles.smallBtnText,
-          {
-            color: primary
-              ? theme.primaryText
-              : danger
-                ? "#fff"
-                : theme.text,
-          },
-        ]}
-      >
-        {label}
-      </Text>
+      <Text style={[styles.btnText, { color: fg }]}>{text}</Text>
     </TouchableOpacity>
   );
 }
 
+// Sizes follow the other main tabs (Memory Verses / Reading Plans)
 const styles = StyleSheet.create({
+  // Phones and tablets: tighter cards and type
+  cardCompact: { padding: 12, gap: 8, borderRadius: 12 },
+  sectionsCompact: { gap: 20 },
+  bigNumberCompact: { fontSize: 30, lineHeight: 36 },
+  titleCompact: { fontSize: 14 },
+  refCompact: { fontSize: 14 },
+  btnCompact: { paddingVertical: 9 },
+  inputCompact: { minHeight: 40, fontSize: 14 },
+
   container: { flex: 1 },
-  content: {
-    paddingBottom: 48,
-  },
-  inner: {
-    gap: 18,
-  },
-  innerDesktop: {
-    maxWidth: 760,
-  },
-  intro: {
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  sectionWrap: { gap: 6 },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    paddingHorizontal: 4,
-  },
-  section: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  form: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    padding: 14,
-  },
+  content: { paddingBottom: 48 },
+  loader: { marginTop: 40 },
+  loadError: { paddingVertical: 24 },
+  flex: { flex: 1, minWidth: 0 },
+  grow: { flexGrow: 1 },
+  stack: { gap: 12 },
+  sections: { gap: 28 },
+  row: { flexDirection: "row", gap: 10, alignSelf: "stretch" },
+
+  card: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12 },
+  label: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2 },
+  // Section headings sit slightly in from the cards, as in Settings
+  sectionLabel: { paddingHorizontal: 4 },
+  title: { fontSize: 15, fontWeight: "700" },
+  body: { fontSize: 14, lineHeight: 20 },
+  small: { fontSize: 12, lineHeight: 17 },
+  strong: { fontWeight: "700" },
+
+  // Add
+  form: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   input: {
     flexGrow: 1,
-    flexBasis: 220,
-    minHeight: 44,
+    flexBasis: 200,
+    minWidth: 0,
+    minHeight: 42,
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     fontSize: 15,
   },
-  primaryBtn: {
-    minHeight: 44,
-    paddingHorizontal: 18,
-    borderRadius: 10,
+  sendBtn: { minWidth: 150, paddingHorizontal: 20 },
+  // Phones / tablets: the button fills its own line when it wraps
+  sendBtnCompact: { flexGrow: 1 },
+  disabled: { opacity: 0.5 },
+
+  // Overview
+  bigNumber: {
+    fontSize: 40,
+    fontFamily: "Oswald_700Bold",
+    letterSpacing: 0.3,
+    lineHeight: 48,
+  },
+  statRow: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
+  statText: { fontSize: 13 },
+
+  // People
+  person: { flexDirection: "row", alignItems: "center", gap: 10 },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    flexGrow: 0,
   },
-  primaryBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  disabled: { opacity: 0.5 },
-  formMessage: {
-    fontSize: 13,
-    lineHeight: 19,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    marginTop: -4,
-  },
-  spinner: { marginTop: 12 },
-  empty: {
-    fontSize: 13,
-    padding: 14,
-  },
-  note: {
-    fontSize: 12,
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-  },
-  row: {
+  avatarText: { fontSize: 13, fontWeight: "700" },
+
+  // Shared verses
+  verseCard: { gap: 8 },
+  ref: { fontSize: 15, fontWeight: "700" },
+  version: { fontSize: 12, fontWeight: "400" },
+  note: { fontSize: 13, lineHeight: 19, fontStyle: "italic" },
+  verseText: { fontSize: 13, lineHeight: 19 },
+
+  // Buttons
+  btn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  rowText: { flex: 1, minWidth: 0 },
-  rowTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  rowSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  rowActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  smallBtn: {
-    borderWidth: 1,
-    borderRadius: 8,
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 10,
+    paddingVertical: 11,
     paddingHorizontal: 12,
-    paddingVertical: 7,
   },
-  smallBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
+  btnFlex: { flex: 1 },
+  btnOutline: { borderWidth: 1 },
+  btnText: { fontSize: 14, fontWeight: "700" },
 });

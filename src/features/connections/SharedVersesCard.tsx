@@ -39,10 +39,14 @@ function timeAgo(ms: number): string {
 export function SharedVersesCard({
   theme,
   style,
+  large = false,
 }: {
   theme: Theme;
   style?: object;
+  /** Desktop Home: text sized to match the other desktop cards. */
+  large?: boolean;
 }) {
+  const L = large ? lg : null;
   const router = useRouter();
   const [shares, setShares] = useState<SharedVerse[] | null>(null);
   const [hasConnections, setHasConnections] = useState(true);
@@ -74,12 +78,13 @@ export function SharedVersesCard({
     <View
       style={[
         styles.card,
+        L?.card,
         { backgroundColor: theme.surface, borderColor: theme.border },
         style,
       ]}
     >
       <View style={styles.header}>
-        <Text style={[styles.label, { color: theme.text }]}>
+        <Text style={[styles.label, L?.label, { color: theme.text }]}>
           From your Brethren
         </Text>
         <TouchableOpacity
@@ -97,26 +102,26 @@ export function SharedVersesCard({
         <ActivityIndicator color={theme.textSecondary} style={styles.spinner} />
       ) : error ? (
         <TouchableOpacity onPress={load} activeOpacity={0.7}>
-          <Text style={[styles.empty, { color: theme.textSecondary }]}>
+          <Text style={[styles.empty, L?.empty, { color: theme.textSecondary }]}>
             Could not load shared verses. Tap to try again.
           </Text>
         </TouchableOpacity>
       ) : !hasConnections ? (
         <View style={styles.emptyWrap}>
-          <Text style={[styles.empty, { color: theme.textSecondary }]}>
+          <Text style={[styles.empty, L?.empty, { color: theme.textSecondary }]}>
             Connect with your Brethren to see the verses they share.
           </Text>
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/brethren")}
             activeOpacity={0.7}
           >
-            <Text style={[styles.link, { color: theme.text }]}>
+            <Text style={[styles.link, L?.link, { color: theme.text }]}>
               Add Brethren →
             </Text>
           </TouchableOpacity>
         </View>
       ) : shares.length === 0 ? (
-        <Text style={[styles.empty, { color: theme.textSecondary }]}>
+        <Text style={[styles.empty, L?.empty, { color: theme.textSecondary }]}>
           When your Brethren share a verse, it will show up here.
         </Text>
       ) : (
@@ -131,13 +136,14 @@ export function SharedVersesCard({
             activeOpacity={0.75}
             style={[
               styles.item,
+              L?.item,
               i > 0 && {
                 borderTopWidth: StyleSheet.hairlineWidth,
                 borderTopColor: theme.border,
               },
             ]}
           >
-            <Text style={[styles.meta, { color: theme.textSecondary }]}>
+            <Text style={[styles.meta, L?.meta, { color: theme.textSecondary }]}>
               <Text style={[styles.author, { color: theme.text }]}>
                 {s.authorName}
               </Text>
@@ -145,18 +151,18 @@ export function SharedVersesCard({
               {timeAgo(s.createdAt)}
             </Text>
             {!!s.note && (
-              <Text style={[styles.note, { color: theme.text }]}>
+              <Text style={[styles.note, L?.note, { color: theme.text }]}>
                 {s.note}
               </Text>
             )}
-            <Text style={[styles.ref, { color: theme.text }]}>
+            <Text style={[styles.ref, L?.ref, { color: theme.text }]}>
               {bookmarkRef(s)}{" "}
               <Text style={{ color: theme.textSecondary, fontWeight: "400" }}>
                 {s.version}
               </Text>
             </Text>
             <Text
-              style={[styles.text, { color: theme.textSecondary }]}
+              style={[styles.text, L?.text, { color: theme.textSecondary }]}
               numberOfLines={3}
             >
               {s.text}
@@ -223,5 +229,44 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 13,
     lineHeight: 19,
+  },
+});
+
+// Desktop Home sizes (matches DesktopHome's cards)
+const lg = StyleSheet.create({
+  card: {
+    paddingHorizontal: 21,
+    paddingTop: 21,
+    paddingBottom: 10,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 1.1,
+  },
+  empty: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  link: {
+    fontSize: 15,
+  },
+  item: {
+    paddingVertical: 14,
+    gap: 5,
+  },
+  meta: {
+    fontSize: 14,
+  },
+  note: {
+    fontSize: 17,
+    lineHeight: 25,
+  },
+  ref: {
+    fontSize: 18,
+  },
+  text: {
+    fontSize: 16,
+    lineHeight: 25,
   },
 });

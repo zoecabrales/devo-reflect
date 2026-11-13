@@ -116,7 +116,7 @@ export function DesktopHome({
 
         {/* ── Verses shared by Brethren ── */}
         {BRETHREN_ENABLED && (
-          <SharedVersesCard theme={theme} style={styles.sharedCard} />
+          <SharedVersesCard theme={theme} style={styles.sharedCard} large />
         )}
 
         {/* ── Browse by section ── */}

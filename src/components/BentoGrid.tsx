@@ -14,6 +14,11 @@ type Props<T> = {
   /** Narrowest a column may get before dropping to fewer columns. */
   minColumnWidth?: number;
   maxColumns?: number;
+  /**
+   * Stretch the last tile of each row so rows end flush (default). Turn off
+   * for lists of same-sized items, where a stretched last item looks odd.
+   */
+  fillRows?: boolean;
 };
 
 type Cell<T> = { item: T; index: number; span: number };
@@ -32,6 +37,7 @@ export function BentoGrid<T>({
   gap = 14,
   minColumnWidth = 260,
   maxColumns = 3,
+  fillRows = true,
 }: Props<T>) {
   const [width, setWidth] = useState(0);
 
@@ -63,12 +69,14 @@ export function BentoGrid<T>({
     });
     if (row.length) out.push(row);
     // Stretch the last tile of each row so rows end flush
-    for (const r of out) {
-      const used = r.reduce((n, c) => n + c.span, 0);
-      r[r.length - 1].span += columns - used;
+    if (fillRows) {
+      for (const r of out) {
+        const used = r.reduce((n, c) => n + c.span, 0);
+        r[r.length - 1].span += columns - used;
+      }
     }
     return out;
-  }, [data, columns, spanFor]);
+  }, [data, columns, spanFor, fillRows]);
 
   const onLayout = (e: LayoutChangeEvent) =>
     setWidth(Math.floor(e.nativeEvent.layout.width));
