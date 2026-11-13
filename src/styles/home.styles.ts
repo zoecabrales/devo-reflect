@@ -166,6 +166,11 @@ export const styles = StyleSheet.create({
     gap: 8,
     alignItems: "flex-start",
   },
+  collectionHelpBtn: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+  },
   collectionIconWrap: {
     width: 30,
     height: 30,

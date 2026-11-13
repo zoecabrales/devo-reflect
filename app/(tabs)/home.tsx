@@ -10,6 +10,10 @@ import {
     ReadingPosition,
 } from "@/src/services/bible";
 import { DesktopHome } from "@/src/features/home/DesktopHome";
+import {
+    SectionGuideButton,
+    SectionGuideModal,
+} from "@/src/features/home/SectionGuide";
 import { loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { loadEntries } from "@/src/services/journal";
@@ -146,6 +150,8 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
 function CollectionCards({ theme }: { theme: Theme }) {
   const router = useRouter();
   const [selected, setSelected] = useState<BibleCollection | null>(null);
+  // Section whose "?" guide is open
+  const [guide, setGuide] = useState<BibleCollection | null>(null);
   const padH = useScrollPaddingH();
 
   return (
@@ -173,6 +179,12 @@ function CollectionCards({ theme }: { theme: Theme }) {
             onPress={() => setSelected(col)}
             activeOpacity={0.75}
           >
+            <SectionGuideButton
+              theme={theme}
+              label={col.label}
+              onPress={() => setGuide(col)}
+              style={styles.collectionHelpBtn}
+            />
             <View
               style={[
                 styles.collectionIconWrap,
@@ -208,6 +220,12 @@ function CollectionCards({ theme }: { theme: Theme }) {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <SectionGuideModal
+        collection={guide}
+        theme={theme}
+        onClose={() => setGuide(null)}
+      />
 
       {/* Collection Info Modal */}
       <AppModal

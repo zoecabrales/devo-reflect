@@ -3,12 +3,14 @@ import { TAB_ACTIVE_COLOR, Theme } from "@/src/constants/theme";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
 import {
   BIBLE_COLLECTIONS,
+  BibleCollection,
   BibleVerse,
   ReadingPosition,
 } from "@/src/services/bible";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
+import { SectionGuideButton, SectionGuideModal } from "./SectionGuide";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -39,6 +41,8 @@ export function DesktopHome({
   journalThisWeek,
 }: Props) {
   const router = useRouter();
+  // Section whose "?" guide is open
+  const [guide, setGuide] = useState<BibleCollection | null>(null);
   const card = { backgroundColor: theme.surface, borderColor: theme.border };
 
   return (
@@ -123,6 +127,12 @@ export function DesktopHome({
                 router.push(`/(tabs)/bible-browser?collectionId=${col.id}`)
               }
             >
+              <SectionGuideButton
+                theme={theme}
+                label={col.label}
+                onPress={() => setGuide(col)}
+                style={styles.sectionHelpBtn}
+              />
               <Ionicons
                 name={col.icon as keyof typeof Ionicons.glyphMap}
                 size={19}
@@ -137,6 +147,12 @@ export function DesktopHome({
             </HoverCard>
           ))}
         </View>
+
+        <SectionGuideModal
+          collection={guide}
+          theme={theme}
+          onClose={() => setGuide(null)}
+        />
 
         {/* ── Quick access ── */}
         <HoverCard
@@ -279,6 +295,12 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     rowGap: 14,
+  },
+  sectionHelpBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    zIndex: 1,
   },
   sectionCard: {
     width: "32.6%",
