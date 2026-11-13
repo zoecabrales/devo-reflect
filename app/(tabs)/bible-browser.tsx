@@ -16,8 +16,10 @@ import {
     formatVerseNumbers,
     loadBookmarks,
     loadHighlights,
+    loadUnderlines,
     removeHighlight,
     saveHighlight,
+    setUnderlines,
 } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { recordChapterRead } from "@/src/services/readingPlans";
@@ -26,6 +28,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
     BackHandler,
+    Platform,
     ScrollView,
     SectionList,
     Share,
@@ -54,6 +57,9 @@ import {
 } from "@/src/utils/responsive";
 
 type Screen = "books" | "chapters" | "verses";
+
+/** Two taps on a verse within this many ms open the verse panel. */
+const DOUBLE_TAP_MS = 260;
 
 const HIGHLIGHT_COLORS = [
   "#FFD966", // yellow
@@ -195,7 +201,13 @@ export default function BibleBrowser() {
   const [highlights, setHighlights] = useState<Map<string, string>>(new Map());
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const [journaled, setJournaled] = useState<Set<string>>(new Set());
+  // Temporary underline (arriving from Concordance); cleared on navigation
   const [underlined, setUnderlined] = useState<Set<string>>(new Set());
+  // Underlines the user saved from the drawer; kept until they remove them
+  const [savedUnderlines, setSavedUnderlines] = useState<Set<string>>(
+    new Set(),
+  );
+  const savedUnderlinesRef = useRef(savedUnderlines);
   const [bookmarkConfirm, setBookmarkConfirm] = useState<string | null>(null);
   const [drawerVerse, setDrawerVerse] = useState<ChapterVerse | null>(null);
   // Select mode: verse numbers picked to bookmark / highlight / journal as one.
@@ -205,6 +217,12 @@ export default function BibleBrowser() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // A first tap waiting to see if a second one follows (double tap)
+  const pendingTap = useRef<{
+    verse: number;
+    timer: ReturnType<typeof setTimeout>;
+    run: () => void;
+  } | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const verseOffsets = useRef<Map<number, number>>(new Map());
   // Desktop book view: verse to open the spread at ("end" = last spread)
@@ -325,11 +343,15 @@ export default function BibleBrowser() {
     setSearchQuery("");
     setSelection(null);
     try {
-      const [data, savedHighlights, savedBookmarks] = await Promise.all([
-        fetchChapter(b.id, ch, (ver ?? version).id),
-        loadHighlights(),
-        loadBookmarks(uid),
-      ]);
+      const [data, savedHighlights, savedBookmarks, underlines] =
+        await Promise.all([
+          fetchChapter(b.id, ch, (ver ?? version).id),
+          loadHighlights(),
+          loadBookmarks(uid),
+          loadUnderlines(),
+        ]);
+      savedUnderlinesRef.current = underlines;
+      setSavedUnderlines(underlines);
       setVerses(data);
 
       // Auto-highlight the target verses that have no existing highlight
@@ -379,8 +401,32 @@ export default function BibleBrowser() {
     }
   }
 
-  /** Single tap → open the highlight / bookmark drawer (or, in select
-   *  mode, add / remove the verse from the selection) */
+  /** Runs a waiting single tap now (e.g. another verse was tapped). */
+  function flushPendingTap() {
+    const p = pendingTap.current;
+    if (!p) return;
+    clearTimeout(p.timer);
+    pendingTap.current = null;
+    p.run();
+  }
+
+  /** Forgets a waiting single tap without running it. */
+  function cancelPendingTap() {
+    if (pendingTap.current) clearTimeout(pendingTap.current.timer);
+    pendingTap.current = null;
+  }
+
+  // Don't fire a waiting tap after leaving the chapter or the screen
+  useEffect(() => () => cancelPendingTap(), [book, chapter]);
+
+  /**
+   * Tap on a verse:
+   * - one tap underlines it (or removes the underline)
+   * - two taps open the panel to colour, bookmark or journal it
+   * - in select mode, a tap adds / removes it from the selection
+   * - when picking or bookmarking a verse for a Growth calendar day, one tap
+   *   opens the panel straight away (that flow is about choosing a verse)
+   */
   function handleVerseTap(v: ChapterVerse) {
     if (selection) {
       const next = selection.includes(v.verse)
@@ -389,7 +435,31 @@ export default function BibleBrowser() {
       setSelection(next.length > 0 ? next : null);
       return;
     }
-    setDrawerVerse(v);
+    if (isPickMode || pendingForDate) {
+      setDrawerVerse(v);
+      return;
+    }
+
+    const p = pendingTap.current;
+    if (p && p.verse === v.verse) {
+      // Second tap on the same verse: open the panel instead of underlining
+      cancelPendingTap();
+      // A double-click on web also selects a word; clear that
+      if (Platform.OS === "web") window.getSelection?.()?.removeAllRanges();
+      setDrawerVerse(v);
+      return;
+    }
+    // A different verse: finish the earlier tap first
+    flushPendingTap();
+    const run = () => toggleUnderline([v.verse]);
+    pendingTap.current = {
+      verse: v.verse,
+      run,
+      timer: setTimeout(() => {
+        pendingTap.current = null;
+        run();
+      }, DOUBLE_TAP_MS),
+    };
   }
 
   /** Drawer → "Select Verses": start select mode with the tapped verse. */
@@ -524,6 +594,25 @@ export default function BibleBrowser() {
     }
   }
 
+  /** Saves or clears the underline on the given verses. They are all
+   *  underlined unless every one already is, in which case all are cleared. */
+  async function toggleUnderline(nums: number[]) {
+    if (!book || nums.length === 0) return;
+    const keys = nums.map((n) => verseKey(book.id, chapter!, n));
+    // Read the latest set (a delayed tap may run from an older render) and
+    // show the change straight away, then save it
+    const current = savedUnderlinesRef.current;
+    const on = !keys.every((k) => current.has(k));
+    const next = new Set(current);
+    for (const k of keys) {
+      if (on) next.add(k);
+      else next.delete(k);
+    }
+    savedUnderlinesRef.current = next;
+    setSavedUnderlines(next);
+    await setUnderlines(keys, on);
+  }
+
   async function handleDrawerBookmark() {
     if (!drawerVerse || !book) return;
     const now = Date.now();
@@ -595,7 +684,7 @@ export default function BibleBrowser() {
     const highlightColor = highlights.get(key);
     const isBookmarked = bookmarked.has(key);
     const isJournaled = journaled.has(key);
-    const isUnderlined = underlined.has(key);
+    const isUnderlined = underlined.has(key) || savedUnderlines.has(key);
     const isSelected = selection?.includes(v.verse) ?? false;
     return (
       <TouchableOpacity
@@ -609,6 +698,26 @@ export default function BibleBrowser() {
           },
         ]}
         onPress={() => handleVerseTap(v)}
+        // Screen readers: activating underlines; the "Verse options" action
+        // opens the panel (a double tap is the screen reader's activate)
+        accessibilityRole="button"
+        accessibilityLabel={`Verse ${v.verse}`}
+        accessibilityHint="Underlines the verse. Tap twice for options."
+        accessibilityActions={[
+          { name: "activate" },
+          { name: "options", label: "Verse options" },
+          { name: "longpress", label: "Share" },
+        ]}
+        onAccessibilityAction={(e) => {
+          if (e.nativeEvent.actionName === "options") {
+            cancelPendingTap();
+            setDrawerVerse(v);
+          } else if (e.nativeEvent.actionName === "longpress") {
+            handleVerseLongPress(v);
+          } else {
+            handleVerseTap(v);
+          }
+        }}
         onLongPress={selection ? undefined : () => handleVerseLongPress(v)}
         delayLongPress={400}
         activeOpacity={0.75}
@@ -983,6 +1092,35 @@ export default function BibleBrowser() {
           })}
         </View>
 
+        {/* Underline: a plain mark, separate from the colour */}
+        {drawerVerse && book && (() => {
+          const on = savedUnderlines.has(
+            verseKey(book.id, chapter!, drawerVerse.verse),
+          );
+          return (
+            <TouchableOpacity
+              style={[
+                styles.underlineChip,
+                styles.underlineChipDrawer,
+                { borderColor: on ? theme.primary : theme.border },
+                on && { backgroundColor: theme.primary + "14" },
+              ]}
+              onPress={() => toggleUnderline([drawerVerse.verse])}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: on }}
+              accessibilityLabel="Underline"
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.underlineChipText, { color: theme.text }]}>
+                Underline
+              </Text>
+              {on && (
+                <Ionicons name="checkmark" size={15} color={theme.primary} />
+              )}
+            </TouchableOpacity>
+          );
+        })()}
+
         {/* Bookmark button */}
         <TouchableOpacity
           style={[
@@ -1301,6 +1439,34 @@ export default function BibleBrowser() {
                 />
               );
             })}
+            {(() => {
+              const on = selection.every((n) =>
+                savedUnderlines.has(verseKey(book.id, chapter!, n)),
+              );
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.underlineChip,
+                    { borderColor: on ? theme.primary : theme.border },
+                    on && { backgroundColor: theme.primary + "14" },
+                  ]}
+                  onPress={() => toggleUnderline(selection)}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: on }}
+                  accessibilityLabel="Underline selected verses"
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[styles.underlineChipText, { color: theme.text }]}
+                  >
+                    Underline
+                  </Text>
+                  {on && (
+                    <Ionicons name="checkmark" size={14} color={theme.primary} />
+                  )}
+                </TouchableOpacity>
+              );
+            })()}
           </View>
 
           <View style={styles.selectionActions}>

@@ -328,6 +328,26 @@ export const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
   },
+  // Underline toggle (drawer and select-mode bar)
+  underlineChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    height: 30,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    borderWidth: 1,
+  },
+  underlineChipDrawer: {
+    marginTop: -12,
+    marginBottom: 24,
+  },
+  underlineChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
   swatchActive: {
     transform: [{ scale: 1.2 }],
     shadowColor: "#000",

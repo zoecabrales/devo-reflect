@@ -114,6 +114,7 @@ export async function deleteAccount(currentPassword: string) {
 /** On-device keys holding a user's data, cleared when their account is deleted. */
 const DEVICE_DATA_KEYS = [
   "@highlighted_verses",
+  "@underlined_verses",
   "@reading_position",
   "@daily_verse",
   LAST_ACTIVE_KEY,

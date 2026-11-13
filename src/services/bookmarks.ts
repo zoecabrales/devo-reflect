@@ -150,6 +150,41 @@ export async function saveHighlight(id: string, color: string): Promise<void> {
   await AsyncStorage.setItem(HIGHLIGHTS_KEY, JSON.stringify([...current]));
 }
 
+// ── Underlines ────────────────────────────────────────────────────────────────
+// A plain underline mark, separate from colour highlights (a verse can have
+// both). Stored on this device like highlights.
+
+const UNDERLINES_KEY = "@underlined_verses";
+
+/** Returns the set of underlined verse keys. */
+export async function loadUnderlines(): Promise<Set<string>> {
+  const raw = await AsyncStorage.getItem(UNDERLINES_KEY);
+  if (!raw) return new Set();
+  try {
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+// Writes run one after another so quick taps on several verses can't
+// overwrite each other's changes (each write reads the saved set first).
+let underlineWrites: Promise<void> = Promise.resolve();
+
+/** Underlines (on = true) or clears the underline of the given verse keys. */
+export function setUnderlines(ids: string[], on: boolean): Promise<void> {
+  const write = underlineWrites.then(async () => {
+    const current = await loadUnderlines();
+    for (const id of ids) {
+      if (on) current.add(id);
+      else current.delete(id);
+    }
+    await AsyncStorage.setItem(UNDERLINES_KEY, JSON.stringify([...current]));
+  });
+  underlineWrites = write.catch(() => {});
+  return write;
+}
+
 export async function removeHighlight(id: string): Promise<void> {
   const current = await loadHighlights();
   current.delete(id);
