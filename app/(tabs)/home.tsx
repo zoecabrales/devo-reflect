@@ -582,7 +582,7 @@ export default function Home() {
     else setLoading(true);
     setError(false);
     try {
-      const data = await fetchDailyVerse();
+      const data = await fetchDailyVerse(user?.uid ?? "");
       setVerse(data);
     } catch {
       setError(true);
