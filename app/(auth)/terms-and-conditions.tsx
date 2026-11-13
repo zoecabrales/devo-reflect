@@ -1,3 +1,4 @@
+import { BRETHREN_ENABLED } from "@/src/constants/features";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
@@ -9,8 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const EFFECTIVE_DATE = "April 16, 2026";
-const CONTACT_EMAIL = "support@devoreflect.app";
+// Update when the wording changes. The Brethren parts only show while that
+// feature is switched on, so update the date again when it goes live.
+const EFFECTIVE_DATE = "November 13, 2026";
+const CONTACT_EMAIL = "jirehzoe@gmail.com";
 
 function Section({
   title,
@@ -27,11 +30,11 @@ function Section({
   );
 }
 
-function Body({ children }: { children: string }) {
+function Body({ children }: { children: React.ReactNode }) {
   return <Text style={styles.body}>{children}</Text>;
 }
 
-function Bullet({ children }: { children: string }) {
+function Bullet({ children }: { children: React.ReactNode }) {
   return (
     <View style={styles.bulletRow}>
       <Text style={styles.bulletDot}>•</Text>
@@ -109,7 +112,10 @@ export default function TermsAndConditions() {
             You retain ownership of all content you create within Devo Reflect,
             including journal entries, prayer requests, and notes. By using the
             app, you grant us a limited license to store and display your
-            content solely for the purpose of providing the service to you.
+            content solely for the purpose of providing the service to you
+            {BRETHREN_ENABLED
+              ? ", and, for verses and notes you choose to share through Brethren, to display them to the people you are connected with."
+              : "."}
           </Body>
           <Body>
             You are solely responsible for the content you create. You agree not
@@ -134,12 +140,26 @@ export default function TermsAndConditions() {
             Use the app to transmit spam, malware, or harmful content.
           </Bullet>
           <Bullet>Impersonate any person or entity.</Bullet>
+          {BRETHREN_ENABLED && (
+            <>
+              <Bullet>
+                Send Brethren requests to people who do not know you, or keep
+                sending requests to someone who has declined them.
+              </Bullet>
+              <Bullet>
+                Use shared verses or notes to harass, threaten, or mislead
+                other users.
+              </Bullet>
+            </>
+          )}
         </Section>
 
         <Section title="6. Bible Content">
           <Body>
-            The Bible text provided in Devo Reflect is the American Standard
-            Version (ASV), which is in the public domain. All scripture
+            The Bible translations provided in Devo Reflect — the American
+            Standard Version (ASV), King James Version (KJV), World English
+            Bible (WEB), Bible in Basic English (BBE), and Young&apos;s Literal
+            Translation (YLT) — are in the public domain. All scripture
             references and verse data are provided for personal, non-commercial
             devotional use only.
           </Body>

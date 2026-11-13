@@ -48,6 +48,10 @@ export default function DeleteAccount() {
         setPasswordError(
           "Too many failed attempts. Please wait a moment and try again.",
         );
+      } else if (code === "app/delete-data-failed") {
+        setPasswordError(
+          "Could not delete all of your data. Your account has not been deleted. Please check your connection and try again.",
+        );
       } else if (code === "auth/network-request-failed") {
         setPasswordError("Network error. Please check your connection.");
       } else if (code === "auth/requires-recent-login") {
@@ -73,8 +77,10 @@ export default function DeleteAccount() {
         <View style={styles.warningBox}>
           <Text style={styles.warningTitle}>⚠ This action is irreversible</Text>
           <Text style={styles.warningText}>
-            Deleting your account will permanently remove your credentials from
-            our system. You will not be able to recover your account after this.
+            Deleting your account will permanently remove your login and all of
+            your data: journal entries, prayers, bookmarks, highlights, reading
+            plans, memory verses and Growth calendar. You will not be able to
+            recover your account or data after this.
           </Text>
         </View>
 

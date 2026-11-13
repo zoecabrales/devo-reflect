@@ -1,6 +1,10 @@
 import { AppModal, BentoGrid, PageHeader } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
-import { BookmarkedVerse, loadBookmarks } from "@/src/services/bookmarks";
+import {
+  BookmarkedVerse,
+  bookmarkRef,
+  loadBookmarks,
+} from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import {
   addMemoryVerse,
@@ -23,6 +27,7 @@ import {
   useListPaddingH,
   usePageScroll,
 } from "@/src/utils/responsive";
+import { contextHref } from "@/src/utils/readerLink";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -253,6 +258,26 @@ export default function MemoryVerses() {
                 : `${v.streak} in a row`}
           </Text>
         </View>
+        <TouchableOpacity
+          onPress={() =>
+            router.push(
+              contextHref({
+                bookId: v.bookId,
+                chapter: v.chapter,
+                verse: v.verse,
+                verses: v.verses,
+              }),
+            )
+          }
+          style={styles.contextLink}
+          accessibilityRole="link"
+          accessibilityLabel={`Read ${verseRef(v)} in context`}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.link, { color: theme.text }]}>
+            Read in context →
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -566,7 +591,7 @@ export default function MemoryVerses() {
               >
                 <View style={styles.flex}>
                   <Text style={[styles.ref, compact && styles.refCompact, { color: theme.text }]}>
-                    {b.bookLabel} {b.chapter}:{b.verse}
+                    {bookmarkRef(b)}
                   </Text>
                   <Text
                     style={[styles.verseText, { color: theme.textSecondary }]}
@@ -579,7 +604,7 @@ export default function MemoryVerses() {
                   style={[styles.addBtn, { backgroundColor: theme.primary }]}
                   onPress={() => handleAdd(b)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Add ${b.bookLabel} ${b.chapter}:${b.verse}`}
+                  accessibilityLabel={`Add ${bookmarkRef(b)}`}
                 >
                   <Ionicons name="add" size={18} color={theme.primaryText} />
                 </TouchableOpacity>
@@ -847,6 +872,7 @@ const styles = StyleSheet.create({
   strong: { fontWeight: "700" },
   label: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2 },
   link: { fontSize: 14, fontWeight: "600" },
+  contextLink: { alignSelf: "flex-start" },
   btn: {
     flexDirection: "row",
     alignItems: "center",

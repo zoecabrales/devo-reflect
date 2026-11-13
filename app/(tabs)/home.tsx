@@ -10,6 +10,12 @@ import {
     ReadingPosition,
 } from "@/src/services/bible";
 import { DesktopHome } from "@/src/features/home/DesktopHome";
+import { BRETHREN_ENABLED } from "@/src/constants/features";
+import { SharedVersesCard } from "@/src/features/connections/SharedVersesCard";
+import {
+    SectionGuideButton,
+    SectionGuideModal,
+} from "@/src/features/home/SectionGuide";
 import { loadBookmarks } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { loadEntries } from "@/src/services/journal";
@@ -19,10 +25,17 @@ import {
   usePageScroll,
   useScrollPaddingH,
 } from "@/src/utils/responsive";
+import { contextHref } from "@/src/utils/readerLink";
+import {
+    ShareImageSheet,
+    ShareImageTarget,
+} from "@/src/features/shareImage/ShareImageSheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
+    AppState,
     RefreshControl,
     ScrollView,
     Text,
@@ -96,7 +109,9 @@ function ErrorCard({ theme, onRetry }: { theme: Theme; onRetry: () => void }) {
 function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
   const router = useRouter();
   const reference = `${verse.bookLabel} ${verse.chapter}:${verse.verse}`;
+  const [share, setShare] = useState<ShareImageTarget | null>(null);
   return (
+    <>
     <TouchableOpacity
       style={[
         styles.card,
@@ -108,7 +123,11 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
       ]}
       onPress={() =>
         router.push(
-          `/(tabs)/bible-browser?bookId=${verse.book}&chapter=${verse.chapter}&verse=${verse.verse}`,
+          contextHref({
+            bookId: verse.book,
+            chapter: verse.chapter,
+            verse: verse.verse,
+          }),
         )
       }
       activeOpacity={0.8}
@@ -130,20 +149,46 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
             {verse.version}
           </Text>
         </View>
-        <View style={styles.readInContextLink}>
-          <Text style={[styles.readInContextText, { color: theme.primary }]}>
-            Read in context
-          </Text>
-          <Ionicons name="chevron-forward" size={12} color={theme.primary} />
+        <View style={styles.verseCardActions}>
+          {/* Share to social media (its own button; the card opens the reader) */}
+          <TouchableOpacity
+            onPress={() =>
+              setShare({ text: verse.text, reference, version: verse.version })
+            }
+            hitSlop={8}
+            style={[styles.verseShareBtn, { borderColor: theme.border }]}
+            accessibilityRole="button"
+            accessibilityLabel="Share the verse of the day"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="share-social-outline" size={14} color={theme.text} />
+            <Text style={[styles.verseShareText, { color: theme.text }]}>
+              Share
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.readInContextLink}>
+            <Text style={[styles.readInContextText, { color: theme.primary }]}>
+              Read in context
+            </Text>
+            <Ionicons name="chevron-forward" size={12} color={theme.primary} />
+          </View>
         </View>
       </View>
     </TouchableOpacity>
+    <ShareImageSheet
+      target={share}
+      theme={theme}
+      onClose={() => setShare(null)}
+    />
+    </>
   );
 }
 
 function CollectionCards({ theme }: { theme: Theme }) {
   const router = useRouter();
   const [selected, setSelected] = useState<BibleCollection | null>(null);
+  // Section whose "?" guide is open
+  const [guide, setGuide] = useState<BibleCollection | null>(null);
   const padH = useScrollPaddingH();
 
   return (
@@ -171,6 +216,12 @@ function CollectionCards({ theme }: { theme: Theme }) {
             onPress={() => setSelected(col)}
             activeOpacity={0.75}
           >
+            <SectionGuideButton
+              theme={theme}
+              label={col.label}
+              onPress={() => setGuide(col)}
+              style={styles.collectionHelpBtn}
+            />
             <View
               style={[
                 styles.collectionIconWrap,
@@ -206,6 +257,12 @@ function CollectionCards({ theme }: { theme: Theme }) {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <SectionGuideModal
+        collection={guide}
+        theme={theme}
+        onClose={() => setGuide(null)}
+      />
 
       {/* Collection Info Modal */}
       <AppModal
@@ -373,7 +430,7 @@ function BookmarkBadgeCard({ count, theme }: { count: number; theme: Theme }) {
       activeOpacity={0.8}
     >
       <View style={[styles.browseIconWrap, { backgroundColor: theme.primary }]}>
-        <Ionicons name="bookmark" size={18} color="#fff" />
+        <Ionicons name="bookmark" size={18} color={theme.primaryText} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.browseLabel, { color: theme.textSecondary }]}>
@@ -457,8 +514,22 @@ function QuickLinkCard({
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
-// Show the verse greeting once per cold start, not on every navigation
-let verseGreetingShown = false;
+// The "Begin Journey" verse greeting shows at most once every 4 hours, when
+// Home opens or the app returns to the foreground on Home.
+const VERSE_GREETING_KEY = "@verse_greeting_shown_at";
+const VERSE_GREETING_INTERVAL_MS = 4 * 60 * 60 * 1000;
+
+/** True (and records now) if the greeting is due; false otherwise. */
+async function claimVerseGreeting(): Promise<boolean> {
+  const now = Date.now();
+  const last = Number(await AsyncStorage.getItem(VERSE_GREETING_KEY));
+  // A missing / unreadable value, or one in the future (clock changed), is due
+  if (last && last <= now && now - last < VERSE_GREETING_INTERVAL_MS) {
+    return false;
+  }
+  await AsyncStorage.setItem(VERSE_GREETING_KEY, String(now));
+  return true;
+}
 
 const PSALM_119_105 =
   "Thy word is a lamp unto my feet, and a light unto my path.";
@@ -490,13 +561,21 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  // Show verse greeting once per cold start
-  useEffect(() => {
-    if (!verseGreetingShown) {
-      verseGreetingShown = true;
-      setShowVerseGreeting(true);
-    }
-  }, []);
+  // Show the verse greeting when it's due: on opening Home, and when the app
+  // comes back to the foreground while Home is the screen in view
+  useFocusEffect(
+    useCallback(() => {
+      const check = () =>
+        claimVerseGreeting()
+          .then((due) => due && setShowVerseGreeting(true))
+          .catch(() => {});
+      check();
+      const sub = AppState.addEventListener("change", (state) => {
+        if (state === "active") check();
+      });
+      return () => sub.remove();
+    }, []),
+  );
 
   async function loadVerse(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
@@ -589,6 +668,9 @@ export default function Home() {
         ) : verse ? (
           <VerseCard verse={verse} theme={theme} />
         ) : null}
+
+        {/* Verses shared by Brethren */}
+        {BRETHREN_ENABLED && <SharedVersesCard theme={theme} />}
 
         {/* Collection Cards */}
         <CollectionCards theme={theme} />

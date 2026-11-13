@@ -4,10 +4,104 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Each user can only read and write their own data.
-    // Covers all sub-collections: journal, bookmarks, prayers, growth-calendar
+    // Covers all sub-collections: journal, bookmarks, prayers, growth-calendar,
+    // reading-plans, memory-verses
     match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // ── Brethren ─────────────────────────────────────────────────
+    // Connections between two users, requested by email. Only signed-in users
+    // with a verified email take part.
+
+    function verified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    // A request from one user to an email address. The id is
+    // `${fromUid}_${toEmail}`, so each pair has at most one pending request.
+    // Only the sender and the owner of the email can see or delete it, so
+    // sending never reveals whether an email has an account.
+    match /connectionRequests/{requestId} {
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(
+             ["fromUid", "fromName", "fromEmail", "toEmail", "createdAt"])
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.fromEmail == myEmail()
+        && request.resource.data.fromName is string
+        && request.resource.data.fromName.size() <= 100
+        && request.resource.data.toEmail is string
+        && request.resource.data.toEmail == request.resource.data.toEmail.lower()
+        && request.resource.data.toEmail.size() <= 254
+        && request.resource.data.toEmail != myEmail()
+        && request.resource.data.createdAt is int
+        && requestId == request.auth.uid + "_" + request.resource.data.toEmail;
+      allow read, delete: if verified()
+        && (resource.data.fromUid == request.auth.uid
+            || resource.data.toEmail == myEmail());
+    }
+
+    // An accepted connection. The id is the two uids sorted and joined with
+    // "_". Created by the person accepting, only while the other person's
+    // request to their email still exists. Either member can remove it.
+    match /connections/{connectionId} {
+      allow read, delete: if verified()
+        && request.auth.uid in resource.data.members;
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(
+             ["members", "names", "requesterId", "accepterId", "createdAt"])
+        && request.resource.data.accepterId == request.auth.uid
+        && request.resource.data.requesterId != request.auth.uid
+        && request.resource.data.members.size() == 2
+        && request.resource.data.members[0] < request.resource.data.members[1]
+        && request.resource.data.accepterId in request.resource.data.members
+        && request.resource.data.requesterId in request.resource.data.members
+        && connectionId == request.resource.data.members[0] + "_"
+             + request.resource.data.members[1]
+        && request.resource.data.names is map
+        && request.resource.data.createdAt is int
+        && exists(/databases/$(database)/documents/connectionRequests/$(
+             request.resource.data.requesterId + "_" + myEmail()));
+    }
+
+    // A verse shared with the author's connections at the time of sharing
+    // (visibleTo). Readers can only remove themselves from visibleTo (when a
+    // connection is removed); the author can edit visibleTo or delete it.
+    match /sharedVerses/{shareId} {
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(
+             ["authorId", "authorName", "bookId", "bookLabel", "chapter",
+              "verse", "verses", "text", "version", "note", "visibleTo",
+              "createdAt"])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() <= 100
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 20000
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 500
+        && request.resource.data.visibleTo is list
+        && request.resource.data.visibleTo.size() <= 500
+        && !(request.auth.uid in request.resource.data.visibleTo)
+        && request.resource.data.createdAt is int;
+      allow read: if verified()
+        && (resource.data.authorId == request.auth.uid
+            || request.auth.uid in resource.data.visibleTo);
+      allow delete: if verified() && resource.data.authorId == request.auth.uid;
+      allow update: if verified()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(["visibleTo"])
+        && (
+          (resource.data.authorId == request.auth.uid
+            && request.resource.data.visibleTo.toSet()
+                 .difference(resource.data.visibleTo.toSet()).size() == 0)
+          || (request.auth.uid in resource.data.visibleTo
+            && request.resource.data.visibleTo
+                 == resource.data.visibleTo.removeAll([request.auth.uid]))
+        );
+    }
   }
 }

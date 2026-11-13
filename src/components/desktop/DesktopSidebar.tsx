@@ -60,6 +60,8 @@ export const PARENT_ITEM: Record<string, string> = {
   "bible-browser": "home",
   concordance: "home",
   "journal-compose": "journal",
+  // Opened from Settings, so Settings stays highlighted
+  brethren: "settings",
 };
 
 /**

@@ -3,12 +3,21 @@ import { TAB_ACTIVE_COLOR, Theme } from "@/src/constants/theme";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
 import {
   BIBLE_COLLECTIONS,
+  BibleCollection,
   BibleVerse,
   ReadingPosition,
 } from "@/src/services/bible";
+import { contextHref } from "@/src/utils/readerLink";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
+import { SectionGuideButton, SectionGuideModal } from "./SectionGuide";
+import {
+  ShareImageSheet,
+  ShareImageTarget,
+} from "@/src/features/shareImage/ShareImageSheet";
+import { BRETHREN_ENABLED } from "@/src/constants/features";
+import { SharedVersesCard } from "@/src/features/connections/SharedVersesCard";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -39,6 +48,10 @@ export function DesktopHome({
   journalThisWeek,
 }: Props) {
   const router = useRouter();
+  // Section whose "?" guide is open
+  const [guide, setGuide] = useState<BibleCollection | null>(null);
+  // Verse of the day being shared to social media
+  const [share, setShare] = useState<ShareImageTarget | null>(null);
   const card = { backgroundColor: theme.surface, borderColor: theme.border };
 
   return (
@@ -66,14 +79,30 @@ export function DesktopHome({
                 <Text style={[styles.verseText, { color: theme.text }]}>
                   {verse.text}
                 </Text>
-                <ArrowLink
-                  label="Read in context"
-                  onPress={() =>
-                    router.push(
-                      `/(tabs)/bible-browser?bookId=${verse.book}&chapter=${verse.chapter}&verse=${verse.verse}`,
-                    )
-                  }
-                />
+                <View style={styles.linkRow}>
+                  <ArrowLink
+                    label="Read in context"
+                    onPress={() =>
+                      router.push(
+                        contextHref({
+                          bookId: verse.book,
+                          chapter: verse.chapter,
+                          verse: verse.verse,
+                        }),
+                      )
+                    }
+                  />
+                  <ArrowLink
+                    label="Share"
+                    onPress={() =>
+                      setShare({
+                        text: verse.text,
+                        reference: `${verse.bookLabel} ${verse.chapter}:${verse.verse}`,
+                        version: verse.version,
+                      })
+                    }
+                  />
+                </View>
               </>
             )}
           </View>
@@ -108,6 +137,11 @@ export function DesktopHome({
           </View>
         </View>
 
+        {/* ── Verses shared by Brethren ── */}
+        {BRETHREN_ENABLED && (
+          <SharedVersesCard theme={theme} style={styles.sharedCard} large />
+        )}
+
         {/* ── Browse by section ── */}
         <SectionLabel theme={theme} style={styles.browseLabel}>
           Browse by Section
@@ -123,6 +157,12 @@ export function DesktopHome({
                 router.push(`/(tabs)/bible-browser?collectionId=${col.id}`)
               }
             >
+              <SectionGuideButton
+                theme={theme}
+                label={col.label}
+                onPress={() => setGuide(col)}
+                style={styles.sectionHelpBtn}
+              />
               <Ionicons
                 name={col.icon as keyof typeof Ionicons.glyphMap}
                 size={19}
@@ -137,6 +177,18 @@ export function DesktopHome({
             </HoverCard>
           ))}
         </View>
+
+        <ShareImageSheet
+          target={share}
+          theme={theme}
+          onClose={() => setShare(null)}
+        />
+
+        <SectionGuideModal
+          collection={guide}
+          theme={theme}
+          onClose={() => setGuide(null)}
+        />
 
         {/* ── Quick access ── */}
         <HoverCard
@@ -254,6 +306,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
     alignSelf: "flex-start",
   },
+  linkRow: {
+    flexDirection: "row",
+    gap: 24,
+  },
   linkText: {
     fontSize: 16,
     color: TAB_ACTIVE_COLOR,
@@ -279,6 +335,15 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     rowGap: 14,
+  },
+  sharedCard: {
+    marginTop: 16,
+  },
+  sectionHelpBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    zIndex: 1,
   },
   sectionCard: {
     width: "32.6%",

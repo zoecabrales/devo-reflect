@@ -7,6 +7,7 @@ import {
 } from "@/src/components/desktop/DesktopSidebar";
 import { TAB_ACTIVE_COLOR } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
+import { NotificationBell } from "@/src/features/connections/NotificationBell";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
@@ -128,6 +129,10 @@ export function MobileTopBar({ state, navigation, topInset }: Props) {
           >
             <Ionicons name="search-outline" size={20} color={theme.text} />
           </Pressable>
+          <NotificationBell
+            buttonStyle={[styles.iconButton, { backgroundColor: theme.surface }]}
+            panelTop={topInset + MOBILE_TOP_BAR_HEIGHT}
+          />
           <Pressable
             onPress={() => setMenuOpen(true)}
             style={[styles.iconButton, { backgroundColor: theme.surface }]}

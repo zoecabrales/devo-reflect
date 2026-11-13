@@ -69,6 +69,18 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
   rowLabel: {
     flex: 1,
     fontSize: 15,

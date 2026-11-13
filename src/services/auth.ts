@@ -13,7 +13,9 @@ import {
     updateProfile,
 } from "firebase/auth";
 import { auth } from "./firebase";
-import { createUserProfile } from "./firestore";
+import { BRETHREN_ENABLED } from "@/src/constants/features";
+import { deleteConnectionData } from "./connections";
+import { createUserProfile, deleteUserData } from "./firestore";
 
 const LAST_ACTIVE_KEY = "@last_active_at";
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
@@ -95,5 +97,33 @@ export async function deleteAccount(currentPassword: string) {
   if (!user || !user.email) throw new Error("No user is currently signed in.");
   const credential = EmailAuthProvider.credential(user.email, currentPassword);
   await reauthenticateWithCredential(user, credential);
+  // Delete the user's data first, while they are still signed in: once the
+  // login is gone the security rules no longer let anyone delete it. If this
+  // fails, the account is kept so the user can try again.
+  try {
+    // Brethren data lives outside users/{uid}. Only touched while
+    // the feature is on: before its Firestore rules are deployed, these
+    // collections can't be read at all.
+    if (BRETHREN_ENABLED) {
+      await deleteConnectionData(user.uid, user.email);
+    }
+    await deleteUserData(user.uid);
+  } catch (error) {
+    throw Object.assign(
+      new Error("Could not delete your data. Please try again."),
+      { code: "app/delete-data-failed", cause: error },
+    );
+  }
   await deleteUser(user);
+  // Data kept on this device (highlights, reading position, daily verse)
+  await AsyncStorage.multiRemove(DEVICE_DATA_KEYS);
 }
+
+/** On-device keys holding a user's data, cleared when their account is deleted. */
+const DEVICE_DATA_KEYS = [
+  "@highlighted_verses",
+  "@underlined_verses",
+  "@reading_position",
+  "@daily_verse",
+  LAST_ACTIVE_KEY,
+];

@@ -58,6 +58,27 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
+  // "Read in context" banner
+  contextBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginHorizontal: LIST_PADDING_H,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  contextBannerIcon: { marginTop: 1 },
+  contextBannerBody: { flex: 1, gap: 3 },
+  contextBannerTitle: { fontSize: 13, fontWeight: "700" },
+  contextBannerText: { fontSize: 12, lineHeight: 17 },
+  contextBannerLink: {
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 2,
+  },
   planBannerText: {
     flex: 1,
     fontSize: 13,
@@ -176,6 +197,16 @@ export const styles = StyleSheet.create({
     gap: 12,
     alignItems: "flex-start",
   },
+  // Select mode: room for the selected tint without shifting the text
+  verseRowSelectable: {
+    marginHorizontal: -8,
+    marginVertical: -4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
   verseNumCol: {
     alignItems: "center",
     minWidth: 24,
@@ -274,6 +305,8 @@ export const styles = StyleSheet.create({
   drawerOverlay: {
     flex: 1,
     justifyContent: "flex-end",
+    // Dim the page behind bottom sheets, as elsewhere in the app
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
   drawerSheet: {
     borderTopLeftRadius: 20,
@@ -318,6 +351,26 @@ export const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
   },
+  // Underline toggle (drawer and select-mode bar)
+  underlineChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    height: 30,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    borderWidth: 1,
+  },
+  underlineChipDrawer: {
+    marginTop: -12,
+    marginBottom: 24,
+  },
+  underlineChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
   swatchActive: {
     transform: [{ scale: 1.2 }],
     shadowColor: "#000",
@@ -340,12 +393,50 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 15,
   },
-  shareVersePreview: {
+
+  // ── Select mode bar ──────────────────────────────────────
+  selectionBar: {
+    borderTopWidth: 1,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 16,
+  },
+  selectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  selectionTitle: {
     fontSize: 15,
-    fontStyle: "italic",
-    lineHeight: 22,
-    marginBottom: 24,
-    textAlign: "center",
-    opacity: 0.8,
+    fontWeight: "700",
+  },
+  selectionHint: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  selectionSwatches: {
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 14,
+  },
+  selectionSwatch: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+  },
+  selectionActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  selectionShareBtn: {
+    marginTop: 10,
+    paddingVertical: 12,
+  },
+  selectionBtn: {
+    flex: 1,
+    paddingVertical: 12,
   },
 });

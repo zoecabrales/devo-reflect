@@ -6,11 +6,14 @@ import {
     ThemeName,
 } from "@/src/constants/theme";
 import { PageHeader, showAlert } from "@/src/components";
+import { BRETHREN_ENABLED } from "@/src/constants/features";
+import { loadIncomingRequests } from "@/src/services/connections";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { signOutUser } from "@/src/services/auth";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
     Linking,
     ScrollView,
@@ -54,6 +57,7 @@ function SettingRow({
   danger = false,
   theme,
   hideDivider = false,
+  badge = 0,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
@@ -61,6 +65,8 @@ function SettingRow({
   danger?: boolean;
   theme: Theme;
   hideDivider?: boolean;
+  /** Count shown beside the label, e.g. waiting requests (0 = none). */
+  badge?: number;
 }) {
   const color = danger ? "#e53e3e" : theme.text;
   return (
@@ -82,6 +88,13 @@ function SettingRow({
           <Ionicons name={icon} size={18} color={color} />
         </View>
         <Text style={[styles.rowLabel, { color }]}>{label}</Text>
+        {badge > 0 && (
+          <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+            <Text style={[styles.badgeText, { color: theme.primaryText }]}>
+              {badge}
+            </Text>
+          </View>
+        )}
         <Ionicons
           name="chevron-forward"
           size={16}
@@ -103,6 +116,17 @@ export default function Settings() {
   // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
   const pageScroll = usePageScroll();
   const padH = useListPaddingH();
+  // Brethren requests waiting for a reply
+  const [requestCount, setRequestCount] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!BRETHREN_ENABLED) return;
+      loadIncomingRequests()
+        .then((r) => setRequestCount(r.length))
+        .catch(() => setRequestCount(0));
+    }, []),
+  );
 
   async function handleSignOut() {
     try {
@@ -134,6 +158,31 @@ export default function Settings() {
         <View style={[styles.contentInner, isDesktop && styles.desktopMain]}>
           {/* Phone / tablet: profile summary up top (desktop has it in the side column) */}
           {!isDesktop && <AccountCard />}
+
+          {BRETHREN_ENABLED && (
+            <>
+              <Text
+                style={[styles.sectionLabel, { color: theme.textSecondary }]}
+              >
+                Community
+              </Text>
+              <View
+                style={[
+                  styles.section,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <SettingRow
+                  icon="people-outline"
+                  label="Brethren"
+                  onPress={() => router.push("/(tabs)/brethren")}
+                  theme={theme}
+                  badge={requestCount}
+                  hideDivider
+                />
+              </View>
+            </>
+          )}
 
           {/* Appearance section */}
           <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>

@@ -35,6 +35,7 @@ const ZOOMED_DESKTOP_TABS = new Set([
   "settings",
   "reading-plans",
   "memory-verses",
+  "brethren",
 ]);
 
 type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";
@@ -211,6 +212,10 @@ export default function TabsLayout() {
       />
       {/* Disabled tabs — files kept for git history, hidden from tab bar */}
       <Tabs.Screen name="prayers" options={{ href: null }} />
+      <Tabs.Screen
+        name="brethren"
+        options={{ href: null, title: "Brethren" }}
+      />
     </Tabs>
   );
 

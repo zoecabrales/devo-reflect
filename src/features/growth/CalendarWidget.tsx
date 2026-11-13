@@ -1,6 +1,10 @@
 import { AppModal } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
-import { BookmarkedVerse, loadBookmarks } from "@/src/services/bookmarks";
+import {
+  BookmarkedVerse,
+  bookmarkRef,
+  loadBookmarks,
+} from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import { JournalEntry, loadEntries } from "@/src/services/journal";
 import {
@@ -437,7 +441,7 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
                       { color: theme.primary },
                     ]}
                   >
-                    {bm.bookLabel} {bm.chapter}:{bm.verse} ·{" "}
+                    {bookmarkRef(bm)} ·{" "}
                     {bm.version}
                   </Text>
                   <Text
