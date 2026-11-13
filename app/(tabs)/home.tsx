@@ -26,6 +26,10 @@ import {
   useScrollPaddingH,
 } from "@/src/utils/responsive";
 import { contextHref } from "@/src/utils/readerLink";
+import {
+    ShareImageSheet,
+    ShareImageTarget,
+} from "@/src/features/shareImage/ShareImageSheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -105,7 +109,9 @@ function ErrorCard({ theme, onRetry }: { theme: Theme; onRetry: () => void }) {
 function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
   const router = useRouter();
   const reference = `${verse.bookLabel} ${verse.chapter}:${verse.verse}`;
+  const [share, setShare] = useState<ShareImageTarget | null>(null);
   return (
+    <>
     <TouchableOpacity
       style={[
         styles.card,
@@ -143,14 +149,38 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
             {verse.version}
           </Text>
         </View>
-        <View style={styles.readInContextLink}>
-          <Text style={[styles.readInContextText, { color: theme.primary }]}>
-            Read in context
-          </Text>
-          <Ionicons name="chevron-forward" size={12} color={theme.primary} />
+        <View style={styles.verseCardActions}>
+          {/* Share to social media (its own button; the card opens the reader) */}
+          <TouchableOpacity
+            onPress={() =>
+              setShare({ text: verse.text, reference, version: verse.version })
+            }
+            hitSlop={8}
+            style={[styles.verseShareBtn, { borderColor: theme.border }]}
+            accessibilityRole="button"
+            accessibilityLabel="Share the verse of the day"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="share-social-outline" size={14} color={theme.text} />
+            <Text style={[styles.verseShareText, { color: theme.text }]}>
+              Share
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.readInContextLink}>
+            <Text style={[styles.readInContextText, { color: theme.primary }]}>
+              Read in context
+            </Text>
+            <Ionicons name="chevron-forward" size={12} color={theme.primary} />
+          </View>
         </View>
       </View>
     </TouchableOpacity>
+    <ShareImageSheet
+      target={share}
+      theme={theme}
+      onClose={() => setShare(null)}
+    />
+    </>
   );
 }
 

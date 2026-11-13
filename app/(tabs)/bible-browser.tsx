@@ -23,6 +23,10 @@ import {
 } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import {
+  ShareImageSheet,
+  ShareImageTarget,
+} from "@/src/features/shareImage/ShareImageSheet";
+import {
   BookGuideSheet,
   bookSetting,
 } from "@/src/features/bible/BookGuideSheet";
@@ -41,7 +45,6 @@ import {
     Platform,
     ScrollView,
     SectionList,
-    Share,
     Text,
     TextInput,
     TouchableOpacity,
@@ -234,7 +237,8 @@ export default function BibleBrowser() {
   const [selection, setSelection] = useState<number[] | null>(null);
   // Verse(s) being shared with Brethren
   const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null);
-  const [shareVerse, setShareVerse] = useState<ChapterVerse | null>(null);
+  // Verse(s) being shared as an image (or text) to social media
+  const [imageShare, setImageShare] = useState<ShareImageTarget | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -623,16 +627,44 @@ export default function BibleBrowser() {
     });
   }
 
-  /** Long press → open the share modal */
-  function handleVerseLongPress(v: ChapterVerse) {
-    setShareVerse(v);
+  /** Opens the share-as-image sheet for the given verses. */
+  function openImageShare(picked: ChapterVerse[]) {
+    if (!book || picked.length === 0) return;
+    setImageShare({
+      text: picked.map((v) => v.text).join(" "),
+      verses: picked.map((v) => ({ verse: v.verse, text: v.text })),
+      reference: `${book.label} ${chapter}:${formatVerseNumbers(
+        picked.map((v) => v.verse),
+      )}`,
+      version: version.label,
+    });
   }
 
-  async function handleShare() {
-    if (!shareVerse || !book) return;
-    const ref = `${book.label} ${chapter}:${shareVerse.verse} (${version.label})`;
-    await Share.share({ message: `"${shareVerse.text}"\n\n— ${ref}` });
-    setShareVerse(null);
+  /**
+   * The verse plus its neighbours highlighted in the same colour, so a
+   * passage highlighted together is shared together. Just [v] if the verse
+   * isn't highlighted.
+   */
+  function highlightedRun(v: ChapterVerse): ChapterVerse[] {
+    if (!book) return [v];
+    const colorOf = (n: number) => highlights.get(verseKey(book.id, chapter!, n));
+    const color = colorOf(v.verse);
+    if (!color) return [v];
+    const i = verses.findIndex((x) => x.verse === v.verse);
+    if (i < 0) return [v];
+    let start = i;
+    let end = i;
+    while (start > 0 && colorOf(verses[start - 1].verse) === color) start--;
+    while (end < verses.length - 1 && colorOf(verses[end + 1].verse) === color) end++;
+    return verses.slice(start, end + 1);
+  }
+
+  // Verses the panel's "Share as Image" will include
+  const drawerRun = drawerVerse ? highlightedRun(drawerVerse) : [];
+
+  /** Long press → share the verse, or its highlighted passage */
+  function handleVerseLongPress(v: ChapterVerse) {
+    openImageShare(highlightedRun(v));
   }
 
   async function handleHighlight(color: string) {
@@ -801,7 +833,7 @@ export default function BibleBrowser() {
         accessibilityActions={[
           { name: "activate" },
           { name: "options", label: "Verse options" },
-          { name: "longpress", label: "Share" },
+          { name: "longpress", label: "Share as image" },
         ]}
         onAccessibilityAction={(e) => {
           if (e.nativeEvent.actionName === "options") {
@@ -1184,54 +1216,11 @@ export default function BibleBrowser() {
         })}
       </AppModal>
 
-      {/* Share modal */}
-      <AppModal
-        visible={shareVerse !== null}
-        onClose={() => setShareVerse(null)}
-        animationType="slide"
-        overlayStyle={styles.drawerOverlay}
-        cardStyle={[
-          styles.drawerSheet,
-          { backgroundColor: theme.surface, borderColor: theme.border },
-        ]}
-      >
-        <SheetHandle style={styles.drawerHandle} />
-        <Text style={[styles.drawerTitle, { color: theme.text }]}>
-          {shareVerse
-            ? `${book?.label ?? ""} ${chapter}:${shareVerse.verse}`
-            : ""}
-        </Text>
-
-        {/* Verse preview */}
-        {shareVerse && (
-          <Text
-            style={[
-              styles.shareVersePreview,
-              { color: theme.textSecondary },
-            ]}
-            numberOfLines={4}
-          >
-            "{shareVerse.text}"
-          </Text>
-        )}
-
-        {/* Share button */}
-        <TouchableOpacity
-          style={[
-            styles.drawerBookmarkBtn,
-            { backgroundColor: theme.primary },
-          ]}
-          onPress={handleShare}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="share-outline" size={18} color={theme.primaryText} />
-          <Text
-            style={[styles.drawerBookmarkBtnText, { color: theme.primaryText }]}
-          >
-            Share Verse
-          </Text>
-        </TouchableOpacity>
-      </AppModal>
+      <ShareImageSheet
+        target={imageShare}
+        theme={theme}
+        onClose={() => setImageShare(null)}
+      />
 
       {/* Highlight / Bookmark drawer */}
       <AppModal
@@ -1377,6 +1366,33 @@ export default function BibleBrowser() {
             ]}
           >
             Add to Journal
+          </Text>
+        </TouchableOpacity>
+
+        {/* Share to social media as an image */}
+        <TouchableOpacity
+          style={[
+            styles.drawerBookmarkBtn,
+            {
+              marginTop: 10,
+              backgroundColor: theme.surface,
+              borderWidth: 1,
+              borderColor: theme.border,
+            },
+          ]}
+          onPress={() => {
+            if (!drawerVerse) return;
+            const run = highlightedRun(drawerVerse);
+            setDrawerVerse(null);
+            openImageShare(run);
+          }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="image-outline" size={18} color={theme.text} />
+          <Text style={[styles.drawerBookmarkBtnText, { color: theme.text }]}>
+            {drawerRun.length > 1
+              ? `Share ${chapter}:${formatVerseNumbers(drawerRun.map((x) => x.verse))} as Image`
+              : "Share as Image"}
           </Text>
         </TouchableOpacity>
 
@@ -1743,6 +1759,29 @@ export default function BibleBrowser() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={[
+              styles.drawerBookmarkBtn,
+              styles.selectionShareBtn,
+              {
+                backgroundColor: theme.surface,
+                borderWidth: 1,
+                borderColor: theme.border,
+              },
+            ]}
+            onPress={() => {
+              const picked = selectedVerses();
+              setSelection(null);
+              openImageShare(picked);
+            }}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="image-outline" size={17} color={theme.text} />
+            <Text style={[styles.drawerBookmarkBtnText, { color: theme.text }]}>
+              Share as Image
+            </Text>
+          </TouchableOpacity>
 
           {BRETHREN_ENABLED && (
             <TouchableOpacity

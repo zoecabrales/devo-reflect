@@ -439,12 +439,4 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
   },
-  shareVersePreview: {
-    fontSize: 15,
-    fontStyle: "italic",
-    lineHeight: 22,
-    marginBottom: 24,
-    textAlign: "center",
-    opacity: 0.8,
-  },
 });

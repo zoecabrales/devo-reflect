@@ -12,6 +12,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ReactNode, useState } from "react";
 import { SectionGuideButton, SectionGuideModal } from "./SectionGuide";
+import {
+  ShareImageSheet,
+  ShareImageTarget,
+} from "@/src/features/shareImage/ShareImageSheet";
 import { BRETHREN_ENABLED } from "@/src/constants/features";
 import { SharedVersesCard } from "@/src/features/connections/SharedVersesCard";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -46,6 +50,8 @@ export function DesktopHome({
   const router = useRouter();
   // Section whose "?" guide is open
   const [guide, setGuide] = useState<BibleCollection | null>(null);
+  // Verse of the day being shared to social media
+  const [share, setShare] = useState<ShareImageTarget | null>(null);
   const card = { backgroundColor: theme.surface, borderColor: theme.border };
 
   return (
@@ -73,18 +79,30 @@ export function DesktopHome({
                 <Text style={[styles.verseText, { color: theme.text }]}>
                   {verse.text}
                 </Text>
-                <ArrowLink
-                  label="Read in context"
-                  onPress={() =>
-                    router.push(
-                      contextHref({
-                        bookId: verse.book,
-                        chapter: verse.chapter,
-                        verse: verse.verse,
-                      }),
-                    )
-                  }
-                />
+                <View style={styles.linkRow}>
+                  <ArrowLink
+                    label="Read in context"
+                    onPress={() =>
+                      router.push(
+                        contextHref({
+                          bookId: verse.book,
+                          chapter: verse.chapter,
+                          verse: verse.verse,
+                        }),
+                      )
+                    }
+                  />
+                  <ArrowLink
+                    label="Share"
+                    onPress={() =>
+                      setShare({
+                        text: verse.text,
+                        reference: `${verse.bookLabel} ${verse.chapter}:${verse.verse}`,
+                        version: verse.version,
+                      })
+                    }
+                  />
+                </View>
               </>
             )}
           </View>
@@ -159,6 +177,12 @@ export function DesktopHome({
             </HoverCard>
           ))}
         </View>
+
+        <ShareImageSheet
+          target={share}
+          theme={theme}
+          onClose={() => setShare(null)}
+        />
 
         <SectionGuideModal
           collection={guide}
@@ -281,6 +305,10 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 16,
     alignSelf: "flex-start",
+  },
+  linkRow: {
+    flexDirection: "row",
+    gap: 24,
   },
   linkText: {
     fontSize: 16,

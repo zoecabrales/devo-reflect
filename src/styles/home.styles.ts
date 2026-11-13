@@ -78,6 +78,24 @@ export const styles = StyleSheet.create({
     letterSpacing: 1.5,
     textTransform: "uppercase",
   },
+  verseCardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  verseShareBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  verseShareText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
   readInContextLink: {
     flexDirection: "row",
     alignItems: "center",
