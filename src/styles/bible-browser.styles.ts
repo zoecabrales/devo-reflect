@@ -305,6 +305,8 @@ export const styles = StyleSheet.create({
   drawerOverlay: {
     flex: 1,
     justifyContent: "flex-end",
+    // Dim the page behind bottom sheets, as elsewhere in the app
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
   drawerSheet: {
     borderTopLeftRadius: 20,

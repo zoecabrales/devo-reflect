@@ -165,6 +165,8 @@ export function SharedVersesCard({
               style={[
                 styles.ref,
                 L?.ref,
+                // Space between the note and the verse it's about
+                !!s.note && (L ? lg.refAfterNote : styles.refAfterNote),
                 { color: theme.text },
               ]}
             >
@@ -238,6 +240,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 2,
   },
+  refAfterNote: {
+    marginTop: 8,
+  },
   text: {
     fontSize: 13,
     lineHeight: 19,
@@ -276,6 +281,9 @@ const lg = StyleSheet.create({
   },
   ref: {
     fontSize: 18,
+  },
+  refAfterNote: {
+    marginTop: 10,
   },
   text: {
     fontSize: 16,
