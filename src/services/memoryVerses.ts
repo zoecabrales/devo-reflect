@@ -8,12 +8,13 @@ import {
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
-import type { BookmarkedVerse } from "./bookmarks";
+import { bookmarkRef, type BookmarkedVerse } from "./bookmarks";
 import { db } from "./firebase";
 
 // ── Memory verses (Firestore) ────────────────────────────────────────────────
 // Path: users/{uid}/memory-verses/{id} — id matches the bookmark it came from
-// (`${bookId}-${chapter}-${verse}`), so a verse can only be added once.
+// (`${bookId}-${chapter}-${verse}`, or `…-${v1}_${v2}_…` for a passage), so a
+// bookmark can only be added once.
 
 /** Correct answers in a row needed to count a verse as memorised. */
 export const MASTERY_STREAK = 3;
@@ -24,6 +25,8 @@ export interface MemoryVerse {
   bookLabel: string;
   chapter: number;
   verse: number;
+  /** All verses when the bookmark covered several; missing for one verse. */
+  verses?: number[] | null;
   text: string;
   version: string;
   addedAt: number;
@@ -34,8 +37,10 @@ export interface MemoryVerse {
   lastPracticedAt: number | null;
 }
 
-export function verseRef(v: Pick<MemoryVerse, "bookLabel" | "chapter" | "verse">) {
-  return `${v.bookLabel} ${v.chapter}:${v.verse}`;
+export function verseRef(
+  v: Pick<MemoryVerse, "bookLabel" | "chapter" | "verse" | "verses">,
+) {
+  return bookmarkRef(v);
 }
 
 export function isMastered(v: MemoryVerse): boolean {
@@ -57,6 +62,7 @@ export async function loadMemoryVerses(uid: string): Promise<MemoryVerse[]> {
       bookLabel: data.bookLabel as string,
       chapter: data.chapter as number,
       verse: data.verse as number,
+      verses: (data.verses as number[] | undefined) ?? null,
       text: data.text as string,
       version: (data.version as string) ?? "",
       addedAt: data.addedAt as number,
@@ -78,6 +84,7 @@ export async function addMemoryVerse(
     bookLabel: bm.bookLabel,
     chapter: bm.chapter,
     verse: bm.verse,
+    verses: bm.verses && bm.verses.length > 1 ? bm.verses : null,
     text: bm.text,
     version: bm.version,
     addedAt: Date.now(),
@@ -85,9 +92,10 @@ export async function addMemoryVerse(
     streak: 0,
     lastPracticedAt: null,
   };
-  const { id, ...data } = verse;
+  const { id, verses, ...data } = verse;
   await setDoc(doc(memoryCol(uid), id), {
     ...data,
+    ...(verses ? { verses } : {}),
     addedAtServer: serverTimestamp(),
   });
   return verse;

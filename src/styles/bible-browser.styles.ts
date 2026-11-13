@@ -176,6 +176,16 @@ export const styles = StyleSheet.create({
     gap: 12,
     alignItems: "flex-start",
   },
+  // Select mode: room for the selected tint without shifting the text
+  verseRowSelectable: {
+    marginHorizontal: -8,
+    marginVertical: -4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
   verseNumCol: {
     alignItems: "center",
     minWidth: 24,
@@ -339,6 +349,48 @@ export const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 15,
+  },
+
+  // ── Select mode bar ──────────────────────────────────────
+  selectionBar: {
+    borderTopWidth: 1,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 16,
+  },
+  selectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  selectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  selectionHint: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  selectionSwatches: {
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 14,
+  },
+  selectionSwatch: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+  },
+  selectionActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  selectionBtn: {
+    flex: 1,
+    paddingVertical: 12,
   },
   shareVersePreview: {
     fontSize: 15,

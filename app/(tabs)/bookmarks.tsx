@@ -2,6 +2,7 @@ import { AppModal, BentoGrid, PageHeader } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BookmarkedVerse,
+    bookmarkRef,
     loadBookmarks,
     removeBookmark,
 } from "@/src/services/bookmarks";
@@ -75,14 +76,16 @@ export default function Bookmarks() {
         ]}
         onPress={() =>
           router.push(
-            `/(tabs)/bible-browser?bookId=${item.bookId}&chapter=${item.chapter}&verse=${item.verse}&highlight=true`,
+            `/(tabs)/bible-browser?bookId=${item.bookId}&chapter=${item.chapter}&verse=${item.verse}&highlight=true${
+              item.verses?.length ? `&verses=${item.verses.join(",")}` : ""
+            }`,
           )
         }
         activeOpacity={0.75}
       >
         <View style={styles.rowBody}>
           <Text style={[styles.rowRef, { color: theme.primary }]}>
-            {item.bookLabel} {item.chapter}:{item.verse}
+            {bookmarkRef(item)}
           </Text>
           <Text
             style={[

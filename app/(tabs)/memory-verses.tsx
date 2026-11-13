@@ -1,6 +1,10 @@
 import { AppModal, BentoGrid, PageHeader } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
-import { BookmarkedVerse, loadBookmarks } from "@/src/services/bookmarks";
+import {
+  BookmarkedVerse,
+  bookmarkRef,
+  loadBookmarks,
+} from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
 import {
   addMemoryVerse,
@@ -566,7 +570,7 @@ export default function MemoryVerses() {
               >
                 <View style={styles.flex}>
                   <Text style={[styles.ref, compact && styles.refCompact, { color: theme.text }]}>
-                    {b.bookLabel} {b.chapter}:{b.verse}
+                    {bookmarkRef(b)}
                   </Text>
                   <Text
                     style={[styles.verseText, { color: theme.textSecondary }]}
@@ -579,7 +583,7 @@ export default function MemoryVerses() {
                   style={[styles.addBtn, { backgroundColor: theme.primary }]}
                   onPress={() => handleAdd(b)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Add ${b.bookLabel} ${b.chapter}:${b.verse}`}
+                  accessibilityLabel={`Add ${bookmarkRef(b)}`}
                 >
                   <Ionicons name="add" size={18} color={theme.primaryText} />
                 </TouchableOpacity>

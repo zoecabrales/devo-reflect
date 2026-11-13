@@ -12,6 +12,8 @@ import {
 } from "@/src/services/bible";
 import {
     addBookmark,
+    bookmarkId,
+    formatVerseNumbers,
     loadBookmarks,
     loadHighlights,
     removeHighlight,
@@ -132,6 +134,7 @@ export default function BibleBrowser() {
     bookId,
     chapter: chapterParam,
     verse: verseParam,
+    verses: versesParam,
     highlight: highlightParam,
     underline: underlineParam,
     pickMode,
@@ -144,6 +147,7 @@ export default function BibleBrowser() {
     bookId?: string;
     chapter?: string;
     verse?: string;
+    verses?: string; // "16,17,18" when opening a multi-verse bookmark
     highlight?: string;
     underline?: string;
     pickMode?: string; // "verse" when opened from CalendarWidget
@@ -194,6 +198,9 @@ export default function BibleBrowser() {
   const [underlined, setUnderlined] = useState<Set<string>>(new Set());
   const [bookmarkConfirm, setBookmarkConfirm] = useState<string | null>(null);
   const [drawerVerse, setDrawerVerse] = useState<ChapterVerse | null>(null);
+  // Select mode: verse numbers picked to bookmark / highlight / journal as one.
+  // null = not selecting.
+  const [selection, setSelection] = useState<number[] | null>(null);
   const [shareVerse, setShareVerse] = useState<ChapterVerse | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -221,23 +228,30 @@ export default function BibleBrowser() {
       const found = BIBLE_BOOKS.find((b) => b.id === bookId);
       const ch = parseInt(chapterParam, 10);
       if (found && !isNaN(ch)) {
-        const targetVerse =
-          (highlightParam === "true" || underlineParam === "true") && verseParam
-            ? parseInt(verseParam, 10)
-            : undefined;
         const v = verseParam ? parseInt(verseParam, 10) : NaN;
+        // A multi-verse bookmark highlights every verse it covers
+        const range = (versesParam ?? "")
+          .split(",")
+          .map((n) => parseInt(n, 10))
+          .filter((n) => !isNaN(n));
+        const targets =
+          (highlightParam === "true" || underlineParam === "true") && !isNaN(v)
+            ? range.length > 0
+              ? range
+              : [v]
+            : undefined;
         openChapter(
           found,
           ch,
           undefined,
-          targetVerse,
+          targets,
           underlineParam === "true",
           isNaN(v) ? null : v,
         );
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId, chapterParam, verseParam, highlightParam, underlineParam]);
+  }, [bookId, chapterParam, verseParam, versesParam, highlightParam, underlineParam]);
 
   // Clear underlines when user starts searching
   useEffect(() => {
@@ -257,6 +271,7 @@ export default function BibleBrowser() {
 
   function goBack() {
     setUnderlined(new Set()); // Clear temporary underlines when navigating
+    setSelection(null);
     if (returnTo) {
       // Opened from another screen (e.g. a reading plan): go straight back
       // there, not up through the chapter list or to the first tab
@@ -293,7 +308,8 @@ export default function BibleBrowser() {
     b: BibleBook,
     ch: number,
     ver?: BibleVersion,
-    autoHighlightVerse?: number,
+    /** Verses to highlight (or underline) on open, e.g. from a bookmark. */
+    autoHighlightVerses?: number[],
     autoUnderlineVerse: boolean = false,
     /** Desktop book view: verse to open at, or "end" for the last spread. */
     focus: number | "end" | null = null,
@@ -307,6 +323,7 @@ export default function BibleBrowser() {
     setFocusVerse(focus);
     setSearchVisible(false);
     setSearchQuery("");
+    setSelection(null);
     try {
       const [data, savedHighlights, savedBookmarks] = await Promise.all([
         fetchChapter(b.id, ch, (ver ?? version).id),
@@ -315,24 +332,35 @@ export default function BibleBrowser() {
       ]);
       setVerses(data);
 
-      // Auto-highlight the target verse if it has no existing highlight
+      // Auto-highlight the target verses that have no existing highlight
       let finalHighlights = savedHighlights;
-      if (autoHighlightVerse && !autoUnderlineVerse) {
-        const key = verseKey(b.id, ch, autoHighlightVerse);
-        if (!savedHighlights.has(key)) {
+      if (autoHighlightVerses && !autoUnderlineVerse) {
+        for (const n of autoHighlightVerses) {
+          const key = verseKey(b.id, ch, n);
+          if (finalHighlights.has(key)) continue;
           await saveHighlight(key, HIGHLIGHT_COLORS[0]);
-          finalHighlights = new Map(savedHighlights);
+          finalHighlights = new Map(finalHighlights);
           finalHighlights.set(key, HIGHLIGHT_COLORS[0]);
         }
       }
 
       setHighlights(finalHighlights);
-      setBookmarked(new Set(savedBookmarks.map((bm) => bm.id)));
+      // Mark every verse a bookmark covers (several for a multi-verse one)
+      setBookmarked(
+        new Set(
+          savedBookmarks.flatMap((bm) =>
+            (bm.verses && bm.verses.length > 0 ? bm.verses : [bm.verse]).map(
+              (n) => verseKey(bm.bookId, bm.chapter, n),
+            ),
+          ),
+        ),
+      );
 
       // Set temporary underline for Concordance navigation
-      if (autoUnderlineVerse && autoHighlightVerse) {
-        const key = verseKey(b.id, ch, autoHighlightVerse);
-        setUnderlined(new Set([key]));
+      if (autoUnderlineVerse && autoHighlightVerses?.length) {
+        setUnderlined(
+          new Set(autoHighlightVerses.map((n) => verseKey(b.id, ch, n))),
+        );
       } else {
         setUnderlined(new Set());
       }
@@ -351,9 +379,120 @@ export default function BibleBrowser() {
     }
   }
 
-  /** Single tap → open the highlight / bookmark drawer */
+  /** Single tap → open the highlight / bookmark drawer (or, in select
+   *  mode, add / remove the verse from the selection) */
   function handleVerseTap(v: ChapterVerse) {
+    if (selection) {
+      const next = selection.includes(v.verse)
+        ? selection.filter((n) => n !== v.verse)
+        : [...selection, v.verse].sort((a, b) => a - b);
+      setSelection(next.length > 0 ? next : null);
+      return;
+    }
     setDrawerVerse(v);
+  }
+
+  /** Drawer → "Select Verses": start select mode with the tapped verse. */
+  function startSelection() {
+    if (!drawerVerse) return;
+    setSelection([drawerVerse.verse]);
+    setDrawerVerse(null);
+  }
+
+  /** The selected verses, in order, with their text. */
+  function selectedVerses(): ChapterVerse[] {
+    if (!selection) return [];
+    return verses.filter((v) => selection.includes(v.verse));
+  }
+
+  function showBookmarkConfirm(label: string) {
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    setBookmarkConfirm(label);
+    confirmTimerRef.current = setTimeout(() => setBookmarkConfirm(null), 2000);
+  }
+
+  /** Select mode: highlight every selected verse in one colour. Tapping the
+   *  colour they all already have removes it from all of them. */
+  async function handleSelectionHighlight(color: string) {
+    if (!selection || !book) return;
+    const keys = selection.map((n) => verseKey(book.id, chapter!, n));
+    const allHaveIt = keys.every((k) => highlights.get(k) === color);
+    for (const k of keys) {
+      if (allHaveIt) await removeHighlight(k);
+      else await saveHighlight(k, color);
+    }
+    setHighlights((prev) => {
+      const next = new Map(prev);
+      for (const k of keys) {
+        if (allHaveIt) next.delete(k);
+        else next.set(k, color);
+      }
+      return next;
+    });
+  }
+
+  /** Select mode: save the selected verses as one bookmark. */
+  async function handleSelectionBookmark() {
+    const picked = selectedVerses();
+    if (picked.length === 0 || !book) return;
+    const nums = picked.map((v) => v.verse);
+    await addBookmark(uid, {
+      id: bookmarkId(book.id, chapter!, nums),
+      bookId: book.id,
+      bookLabel: book.label,
+      chapter: chapter!,
+      verse: nums[0],
+      verses: nums.length > 1 ? nums : null,
+      text: picked.map((v) => v.text).join(" "),
+      version: version.label,
+      forDate: pendingForDate,
+      createdAt: Date.now(),
+    });
+    clearPendingForDate();
+    setBookmarked(
+      (prev) =>
+        new Set([...prev, ...nums.map((n) => verseKey(book.id, chapter!, n))]),
+    );
+    setSelection(null);
+    showBookmarkConfirm(
+      `${book.label} ${chapter}:${formatVerseNumbers(nums)}`,
+    );
+  }
+
+  /** Select mode: start a journal entry with the selected verses. */
+  function handleSelectionJournal() {
+    const picked = selectedVerses();
+    if (picked.length === 0 || !book) return;
+    const nums = picked.map((v) => v.verse);
+    setJournaled(
+      (prev) =>
+        new Set([...prev, ...nums.map((n) => verseKey(book.id, chapter!, n))]),
+    );
+    setSelection(null);
+    router.push({
+      pathname: "/(tabs)/journal-compose",
+      params: {
+        ref: `${book.label} ${chapter}:${formatVerseNumbers(nums)}`,
+        text: picked.map((v) => v.text).join(" "),
+      },
+    });
+  }
+
+  /** Select mode: return the selected verses to Growth (CalendarWidget). */
+  function handleSelectionPick() {
+    const picked = selectedVerses();
+    if (picked.length === 0 || !book) return;
+    const nums = picked.map((v) => v.verse);
+    setSelection(null);
+    router.navigate({
+      pathname: "/(tabs)/growth",
+      params: {
+        pickedVerseText: picked.map((v) => v.text).join(" "),
+        pickedVerseRef: `${book.label} ${chapter}:${formatVerseNumbers(nums)}`,
+        pickTarget: pickTarget ?? "day",
+        pickSessionId: Date.now().toString(),
+      },
+    });
   }
 
   /** Long press → open the share modal */
@@ -403,10 +542,7 @@ export default function BibleBrowser() {
     clearPendingForDate();
     setBookmarked((prev) => new Set([...prev, key]));
     setDrawerVerse(null);
-    const label = `${book.label} ${chapter}:${drawerVerse.verse}`;
-    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
-    setBookmarkConfirm(label);
-    confirmTimerRef.current = setTimeout(() => setBookmarkConfirm(null), 2000);
+    showBookmarkConfirm(`${book.label} ${chapter}:${drawerVerse.verse}`);
   }
 
   function handleDrawerJournal() {
@@ -460,12 +596,20 @@ export default function BibleBrowser() {
     const isBookmarked = bookmarked.has(key);
     const isJournaled = journaled.has(key);
     const isUnderlined = underlined.has(key);
+    const isSelected = selection?.includes(v.verse) ?? false;
     return (
       <TouchableOpacity
         key={v.verse}
-        style={styles.verseRow}
+        style={[
+          styles.verseRow,
+          selection && styles.verseRowSelectable,
+          isSelected && {
+            backgroundColor: theme.primary + "14",
+            borderColor: theme.primary + "55",
+          },
+        ]}
         onPress={() => handleVerseTap(v)}
-        onLongPress={() => handleVerseLongPress(v)}
+        onLongPress={selection ? undefined : () => handleVerseLongPress(v)}
         delayLongPress={400}
         activeOpacity={0.75}
         onLayout={
@@ -492,6 +636,13 @@ export default function BibleBrowser() {
           >
             {v.verse}
           </Text>
+          {selection && (
+            <Ionicons
+              name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+              size={14}
+              color={isSelected ? theme.primary : theme.textSecondary}
+            />
+          )}
           {isBookmarked && (
             <Ionicons
               name="bookmark"
@@ -847,6 +998,31 @@ export default function BibleBrowser() {
           </Text>
         </TouchableOpacity>
 
+        {/* Select mode: pick more verses to bookmark / highlight as one */}
+        <TouchableOpacity
+          style={[
+            styles.drawerBookmarkBtn,
+            {
+              marginTop: 10,
+              backgroundColor: theme.surface,
+              borderWidth: 1,
+              borderColor: theme.border,
+            },
+          ]}
+          onPress={startSelection}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="checkmark-done-outline" size={18} color={theme.text} />
+          <Text
+            style={[
+              styles.drawerBookmarkBtnText,
+              { color: theme.text },
+            ]}
+          >
+            Select More Verses
+          </Text>
+        </TouchableOpacity>
+
         {/* Add to Journal button */}
         <TouchableOpacity
           style={[
@@ -913,7 +1089,9 @@ export default function BibleBrowser() {
         <Ionicons name="bookmark" size={22} color={theme.primary} />
         <View style={styles.confirmTextWrap}>
           <Text style={[styles.confirmTitle, { color: theme.text }]}>
-            Verse Bookmarked
+            {bookmarkConfirm?.includes(",") || bookmarkConfirm?.includes("\u2013")
+              ? "Verses Bookmarked"
+              : "Verse Bookmarked"}
           </Text>
           <Text style={[styles.confirmRef, { color: theme.textSecondary }]}>
             {bookmarkConfirm} saved to Bookmarks
@@ -1066,6 +1244,137 @@ export default function BibleBrowser() {
             {verses.map((v) => renderVerse(v))}
           </ScrollView>
         ))}
+
+      {/* Select mode: actions for the selected verses */}
+      {screen === "verses" && selection && book && (
+        <View
+          style={[
+            styles.selectionBar,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+            isDesktop && {
+              marginHorizontal: bookInset,
+              borderLeftWidth: 1,
+              borderRightWidth: 1,
+            },
+          ]}
+        >
+          <View style={styles.selectionHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.selectionTitle, { color: theme.text }]}>
+                {book.label} {chapter}:{formatVerseNumbers(selection)}
+              </Text>
+              <Text
+                style={[styles.selectionHint, { color: theme.textSecondary }]}
+              >
+                {selection.length} {selection.length === 1 ? "verse" : "verses"}{" "}
+                selected · tap verses to add or remove
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setSelection(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel selection"
+              hitSlop={8}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={20} color={theme.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.swatchRow, styles.selectionSwatches]}>
+            {HIGHLIGHT_COLORS.map((c) => {
+              const isActive = selection.every(
+                (n) => highlights.get(verseKey(book.id, chapter!, n)) === c,
+              );
+              return (
+                <TouchableOpacity
+                  key={c}
+                  style={[
+                    styles.swatch,
+                    styles.selectionSwatch,
+                    { backgroundColor: c },
+                    isActive && styles.swatchActive,
+                  ]}
+                  onPress={() => handleSelectionHighlight(c)}
+                  accessibilityLabel="Highlight selected verses"
+                  activeOpacity={0.8}
+                />
+              );
+            })}
+          </View>
+
+          <View style={styles.selectionActions}>
+            <TouchableOpacity
+              style={[
+                styles.drawerBookmarkBtn,
+                styles.selectionBtn,
+                { backgroundColor: theme.primary },
+              ]}
+              onPress={handleSelectionBookmark}
+              activeOpacity={0.85}
+            >
+              <Ionicons
+                name="bookmark-outline"
+                size={17}
+                color={theme.primaryText}
+              />
+              <Text
+                style={[
+                  styles.drawerBookmarkBtnText,
+                  { color: theme.primaryText },
+                ]}
+              >
+                {selection.length > 1 ? "Bookmark as One" : "Bookmark"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.drawerBookmarkBtn,
+                styles.selectionBtn,
+                {
+                  backgroundColor: theme.surface,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                },
+              ]}
+              onPress={handleSelectionJournal}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="book-outline" size={17} color={theme.text} />
+              <Text
+                style={[styles.drawerBookmarkBtnText, { color: theme.text }]}
+              >
+                Journal
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {isPickMode && (
+            <TouchableOpacity
+              style={[
+                styles.drawerBookmarkBtn,
+                { marginTop: 10, backgroundColor: theme.primary },
+              ]}
+              onPress={handleSelectionPick}
+              activeOpacity={0.85}
+            >
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={17}
+                color={theme.primaryText}
+              />
+              <Text
+                style={[
+                  styles.drawerBookmarkBtnText,
+                  { color: theme.primaryText },
+                ]}
+              >
+                {selection.length > 1 ? "Use these Verses" : "Use this Verse"}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </SafeAreaView>
   );
 }
