@@ -543,6 +543,8 @@ function Grid<T>({
   span,
   gridLayout,
   gap,
+  maxColumns = 4,
+  minColumnWidth = 200,
 }: {
   data: T[];
   keyOf: (item: T) => string;
@@ -550,6 +552,9 @@ function Grid<T>({
   span?: (item: T) => 1 | 2;
   gridLayout: boolean;
   gap: number;
+  /** Small tiles: how many fit across, and how narrow they may get. */
+  maxColumns?: number;
+  minColumnWidth?: number;
 }) {
   if (!gridLayout) {
     return (
@@ -566,8 +571,9 @@ function Grid<T>({
       data={data}
       keyExtractor={keyOf}
       spanFor={span ?? (() => 1)}
-      minColumnWidth={240}
-      // Item cards keep their size; a lone last card doesn't stretch
+      minColumnWidth={minColumnWidth}
+      maxColumns={maxColumns}
+      // Small tiles keep their size; a lone card stays a small box
       fillRows={false}
       renderItem={(item) => render(item)}
     />
