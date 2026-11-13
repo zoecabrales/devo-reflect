@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 // Update when the wording changes. The Brethren parts only show while that
 // feature is switched on, so update the date again when it goes live.
 const EFFECTIVE_DATE = "November 13, 2026";
-const CONTACT_EMAIL = "support@devoreflect.app";
+const CONTACT_EMAIL = "jirehzoe@gmail.com";
 
 function Section({
   title,
