@@ -7,6 +7,7 @@ import {
   BibleVerse,
   ReadingPosition,
 } from "@/src/services/bible";
+import { contextHref } from "@/src/utils/readerLink";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ReactNode, useState } from "react";
@@ -76,7 +77,11 @@ export function DesktopHome({
                   label="Read in context"
                   onPress={() =>
                     router.push(
-                      `/(tabs)/bible-browser?bookId=${verse.book}&chapter=${verse.chapter}&verse=${verse.verse}`,
+                      contextHref({
+                        bookId: verse.book,
+                        chapter: verse.chapter,
+                        verse: verse.verse,
+                      }),
                     )
                   }
                 />

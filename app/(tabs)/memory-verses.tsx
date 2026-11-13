@@ -27,6 +27,7 @@ import {
   useListPaddingH,
   usePageScroll,
 } from "@/src/utils/responsive";
+import { contextHref } from "@/src/utils/readerLink";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -257,6 +258,26 @@ export default function MemoryVerses() {
                 : `${v.streak} in a row`}
           </Text>
         </View>
+        <TouchableOpacity
+          onPress={() =>
+            router.push(
+              contextHref({
+                bookId: v.bookId,
+                chapter: v.chapter,
+                verse: v.verse,
+                verses: v.verses,
+              }),
+            )
+          }
+          style={styles.contextLink}
+          accessibilityRole="link"
+          accessibilityLabel={`Read ${verseRef(v)} in context`}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.link, { color: theme.text }]}>
+            Read in context →
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -851,6 +872,7 @@ const styles = StyleSheet.create({
   strong: { fontWeight: "700" },
   label: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2 },
   link: { fontSize: 14, fontWeight: "600" },
+  contextLink: { alignSelf: "flex-start" },
   btn: {
     flexDirection: "row",
     alignItems: "center",

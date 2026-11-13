@@ -7,6 +7,7 @@ import {
     removeBookmark,
 } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
+import { contextHref } from "@/src/utils/readerLink";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -76,9 +77,13 @@ export default function Bookmarks() {
         ]}
         onPress={() =>
           router.push(
-            `/(tabs)/bible-browser?bookId=${item.bookId}&chapter=${item.chapter}&verse=${item.verse}&highlight=true${
-              item.verses?.length ? `&verses=${item.verses.join(",")}` : ""
-            }`,
+            contextHref({
+              bookId: item.bookId,
+              chapter: item.chapter,
+              verse: item.verse,
+              verses: item.verses,
+              extra: "&highlight=true",
+            }),
           )
         }
         activeOpacity={0.75}

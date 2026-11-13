@@ -2,6 +2,7 @@ import { AppModal, SheetHandle } from "@/src/components";
 import { BOOK_GUIDES, SECTION_GUIDES } from "@/src/constants/bibleGuide";
 import { Theme } from "@/src/constants/theme";
 import { BIBLE_BOOKS, BibleCollection } from "@/src/services/bible";
+import { contextHref, passageTarget } from "@/src/utils/readerLink";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -44,17 +45,6 @@ export function SectionGuideButton({
   );
 }
 
-/** "Genesis 12:1–3" → chapter 12, verse 1 (for opening the reader). */
-function passageTarget(passage: string): { chapter: number; verse?: number } {
-  // Skip the book name (which may start with a digit, e.g. "1 John")
-  const m = passage.match(/(\d+)(?::(\d+))?(?:[–-].*)?$/);
-  if (!m) return { chapter: 1 };
-  return {
-    chapter: parseInt(m[1], 10),
-    verse: m[2] ? parseInt(m[2], 10) : undefined,
-  };
-}
-
 /** Scrollable guide to one Bible section and each of its books. */
 export function SectionGuideModal({
   collection,
@@ -77,9 +67,9 @@ export function SectionGuideModal({
   function openReader(bookId: string, chapter: number, verse?: number) {
     close();
     router.push(
-      `/(tabs)/bible-browser?bookId=${bookId}&chapter=${chapter}${
-        verse ? `&verse=${verse}` : ""
-      }`,
+      verse
+        ? contextHref({ bookId, chapter, verse })
+        : `/(tabs)/bible-browser?bookId=${bookId}&chapter=${chapter}`,
     );
   }
 

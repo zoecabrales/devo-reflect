@@ -58,6 +58,27 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
+  // "Read in context" banner
+  contextBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginHorizontal: LIST_PADDING_H,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  contextBannerIcon: { marginTop: 1 },
+  contextBannerBody: { flex: 1, gap: 3 },
+  contextBannerTitle: { fontSize: 13, fontWeight: "700" },
+  contextBannerText: { fontSize: 12, lineHeight: 17 },
+  contextBannerLink: {
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 2,
+  },
   planBannerText: {
     flex: 1,
     fontSize: 13,

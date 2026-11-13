@@ -5,6 +5,7 @@ import {
   loadSharedWithMe,
   SharedVerse,
 } from "@/src/services/connections";
+import { contextHref } from "@/src/utils/readerLink";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -130,7 +131,12 @@ export function SharedVersesCard({
             key={s.id}
             onPress={() =>
               router.push(
-                `/(tabs)/bible-browser?bookId=${s.bookId}&chapter=${s.chapter}&verse=${s.verse}`,
+                contextHref({
+                  bookId: s.bookId,
+                  chapter: s.chapter,
+                  verse: s.verse,
+                  verses: s.verses,
+                }),
               )
             }
             activeOpacity={0.75}
@@ -155,7 +161,13 @@ export function SharedVersesCard({
                 {s.note}
               </Text>
             )}
-            <Text style={[styles.ref, L?.ref, { color: theme.text }]}>
+            <Text
+              style={[
+                styles.ref,
+                L?.ref,
+                { color: theme.text },
+              ]}
+            >
               {bookmarkRef(s)}{" "}
               <Text style={{ color: theme.textSecondary, fontWeight: "400" }}>
                 {s.version}

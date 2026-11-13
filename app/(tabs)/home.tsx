@@ -25,6 +25,7 @@ import {
   usePageScroll,
   useScrollPaddingH,
 } from "@/src/utils/responsive";
+import { contextHref } from "@/src/utils/readerLink";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -116,7 +117,11 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
       ]}
       onPress={() =>
         router.push(
-          `/(tabs)/bible-browser?bookId=${verse.book}&chapter=${verse.chapter}&verse=${verse.verse}`,
+          contextHref({
+            bookId: verse.book,
+            chapter: verse.chapter,
+            verse: verse.verse,
+          }),
         )
       }
       activeOpacity={0.8}

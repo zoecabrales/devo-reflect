@@ -22,6 +22,11 @@ import {
     setUnderlines,
 } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
+import {
+  BookGuideSheet,
+  bookSetting,
+} from "@/src/features/bible/BookGuideSheet";
+import { BOOK_GUIDES } from "@/src/constants/bibleGuide";
 import { BRETHREN_ENABLED } from "@/src/constants/features";
 import {
   ShareTarget,
@@ -62,6 +67,9 @@ import {
 } from "@/src/utils/responsive";
 
 type Screen = "books" | "chapters" | "verses";
+
+/** Verses shaded around a "Read in context" verse (3 either side). */
+const CONTEXT_SPAN = 3;
 
 /** Two taps on a verse within this many ms open the verse panel. */
 const DOUBLE_TAP_MS = 260;
@@ -146,6 +154,7 @@ export default function BibleBrowser() {
     chapter: chapterParam,
     verse: verseParam,
     verses: versesParam,
+    context: contextParam,
     highlight: highlightParam,
     underline: underlineParam,
     pickMode,
@@ -159,6 +168,7 @@ export default function BibleBrowser() {
     chapter?: string;
     verse?: string;
     verses?: string; // "16,17,18" when opening a multi-verse bookmark
+    context?: string; // "1" = show the verse(s) in context (see contextHref)
     highlight?: string;
     underline?: string;
     pickMode?: string; // "verse" when opened from CalendarWidget
@@ -208,6 +218,10 @@ export default function BibleBrowser() {
   const [journaled, setJournaled] = useState<Set<string>>(new Set());
   // Temporary underline (arriving from Concordance); cleared on navigation
   const [underlined, setUnderlined] = useState<Set<string>>(new Set());
+  // "Read in context": verse(s) to mark, with the verses around them shaded.
+  // Only shown on screen; nothing is saved.
+  const [contextVerses, setContextVerses] = useState<number[] | null>(null);
+  const [bookGuideOpen, setBookGuideOpen] = useState(false);
   // Underlines the user saved from the drawer; kept until they remove them
   const [savedUnderlines, setSavedUnderlines] = useState<Set<string>>(
     new Set(),
@@ -265,18 +279,36 @@ export default function BibleBrowser() {
               ? range
               : [v]
             : undefined;
+        // Read in context: mark the verse(s) and shade the passage around
+        const context =
+          contextParam === "1" && !isNaN(v)
+            ? range.length > 0
+              ? range
+              : [v]
+            : null;
         openChapter(
           found,
           ch,
           undefined,
           targets,
           underlineParam === "true",
+          // Desktop book view opens at the page holding the verse (a passage
+          // can cross a page break; the verse itself must be on screen)
           isNaN(v) ? null : v,
+          context,
         );
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId, chapterParam, verseParam, versesParam, highlightParam, underlineParam]);
+  }, [
+    bookId,
+    chapterParam,
+    verseParam,
+    versesParam,
+    contextParam,
+    highlightParam,
+    underlineParam,
+  ]);
 
   // Clear underlines when user starts searching
   useEffect(() => {
@@ -297,6 +329,7 @@ export default function BibleBrowser() {
   function goBack() {
     setUnderlined(new Set()); // Clear temporary underlines when navigating
     setSelection(null);
+    setContextVerses(null);
     if (returnTo) {
       // Opened from another screen (e.g. a reading plan): go straight back
       // there, not up through the chapter list or to the first tab
@@ -338,6 +371,8 @@ export default function BibleBrowser() {
     autoUnderlineVerse: boolean = false,
     /** Desktop book view: verse to open at, or "end" for the last spread. */
     focus: number | "end" | null = null,
+    /** Read in context: verse(s) to mark, with their passage shaded. */
+    context: number[] | null = null,
   ) {
     setBook(b);
     setChapter(ch);
@@ -349,6 +384,7 @@ export default function BibleBrowser() {
     setSearchVisible(false);
     setSearchQuery("");
     setSelection(null);
+    setContextVerses(context);
     try {
       const [data, savedHighlights, savedBookmarks, underlines] =
         await Promise.all([
@@ -700,6 +736,31 @@ export default function BibleBrowser() {
   const prevChapter = neighbourChapter(-1);
   const nextChapter = neighbourChapter(1);
 
+  const contextFrom = contextVerses
+    ? Math.max(1, Math.min(...contextVerses) - CONTEXT_SPAN)
+    : null;
+  const contextTo = contextVerses
+    ? Math.max(...contextVerses) + CONTEXT_SPAN
+    : null;
+  // Verse to scroll to on open: the start of the passage in context mode
+  const scrollTarget =
+    contextFrom ?? (verseParam ? parseInt(verseParam, 10) : null);
+
+  /** Opens a key passage from the book guide, in context. */
+  function openPassageInContext(ch: number, verseNum?: number) {
+    if (!book) return;
+    setBookGuideOpen(false);
+    openChapter(
+      book,
+      ch,
+      undefined,
+      undefined,
+      false,
+      verseNum ?? null,
+      verseNum ? [verseNum] : null,
+    );
+  }
+
   /** One verse row; `bookMode` = desktop two-page book (serif, no scroll sync). */
   function renderVerse(v: ChapterVerse, bookMode = false) {
     const key = verseKey(book!.id, chapter!, v.verse);
@@ -708,12 +769,24 @@ export default function BibleBrowser() {
     const isJournaled = journaled.has(key);
     const isUnderlined = underlined.has(key) || savedUnderlines.has(key);
     const isSelected = selection?.includes(v.verse) ?? false;
+    const isContextTarget = contextVerses?.includes(v.verse) ?? false;
+    const isInContext =
+      contextFrom !== null &&
+      contextTo !== null &&
+      v.verse >= contextFrom &&
+      v.verse <= contextTo;
     return (
       <TouchableOpacity
         key={v.verse}
         style={[
           styles.verseRow,
-          selection && styles.verseRowSelectable,
+          (selection || isInContext) && styles.verseRowSelectable,
+          // Read in context: the verse stands out, its passage is shaded
+          !selection &&
+            isInContext && {
+              backgroundColor: theme.primary + (isContextTarget ? "26" : "0A"),
+              borderColor: isContextTarget ? theme.primary + "80" : "transparent",
+            },
           isSelected && {
             backgroundColor: theme.primary + "14",
             borderColor: theme.primary + "55",
@@ -749,10 +822,14 @@ export default function BibleBrowser() {
             : (e) => {
                 const y = e.nativeEvent.layout.y;
                 verseOffsets.current.set(v.verse, y);
-                // If this is the deep-linked target verse, scroll to it now
-                // that we have its exact position (onLayout fires after paint)
-                if (verseParam && v.verse === parseInt(verseParam, 10)) {
-                  scrollViewRef.current?.scrollTo({ y, animated: false });
+                // If this is the deep-linked target verse (or, in context
+                // mode, the start of its passage), scroll to it now that we
+                // have its exact position (onLayout fires after paint)
+                if (scrollTarget !== null && v.verse === scrollTarget) {
+                  scrollViewRef.current?.scrollTo({
+                    y: Math.max(0, y - 8),
+                    animated: false,
+                  });
                 }
               }
         }
@@ -863,6 +940,21 @@ export default function BibleBrowser() {
             </Text>
           )}
         </View>
+        {screen !== "books" && book && BOOK_GUIDES[book.id] && (
+          <TouchableOpacity
+            style={[styles.searchIconBtn, { borderColor: theme.border }]}
+            onPress={() => setBookGuideOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`About ${book.label}`}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={19}
+              color={theme.text}
+            />
+          </TouchableOpacity>
+        )}
         {screen === "verses" && (
           <TouchableOpacity
             style={[styles.searchIconBtn, { borderColor: theme.border }]}
@@ -890,6 +982,76 @@ export default function BibleBrowser() {
           <Ionicons name="chevron-down" size={11} color={theme.textSecondary} />
         </TouchableOpacity>
       </View>
+
+      {/* Read in context: what this passage is and where it sits */}
+      {screen === "verses" && contextVerses && book && chapter && (
+        <View
+          style={[
+            styles.contextBanner,
+            { marginHorizontal: padH },
+            { borderColor: theme.border, backgroundColor: theme.surface },
+            bookAligned && { marginHorizontal: bookInset },
+          ]}
+        >
+          <Ionicons
+            name="reader-outline"
+            size={16}
+            color={theme.textSecondary}
+            style={styles.contextBannerIcon}
+          />
+          <View style={styles.contextBannerBody}>
+            <Text style={[styles.contextBannerTitle, { color: theme.text }]}>
+              {book.label} {chapter}:{formatVerseNumbers(contextVerses)} in
+              context
+            </Text>
+            {bookSetting(book.id) && (
+              <Text
+                style={[
+                  styles.contextBannerText,
+                  { color: theme.textSecondary },
+                ]}
+              >
+                {bookSetting(book.id)}
+              </Text>
+            )}
+            <Text
+              style={[styles.contextBannerText, { color: theme.textSecondary }]}
+            >
+              The shaded verses around it are part of the same passage. Read
+              them together.
+            </Text>
+            {BOOK_GUIDES[book.id] && (
+              <TouchableOpacity
+                onPress={() => setBookGuideOpen(true)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[styles.contextBannerLink, { color: theme.text }]}
+                >
+                  About {book.label} →
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity
+            onPress={() => setContextVerses(null)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Hide context"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={16} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <BookGuideSheet
+        book={book}
+        visible={bookGuideOpen}
+        theme={theme}
+        onClose={() => setBookGuideOpen(false)}
+        onOpenPassage={openPassageInContext}
+      />
 
       {/* Bookmarking / planning for a calendar day (from Growth) */}
       {pendingForDate && (

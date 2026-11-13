@@ -93,6 +93,7 @@ export default function Concordance() {
           chapter: result.chapter.toString(),
           verse: result.verse.toString(),
           underline: "true",
+          context: "1",
         },
       });
     }
