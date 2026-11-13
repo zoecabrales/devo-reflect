@@ -8,7 +8,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "emulators": "firebase emulators:start --project demo-devo-reflect",
+    "deploy:firestore": "firebase deploy --only firestore:rules,firestore:indexes"
   },
   "dependencies": {
     "@expo-google-fonts/oswald": "^0.4.2",
