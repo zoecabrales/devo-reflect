@@ -373,7 +373,7 @@ function BookmarkBadgeCard({ count, theme }: { count: number; theme: Theme }) {
       activeOpacity={0.8}
     >
       <View style={[styles.browseIconWrap, { backgroundColor: theme.primary }]}>
-        <Ionicons name="bookmark" size={18} color="#fff" />
+        <Ionicons name="bookmark" size={18} color={theme.primaryText} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.browseLabel, { color: theme.textSecondary }]}>

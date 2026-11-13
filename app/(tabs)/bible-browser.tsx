@@ -1040,8 +1040,12 @@ export default function BibleBrowser() {
           onPress={handleShare}
           activeOpacity={0.85}
         >
-          <Ionicons name="share-outline" size={18} color="#fff" />
-          <Text style={styles.drawerBookmarkBtnText}>Share Verse</Text>
+          <Ionicons name="share-outline" size={18} color={theme.primaryText} />
+          <Text
+            style={[styles.drawerBookmarkBtnText, { color: theme.primaryText }]}
+          >
+            Share Verse
+          </Text>
         </TouchableOpacity>
       </AppModal>
 
@@ -1130,8 +1134,14 @@ export default function BibleBrowser() {
           onPress={handleDrawerBookmark}
           activeOpacity={0.85}
         >
-          <Ionicons name="bookmark-outline" size={18} color="#fff" />
-          <Text style={styles.drawerBookmarkBtnText}>
+          <Ionicons
+            name="bookmark-outline"
+            size={18}
+            color={theme.primaryText}
+          />
+          <Text
+            style={[styles.drawerBookmarkBtnText, { color: theme.primaryText }]}
+          >
             Add to Bookmarks
           </Text>
         </TouchableOpacity>
