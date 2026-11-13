@@ -1,3 +1,4 @@
+import { BRETHREN_ENABLED } from "@/src/constants/features";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
@@ -9,7 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const EFFECTIVE_DATE = "April 16, 2026";
+// Update when the policy's wording changes. The Brethren parts only show
+// while that feature is switched on, so update the date again on the day
+// Brethren is switched on in production.
+const EFFECTIVE_DATE = "November 13, 2026";
 const CONTACT_EMAIL = "support@devoreflect.app";
 
 function Section({
@@ -27,11 +31,11 @@ function Section({
   );
 }
 
-function Body({ children }: { children: string }) {
+function Body({ children }: { children: React.ReactNode }) {
   return <Text style={styles.body}>{children}</Text>;
 }
 
-function Bullet({ children }: { children: string }) {
+function Bullet({ children }: { children: React.ReactNode }) {
   return (
     <View style={styles.bulletRow}>
       <Text style={styles.bulletDot}>•</Text>
@@ -80,14 +84,24 @@ export default function PrivacyPolicy() {
             register.
           </Bullet>
           <Bullet>
-            User-generated content — journal entries, prayer requests, Bible
-            bookmarks, verse highlights, and growth calendar entries that you
-            create within the app.
+            Content you create — journal entries, prayer requests, Bible
+            bookmarks, growth calendar entries, reading plan progress, and
+            memory verses. These are stored in your account so they are
+            available whenever you sign in.
           </Bullet>
           <Bullet>
-            Reading position — the last Bible book, chapter, and verse you were
-            reading, saved automatically to restore your place.
+            Information kept only on your device — verse highlights,
+            underlines, and your last reading position (book and chapter).
+            These are saved in your browser or phone and are not uploaded to
+            our servers.
           </Bullet>
+          {BRETHREN_ENABLED && (
+            <Bullet>
+              Brethren — if you use this feature, the email addresses you send
+              Brethren requests to, the people you connect with, and the verses
+              and notes you choose to share with them.
+            </Bullet>
+          )}
           <Body>
             We do not collect payment information, location data, or device
             identifiers beyond what is required for Firebase Authentication to
@@ -104,12 +118,20 @@ export default function PrivacyPolicy() {
             To authenticate your identity and secure your account.
           </Bullet>
           <Bullet>
-            To store and sync your devotional content (journals, prayers,
-            bookmarks, highlights, growth calendar) across sessions.
+            To store your devotional content (journals, prayers, bookmarks,
+            growth calendar, reading plans, memory verses) so it is there each
+            time you sign in.
           </Bullet>
           <Bullet>
             To restore your Bible reading position when you reopen the app.
           </Bullet>
+          {BRETHREN_ENABLED && (
+            <Bullet>
+              To deliver Brethren requests to the email address you enter, and
+              to show the verses you share to the people you are connected
+              with.
+            </Bullet>
+          )}
           <Body>
             We do not use your data for advertising, profiling, or any purpose
             unrelated to the operation of this app.
@@ -118,10 +140,14 @@ export default function PrivacyPolicy() {
 
         <Section title="3. Data Storage and Security">
           <Body>
-            All user data is stored securely in Google Firebase (Firestore and
-            Firebase Authentication), which provides industry-standard
-            encryption in transit (TLS) and at rest. Your data is associated
-            with your account and is not accessible to other users.
+            Account data and the content you create are stored securely in
+            Google Firebase (Firestore and Firebase Authentication), which
+            provides industry-standard encryption in transit (TLS) and at rest.
+            Your data is associated with your account and is not accessible to
+            other users
+            {BRETHREN_ENABLED
+              ? ", except what you choose to share through Brethren (see section 4)."
+              : "."}
           </Body>
           <Body>
             While we take reasonable measures to protect your data, no method of
@@ -138,9 +164,39 @@ export default function PrivacyPolicy() {
           </Body>
           <Bullet>
             Google Firebase — for authentication, database, and cloud storage
-            services. Google's privacy policy applies to data processed by
+            services. Google&apos;s privacy policy applies to data processed by
             Firebase.
           </Bullet>
+          {BRETHREN_ENABLED && (
+            <>
+              <Body>
+                Sharing with other users happens only through Brethren, and
+                only when you choose to:
+              </Body>
+              <Bullet>
+                When you send a Brethren request, the person who owns that
+                email address sees your display name and email address. They
+                can accept or decline it. We do not tell you whether an email
+                address has a Devo Reflect account.
+              </Bullet>
+              <Bullet>
+                Once a request is accepted, you and that person see each
+                other&apos;s display names and the verses and notes each of you
+                shares with Brethren.
+              </Bullet>
+              <Bullet>
+                A shared verse is visible to the people you are connected with
+                at the time you share it. You can delete a shared verse at any
+                time, and removing a connection stops you both from seeing each
+                other&apos;s shared verses.
+              </Bullet>
+              <Bullet>
+                Your journal entries, prayer requests, bookmarks, highlights,
+                reading plans, and memory verses are never visible to your
+                Brethren.
+              </Bullet>
+            </>
+          )}
         </Section>
 
         <Section title="5. Your Rights">
@@ -151,16 +207,27 @@ export default function PrivacyPolicy() {
             Delete your account and all associated data at any time from the
             Settings screen.
           </Bullet>
-          <Bullet>Export your content before deleting your account.</Bullet>
+          <Bullet>
+            Request a copy of your data by contacting us at the address below.
+          </Bullet>
         </Section>
 
         <Section title="6. Account Deletion">
           <Body>
             You can permanently delete your account and all associated data from
-            Settings → Delete Account. This action is irreversible. All journal
-            entries, prayer requests, bookmarks, highlights, and growth calendar
-            data will be permanently removed from our servers.
+            Settings → Delete Account. This action is irreversible. Your journal
+            entries, prayer requests, bookmarks, growth calendar, reading plan
+            progress, and memory verses are permanently removed from our
+            servers, and the highlights, underlines, and reading position saved
+            on that device are cleared.
           </Body>
+          {BRETHREN_ENABLED && (
+            <Body>
+              Your Brethren requests, connections, and shared verses are also
+              deleted, and you are removed from verses others have shared with
+              you.
+            </Body>
+          )}
         </Section>
 
         <Section title="7. Children's Privacy">
