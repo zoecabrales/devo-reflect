@@ -22,6 +22,11 @@ import {
     setUnderlines,
 } from "@/src/services/bookmarks";
 import { auth } from "@/src/services/firebase";
+import { BRETHREN_ENABLED } from "@/src/constants/features";
+import {
+  ShareTarget,
+  ShareWithConnectionsModal,
+} from "@/src/features/connections/ShareWithConnections";
 import { recordChapterRead } from "@/src/services/readingPlans";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -213,6 +218,8 @@ export default function BibleBrowser() {
   // Select mode: verse numbers picked to bookmark / highlight / journal as one.
   // null = not selecting.
   const [selection, setSelection] = useState<number[] | null>(null);
+  // Verse(s) being shared with Brethren
+  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null);
   const [shareVerse, setShareVerse] = useState<ChapterVerse | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -545,6 +552,21 @@ export default function BibleBrowser() {
         ref: `${book.label} ${chapter}:${formatVerseNumbers(nums)}`,
         text: picked.map((v) => v.text).join(" "),
       },
+    });
+  }
+
+  /** Opens the Brethren share sheet for the given verses. */
+  function openShareWithConnections(picked: ChapterVerse[]) {
+    if (!book || picked.length === 0) return;
+    const nums = picked.map((v) => v.verse);
+    setShareTarget({
+      bookId: book.id,
+      bookLabel: book.label,
+      chapter: chapter!,
+      verses: nums,
+      ref: `${book.label} ${chapter}:${formatVerseNumbers(nums)}`,
+      text: picked.map((v) => v.text).join(" "),
+      version: version.label,
     });
   }
 
@@ -1196,6 +1218,35 @@ export default function BibleBrowser() {
           </Text>
         </TouchableOpacity>
 
+        {/* Share with Brethren */}
+        {BRETHREN_ENABLED && (
+          <TouchableOpacity
+            style={[
+              styles.drawerBookmarkBtn,
+              {
+                marginTop: 10,
+                backgroundColor: theme.surface,
+                borderWidth: 1,
+                borderColor: theme.border,
+              },
+            ]}
+            onPress={() => {
+              if (!drawerVerse) return;
+              const v = drawerVerse;
+              setDrawerVerse(null);
+              openShareWithConnections([v]);
+            }}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="people-outline" size={18} color={theme.text} />
+            <Text
+              style={[styles.drawerBookmarkBtnText, { color: theme.text }]}
+            >
+              Share with Brethren
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Use this Verse — only shown when opened from CalendarWidget */}
         {isPickMode && (
           <TouchableOpacity
@@ -1222,6 +1273,12 @@ export default function BibleBrowser() {
           </TouchableOpacity>
         )}
       </AppModal>
+
+      <ShareWithConnectionsModal
+        target={shareTarget}
+        theme={theme}
+        onClose={() => setShareTarget(null)}
+      />
 
       {/* Bookmark confirmation popup */}
       <AppModal
@@ -1524,6 +1581,33 @@ export default function BibleBrowser() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {BRETHREN_ENABLED && (
+            <TouchableOpacity
+              style={[
+                styles.drawerBookmarkBtn,
+                styles.selectionShareBtn,
+                {
+                  backgroundColor: theme.surface,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                },
+              ]}
+              onPress={() => {
+                const picked = selectedVerses();
+                setSelection(null);
+                openShareWithConnections(picked);
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="people-outline" size={17} color={theme.text} />
+              <Text
+                style={[styles.drawerBookmarkBtnText, { color: theme.text }]}
+              >
+                Share with Brethren
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {isPickMode && (
             <TouchableOpacity

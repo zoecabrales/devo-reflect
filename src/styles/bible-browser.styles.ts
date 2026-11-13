@@ -408,6 +408,10 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
   },
+  selectionShareBtn: {
+    marginTop: 10,
+    paddingVertical: 12,
+  },
   selectionBtn: {
     flex: 1,
     paddingVertical: 12,

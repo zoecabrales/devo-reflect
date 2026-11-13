@@ -10,6 +10,8 @@ import {
     ReadingPosition,
 } from "@/src/services/bible";
 import { DesktopHome } from "@/src/features/home/DesktopHome";
+import { BRETHREN_ENABLED } from "@/src/constants/features";
+import { SharedVersesCard } from "@/src/features/connections/SharedVersesCard";
 import {
     SectionGuideButton,
     SectionGuideModal,
@@ -631,6 +633,9 @@ export default function Home() {
         ) : verse ? (
           <VerseCard verse={verse} theme={theme} />
         ) : null}
+
+        {/* Verses shared by Brethren */}
+        {BRETHREN_ENABLED && <SharedVersesCard theme={theme} />}
 
         {/* Collection Cards */}
         <CollectionCards theme={theme} />

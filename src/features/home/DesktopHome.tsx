@@ -11,6 +11,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ReactNode, useState } from "react";
 import { SectionGuideButton, SectionGuideModal } from "./SectionGuide";
+import { BRETHREN_ENABLED } from "@/src/constants/features";
+import { SharedVersesCard } from "@/src/features/connections/SharedVersesCard";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -111,6 +113,11 @@ export function DesktopHome({
             />
           </View>
         </View>
+
+        {/* ── Verses shared by Brethren ── */}
+        {BRETHREN_ENABLED && (
+          <SharedVersesCard theme={theme} style={styles.sharedCard} />
+        )}
 
         {/* ── Browse by section ── */}
         <SectionLabel theme={theme} style={styles.browseLabel}>
@@ -295,6 +302,9 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     rowGap: 14,
+  },
+  sharedCard: {
+    marginTop: 16,
   },
   sectionHelpBtn: {
     position: "absolute",

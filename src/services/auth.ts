@@ -13,6 +13,8 @@ import {
     updateProfile,
 } from "firebase/auth";
 import { auth } from "./firebase";
+import { BRETHREN_ENABLED } from "@/src/constants/features";
+import { deleteConnectionData } from "./connections";
 import { createUserProfile, deleteUserData } from "./firestore";
 
 const LAST_ACTIVE_KEY = "@last_active_at";
@@ -99,6 +101,12 @@ export async function deleteAccount(currentPassword: string) {
   // login is gone the security rules no longer let anyone delete it. If this
   // fails, the account is kept so the user can try again.
   try {
+    // Brethren data lives outside users/{uid}. Only touched while
+    // the feature is on: before its Firestore rules are deployed, these
+    // collections can't be read at all.
+    if (BRETHREN_ENABLED) {
+      await deleteConnectionData(user.uid, user.email);
+    }
     await deleteUserData(user.uid);
   } catch (error) {
     throw Object.assign(
