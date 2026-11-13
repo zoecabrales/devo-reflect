@@ -22,7 +22,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
+    AppState,
     RefreshControl,
     ScrollView,
     Text,
@@ -457,8 +459,22 @@ function QuickLinkCard({
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
-// Show the verse greeting once per cold start, not on every navigation
-let verseGreetingShown = false;
+// The "Begin Journey" verse greeting shows at most once every 4 hours, when
+// Home opens or the app returns to the foreground on Home.
+const VERSE_GREETING_KEY = "@verse_greeting_shown_at";
+const VERSE_GREETING_INTERVAL_MS = 4 * 60 * 60 * 1000;
+
+/** True (and records now) if the greeting is due; false otherwise. */
+async function claimVerseGreeting(): Promise<boolean> {
+  const now = Date.now();
+  const last = Number(await AsyncStorage.getItem(VERSE_GREETING_KEY));
+  // A missing / unreadable value, or one in the future (clock changed), is due
+  if (last && last <= now && now - last < VERSE_GREETING_INTERVAL_MS) {
+    return false;
+  }
+  await AsyncStorage.setItem(VERSE_GREETING_KEY, String(now));
+  return true;
+}
 
 const PSALM_119_105 =
   "Thy word is a lamp unto my feet, and a light unto my path.";
@@ -490,13 +506,21 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  // Show verse greeting once per cold start
-  useEffect(() => {
-    if (!verseGreetingShown) {
-      verseGreetingShown = true;
-      setShowVerseGreeting(true);
-    }
-  }, []);
+  // Show the verse greeting when it's due: on opening Home, and when the app
+  // comes back to the foreground while Home is the screen in view
+  useFocusEffect(
+    useCallback(() => {
+      const check = () =>
+        claimVerseGreeting()
+          .then((due) => due && setShowVerseGreeting(true))
+          .catch(() => {});
+      check();
+      const sub = AppState.addEventListener("change", (state) => {
+        if (state === "active") check();
+      });
+      return () => sub.remove();
+    }, []),
+  );
 
   async function loadVerse(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
