@@ -303,16 +303,18 @@ export function nextDay(plan: ReadingPlan, progress: PlanProgress): number | nul
 
 /**
  * How far behind the calendar schedule the reader is (0 = on track).
- * Day 1 is the day the plan was started.
+ * Day 1 is the day the plan was started. Today's reading only counts once
+ * the day is over, so a plan started today isn't already behind.
  */
 export function daysBehind(plan: ReadingPlan, progress: PlanProgress): number {
   const [y, m, d] = progress.startedOn.split("-").map(Number);
   const start = new Date(y, m - 1, d).getTime();
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Days due before today (Math.round absorbs daylight-saving hours)
   const scheduled = Math.min(
     plan.days,
-    Math.round((today.getTime() - start) / 86_400_000) + 1,
+    Math.max(0, Math.round((today.getTime() - start) / 86_400_000)),
   );
   const done = Object.keys(progress.completed).length;
   return Math.max(0, scheduled - done);
