@@ -100,13 +100,24 @@ function toRequest(d: QueryDocumentSnapshot): ConnectionRequest {
 /**
  * Sends a request to an email address. Succeeds whether or not the email has
  * an account, so the app never reveals who uses it. Throws "invalid" for a
- * malformed address and "self" for your own email.
+ * malformed address, "self" for your own email, and "pending" when you've
+ * already asked them and they haven't replied (the rules don't let a
+ * request be overwritten, so sending again would fail).
  */
 export async function sendConnectionRequest(rawEmail: string): Promise<void> {
   const self = me();
   const toEmail = normaliseEmail(rawEmail);
   if (!isValidEmail(toEmail)) throw new Error("invalid");
   if (toEmail === self.email) throw new Error("self");
+  const existing = await getDocs(
+    query(
+      requestsCol(),
+      where("fromUid", "==", self.uid),
+      where("toEmail", "==", toEmail),
+      limit(1),
+    ),
+  );
+  if (!existing.empty) throw new Error("pending");
   await setDoc(doc(requestsCol(), `${self.uid}_${toEmail}`), {
     fromUid: self.uid,
     fromName: self.name,

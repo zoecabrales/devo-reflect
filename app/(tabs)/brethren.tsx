@@ -120,7 +120,9 @@ function Brethren() {
         text:
           e?.message === "self"
             ? "That's your own email address."
-            : "Could not send the request. Please check your connection and try again.",
+            : e?.message === "pending"
+              ? `You've already sent ${to} a request. It's waiting for their reply.`
+              : "Could not send the request. Please check your connection and try again.",
         error: true,
       });
     } finally {

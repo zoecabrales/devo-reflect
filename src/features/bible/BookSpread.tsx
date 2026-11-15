@@ -16,6 +16,7 @@ import {
   StyleSheet,
   Text,
   View,
+  ViewStyle,
 } from "react-native";
 
 /** Widest the open book gets; spreads beyond this would be hard to read. */
@@ -204,12 +205,21 @@ export function BookSpread<T>({
         ]}
       >
         <View
-          style={styles.pageBody}
+          style={[styles.pageBody, webClip]}
           onLayout={side === "left" ? onPageLayout : undefined}
         >
-          {/* Invisible measuring copy of the whole chapter at page width */}
+          {/* Invisible measuring copy of the whole chapter at page width.
+              Hidden from focus, find-in-page and screen readers: reaching
+              it used to scroll the page box and leave the left page blank */}
           {side === "left" && (
-            <View key={gen} style={styles.measureLayer} pointerEvents="none">
+            <View
+              key={gen}
+              style={[styles.measureLayer, webHidden]}
+              pointerEvents="none"
+              aria-hidden
+              importantForAccessibility="no-hide-descendants"
+              accessibilityElementsHidden
+            >
               {items.map((it) => {
                 const k = hKey(it);
                 return (
@@ -353,6 +363,16 @@ export const bookFrame = StyleSheet.create({
   },
 });
 
+// Web: a clipped page box can't be scrolled at all, so nothing (keyboard
+// focus, find-in-page) can shift a page's verses out of view
+const webClip = (
+  Platform.OS === "web" ? { overflow: "clip" } : null
+) as ViewStyle | null;
+// Web: laid out (so it can be measured) but never painted, focused or found
+const webHidden = (
+  Platform.OS === "web" ? { visibility: "hidden" } : null
+) as ViewStyle | null;
+
 const styles = StyleSheet.create({
   page: {
     flex: 1,
@@ -371,6 +391,7 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: "hidden",
   },
+  // (webClip / webHidden below: web-only CSS, not in ViewStyle's type)
   measureLayer: {
     position: "absolute",
     top: 0,
