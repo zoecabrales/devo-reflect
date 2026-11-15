@@ -1,7 +1,15 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { useListPaddingH } from "@/src/utils/responsive";
 import { useEffect, useRef } from "react";
-import { Animated, DimensionValue, StyleSheet, View } from "react-native";
+import {
+  Animated,
+  DimensionValue,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from "react-native";
+import { BentoGrid } from "./BentoGrid";
 
 // ── Base element ──────────────────────────────────────────────────────────────
 
@@ -172,32 +180,94 @@ export function ChapterSkeleton() {
 }
 
 /** Concordance – replaces the centred ActivityIndicator while search results load */
-export function ConcordanceSkeleton() {
+/**
+ * Concordance search in progress. Mirrors the results it stands in for:
+ * a list of rows on phones, or sections of verse cards on tablets and
+ * desktop, with the same frame and side padding (passed by the screen).
+ */
+export function ConcordanceSkeleton({
+  cards = false,
+  padH = 20,
+  contentStyle,
+}: {
+  /** Tablets / desktop: sections of cards instead of a list. */
+  cards?: boolean;
+  /** Side padding of the results (0 when contentStyle already pads). */
+  padH?: number;
+  /** The results' container style, e.g. the desktop page frame. */
+  contentStyle?: StyleProp<ViewStyle>;
+}) {
   const { theme } = useAppTheme();
-  return (
-    <View style={{ flex: 1 }}>
-      {/* Result count header */}
-      <View style={sk.concordanceHeader}>
-        <SkeletonLine size="short" />
-      </View>
 
-      {/* Result rows */}
-      <View style={sk.list}>
-        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-          <View
-            key={i}
-            style={[sk.concordanceRow, { borderBottomColor: theme.border }]}
-          >
-            {/* Reference line */}
-            <Skeleton width="30%" height={11} borderRadius={5} />
-            {/* Verse text lines */}
-            <View style={sk.concordanceLines}>
-              <SkeletonLine size={i % 3 === 0 ? "full" : "long"} />
-              {i % 2 === 0 && <SkeletonLine size="medium" />}
-            </View>
-          </View>
-        ))}
+  const count = (
+    <View style={[sk.concordanceCount, { marginHorizontal: padH }]}>
+      <Skeleton width={120} height={12} borderRadius={6} />
+    </View>
+  );
+
+  if (cards) {
+    const card = (i: number) => (
+      <View
+        style={[
+          sk.concordanceCard,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+        ]}
+      >
+        <Skeleton width="35%" height={12} borderRadius={6} />
+        <View style={sk.concordanceLines}>
+          <SkeletonLine size="full" />
+          <SkeletonLine size={i % 2 === 0 ? "long" : "full"} />
+          {i % 3 !== 1 && <SkeletonLine size="medium" />}
+        </View>
       </View>
+    );
+    return (
+      <View style={[{ flex: 1 }, contentStyle]}>
+        {count}
+        <View style={sk.concordanceSections}>
+          {[4, 2].map((n, s) => (
+            <View key={s} style={[sk.concordanceSection, { paddingHorizontal: padH }]}>
+              <View style={sk.concordanceSectionHead}>
+                <Skeleton width={110} height={11} borderRadius={5} />
+                <View style={[sk.concordanceRule, { backgroundColor: theme.border }]} />
+              </View>
+              <BentoGrid
+                gap={12}
+                data={Array.from({ length: n }, (_, i) => i + s * 4)}
+                keyExtractor={(i) => String(i)}
+                spanFor={() => 1}
+                minColumnWidth={300}
+                maxColumns={2}
+                fillRows={false}
+                renderItem={card}
+              />
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[{ flex: 1 }, contentStyle]}>
+      {count}
+      {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+        <View
+          key={i}
+          style={[
+            sk.concordanceRow,
+            { paddingHorizontal: padH, borderBottomColor: theme.border },
+          ]}
+        >
+          {/* Reference line */}
+          <Skeleton width="30%" height={11} borderRadius={5} />
+          {/* Verse text lines */}
+          <View style={sk.concordanceLines}>
+            <SkeletonLine size={i % 3 === 0 ? "full" : "long"} />
+            {i % 2 === 0 && <SkeletonLine size="medium" />}
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
@@ -250,18 +320,41 @@ const sk = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  concordanceHeader: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    marginBottom: 8,
+  // Concordance: same spacing as the results (concordance.styles.ts)
+  concordanceCount: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginBottom: 12,
   },
   concordanceRow: {
-    paddingHorizontal: 16,
     paddingVertical: 14,
-    gap: 4,
+    gap: 8,
     borderBottomWidth: 1,
   },
   concordanceLines: {
     gap: 8,
+  },
+  concordanceSections: {
+    gap: 24,
+  },
+  concordanceSection: {
+    gap: 12,
+  },
+  concordanceSectionHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 6,
+  },
+  concordanceRule: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  concordanceCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 16,
+    gap: 10,
   },
 });
