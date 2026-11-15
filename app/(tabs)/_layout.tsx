@@ -37,6 +37,7 @@ const ZOOMED_DESKTOP_TABS = new Set([
   "reading-plans",
   "memory-verses",
   "brethren",
+  "concordance",
 ]);
 
 type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";

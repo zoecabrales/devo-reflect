@@ -6,42 +6,10 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── Header ───────────────────────────────────────────────
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: LIST_PADDING_H,
-    paddingTop: 12,
-    paddingBottom: 16,
-    gap: 14,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTextWrap: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: "Oswald_700Bold",
-    letterSpacing: 0.5,
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    opacity: 0.5,
-    marginTop: 1,
-  },
-
   // ── Search Bar ───────────────────────────────────────────
   searchWrap: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: LIST_PADDING_H,
     marginBottom: 16,
     borderRadius: 12,
     borderWidth: 1,
@@ -54,14 +22,13 @@ export const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  // ── Section Label ────────────────────────────────────────
+  // ── Section Label (same as the other main tabs) ──────────
   sectionLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 2.5,
-    opacity: 0.45,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
-    marginHorizontal: LIST_PADDING_H,
+    paddingHorizontal: 4,
     marginBottom: 10,
   },
 
@@ -69,7 +36,6 @@ export const styles = StyleSheet.create({
   suggestedWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    paddingHorizontal: 16,
     gap: 8,
   },
   suggestedChip: {
@@ -108,11 +74,9 @@ export const styles = StyleSheet.create({
 
   // ── Result count ─────────────────────────────────────────
   resultCount: {
-    fontSize: 11,
-    opacity: 0.45,
-    marginHorizontal: LIST_PADDING_H,
-    marginBottom: 8,
-    fontStyle: "italic",
+    fontSize: 12,
+    paddingHorizontal: 4,
+    marginBottom: 12,
   },
 
   // ── States ───────────────────────────────────────────────
@@ -140,5 +104,51 @@ export const styles = StyleSheet.create({
   },
   resultList: {
     paddingBottom: 48,
+  },
+
+  // ── Tablet / desktop: sections by book, verses as cards ──
+  sectionList: {
+    gap: 24,
+  },
+  bookSection: {
+    gap: 12,
+  },
+  bookSectionHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 2,
+  },
+  // Book heading: the section label, without its gap below (the rule
+  // beside it lines up with the text)
+  bookSectionLabel: {
+    marginBottom: 0,
+  },
+  bookSectionRule: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  resultCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 16,
+    gap: 8,
+  },
+  resultCardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  resultCardRef: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  resultCardText: {
+    fontSize: 15,
+    lineHeight: 23,
   },
 });

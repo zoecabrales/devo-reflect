@@ -1,5 +1,6 @@
-import { ConcordanceSkeleton } from "@/src/components";
-import { useListPaddingH } from "@/src/utils/responsive";
+import { BentoGrid, ConcordanceSkeleton, PageHeader } from "@/src/components";
+import { desktopPage } from "@/src/styles/desktopPage.styles";
+import { useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     ConcordanceResult,
@@ -15,12 +16,24 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/src/styles/concordance.styles";
 
 const PAGE_SIZE = 10;
+
+/** Tablets and desktop: results as verse cards in sections by book. */
+const WIDE_MIN_WIDTH = 768;
+
+type BookSection = {
+  book: number;
+  label: string;
+  /** All matches in this book (not just the ones loaded so far). */
+  total: number;
+  items: ConcordanceResult[];
+};
 
 // Map numeric book IDs (1-66) to Bible browser book IDs
 const BOOK_ID_MAP: Record<number, string> = {
@@ -45,6 +58,14 @@ export default function Concordance() {
   const router = useRouter();
   const { theme } = useAppTheme();
   const padH = useListPaddingH();
+  const isDesktop = useIsDesktop();
+  const { width } = useWindowDimensions();
+  // Phones keep the plain list; tablets and desktop get sections of cards
+  const wide = isDesktop || width >= WIDE_MIN_WIDTH;
+  // Same frame as the other main tabs: desktop page width, else side padding
+  const frame = isDesktop ? desktopPage.header : { paddingHorizontal: padH };
+  // Side padding inside the results (the desktop frame already pads)
+  const innerPadH = isDesktop ? 0 : padH;
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ConcordanceResult[]>([]);
@@ -81,6 +102,11 @@ export default function Concordance() {
   function handleQueryChange(text: string) {
     setQuery(text);
     runSearch(text);
+  }
+
+  function close() {
+    if (router.canGoBack()) router.back();
+    else router.navigate("/(tabs)/home");
   }
 
   function navigateToVerse(result: ConcordanceResult) {
@@ -144,38 +170,118 @@ export default function Concordance() {
     );
   };
 
-  const visibleResults = sortedResults.slice(0, visibleCount);
-  const hasMore = visibleCount < sortedResults.length;
+  // Wide layouts: books in the order of their best match, each book's verses
+  // together, so loading more only ever grows the last section
+  const bookOrdered = useMemo(() => {
+    if (!wide) return sortedResults;
+    const byBook = new Map<number, ConcordanceResult[]>();
+    for (const r of sortedResults) {
+      const list = byBook.get(r.book);
+      if (list) list.push(r);
+      else byBook.set(r.book, [r]);
+    }
+    return [...byBook.values()].flat();
+  }, [wide, sortedResults]);
+
+  const visibleResults = bookOrdered.slice(0, visibleCount);
+  const hasMore = visibleCount < bookOrdered.length;
+
+  const sections = useMemo(() => {
+    if (!wide) return [] as BookSection[];
+    const totals = new Map<number, number>();
+    for (const r of bookOrdered) totals.set(r.book, (totals.get(r.book) ?? 0) + 1);
+    const out: BookSection[] = [];
+    for (const r of visibleResults) {
+      const last = out[out.length - 1];
+      if (last && last.book === r.book) last.items.push(r);
+      else
+        out.push({
+          book: r.book,
+          label: r.bookLabel,
+          total: totals.get(r.book) ?? 0,
+          items: [r],
+        });
+    }
+    return out;
+  }, [wide, bookOrdered, visibleResults]);
+
+  const loadMore = () => {
+    if (hasMore)
+      setVisibleCount((p) => Math.min(p + PAGE_SIZE, bookOrdered.length));
+  };
+
+  const bookCount = wide ? new Set(results.map((r) => r.book)).size : 0;
+  const resultCount = (
+    <Text
+      style={[
+        styles.resultCount,
+        { marginHorizontal: innerPadH },
+        { color: theme.textSecondary },
+      ]}
+    >
+      {results.length} verse{results.length !== 1 ? "s" : ""} found
+      {wide && bookCount > 0
+        ? ` · ${bookCount} book${bookCount !== 1 ? "s" : ""}`
+        : ""}
+    </Text>
+  );
+
+  const loadingMore = hasMore ? (
+    <View style={{ paddingVertical: 20, alignItems: "center" }}>
+      <ActivityIndicator color={theme.textSecondary} />
+    </View>
+  ) : null;
+
+  /** Tablet / desktop: one verse as a card. */
+  const verseCard = (item: ConcordanceResult) => (
+    <TouchableOpacity
+      style={[
+        styles.resultCard,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+      onPress={() => navigateToVerse(item)}
+      activeOpacity={0.7}
+      accessibilityRole="link"
+      accessibilityLabel={`Open ${item.bookLabel} ${item.chapter}:${item.verse}`}
+    >
+      <View style={styles.resultCardHead}>
+        <Text style={[styles.resultCardRef, { color: theme.text }]}>
+          {item.bookLabel} {item.chapter}:{item.verse}
+        </Text>
+        <Ionicons name="arrow-forward" size={14} color={theme.textSecondary} />
+      </View>
+      <Text style={[styles.resultCardText, { color: theme.text }]}>
+        {highlightQueryText(item.text)}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      {/* Header */}
-      <View style={[styles.header, { paddingHorizontal: padH }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[styles.backBtn, { borderColor: theme.border }]}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.headerTextWrap}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            Biblical Concordance
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-            Search every verse · ASV
-          </Text>
-        </View>
-      </View>
+      <PageHeader
+        title="Biblical Concordance"
+        subtitle="Search every verse · ASV"
+        right={
+          <TouchableOpacity
+            onPress={close}
+            accessibilityRole="button"
+            accessibilityLabel="Close Concordance"
+            hitSlop={10}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={22} color={theme.textSecondary} />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Search bar */}
+      <View style={frame}>
       <View
         style={[
           styles.searchWrap,
-          { marginHorizontal: padH },
           { borderColor: theme.border, backgroundColor: theme.surface },
         ]}
       >
@@ -199,10 +305,15 @@ export default function Concordance() {
           </TouchableOpacity>
         )}
       </View>
+      </View>
 
       {/* Content */}
       {searching ? (
-        <ConcordanceSkeleton />
+        <ConcordanceSkeleton
+          cards={wide}
+          padH={innerPadH}
+          contentStyle={isDesktop && desktopPage.content}
+        />
       ) : searchError ? (
         <View style={styles.centered}>
           <Text style={[styles.emptyText, { color: theme.text }]}>
@@ -221,32 +332,56 @@ export default function Concordance() {
       ) : hasSearched && results.length === 0 ? (
         <View style={styles.centered}>
           <Text style={[styles.emptyText, { color: theme.text }]}>
-            No verses found for "{query}".
+            No verses found for &ldquo;{query}&rdquo;.
           </Text>
         </View>
+      ) : hasSearched && wide ? (
+        // Tablet / desktop: a section per book, its verses as cards
+        <FlatList
+          data={sections}
+          keyExtractor={(sec) => String(sec.book)}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.resultList,
+            styles.sectionList,
+            isDesktop && desktopPage.content,
+          ]}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.2}
+          ListHeaderComponent={resultCount}
+          ListFooterComponent={loadingMore}
+          renderItem={({ item: sec }) => (
+            <View style={[styles.bookSection, { paddingHorizontal: innerPadH }]}>
+              <View style={styles.bookSectionHead}>
+                <Text style={[styles.sectionLabel, styles.bookSectionLabel, { color: theme.textSecondary }]}>
+                  {`${sec.label} · ${sec.total} verse${sec.total !== 1 ? "s" : ""}`}
+                </Text>
+                <View style={[styles.bookSectionRule, { backgroundColor: theme.border }]} />
+              </View>
+              <BentoGrid
+                gap={12}
+                data={sec.items}
+                keyExtractor={(r) => String(r.pk)}
+                spanFor={() => 1}
+                minColumnWidth={300}
+                maxColumns={2}
+                // A lone verse keeps its card size instead of stretching
+                fillRows={false}
+                renderItem={(r) => verseCard(r)}
+              />
+            </View>
+          )}
+        />
       ) : hasSearched ? (
         <FlatList
           data={visibleResults}
           keyExtractor={(item) => String(item.pk)}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.resultList}
-          onEndReached={() => {
-            if (hasMore)
-              setVisibleCount((p) => Math.min(p + PAGE_SIZE, results.length));
-          }}
+          onEndReached={loadMore}
           onEndReachedThreshold={0.2}
-          ListHeaderComponent={
-            <Text style={[styles.resultCount, { marginHorizontal: padH }, { color: theme.textSecondary }]}>
-              {results.length} verse{results.length !== 1 ? "s" : ""} found
-            </Text>
-          }
-          ListFooterComponent={
-            hasMore ? (
-              <View style={{ paddingVertical: 20, alignItems: "center" }}>
-                <ActivityIndicator color={theme.textSecondary} />
-              </View>
-            ) : null
-          }
+          ListHeaderComponent={resultCount}
+          ListFooterComponent={loadingMore}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[
@@ -269,10 +404,11 @@ export default function Concordance() {
       ) : (
         /* Landing state — suggested search terms */
         <>
-          <Text style={[styles.sectionLabel, { marginHorizontal: padH }, { color: theme.text }]}>
+          <View style={frame}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
             Suggested Topics
           </Text>
-          <View style={[styles.suggestedWrap, { paddingHorizontal: padH }]}>
+          <View style={styles.suggestedWrap}>
             {SUGGESTED_TERMS.map((term) => (
               <TouchableOpacity
                 key={term}
@@ -291,6 +427,7 @@ export default function Concordance() {
                 </Text>
               </TouchableOpacity>
             ))}
+          </View>
           </View>
         </>
       )}
