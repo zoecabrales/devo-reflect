@@ -11,6 +11,7 @@ import {
     signOut,
     updatePassword,
     updateProfile,
+    type User,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { BRETHREN_ENABLED } from "@/src/constants/features";
@@ -74,7 +75,26 @@ export async function reloadAndCheckVerified(): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) return false;
   await reload(user);
+  // reload() updates user.emailVerified but not the ID token, whose
+  // email_verified claim is what the Firestore rules (Brethren) check
+  if (user.emailVerified) await user.getIdToken(true);
   return user.emailVerified;
+}
+
+/**
+ * Refreshes the ID token if it still says the email is unverified although
+ * the account is verified (verified on another device or tab, or before the
+ * fix above). Otherwise the Brethren reads are refused until the token
+ * renews itself, up to an hour later.
+ */
+export async function refreshStaleVerifiedToken(user: User): Promise<void> {
+  if (!user.emailVerified) return;
+  try {
+    const { claims } = await user.getIdTokenResult();
+    if (claims.email_verified !== true) await user.getIdToken(true);
+  } catch {
+    // Offline: the token renews itself later
+  }
 }
 
 export async function sendPasswordReset(email: string) {

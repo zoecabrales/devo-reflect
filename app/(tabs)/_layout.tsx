@@ -5,6 +5,7 @@ import { TAB_ACTIVE_COLOR } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     isIdleTimeout,
+    refreshStaleVerifiedToken,
     setLastActiveAt,
     signOutUser,
 } from "@/src/services/auth";
@@ -62,7 +63,8 @@ export default function TabsLayout() {
 
   // Auth state guard
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    let active = true;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       // Hide the native splash in case navigation state was restored directly
       // to (tabs) — prevents the dashboard flashing before the auth redirect.
       // hideSplashOnce() is a no-op if SplashScreen.tsx already called it.
@@ -73,10 +75,16 @@ export default function TabsLayout() {
       } else if (!user.emailVerified) {
         setAuthState("unverified");
       } else {
-        setAuthState("authenticated");
+        // Before any screen reads Brethren data, make sure the token knows
+        // the email is verified (the Firestore rules check it)
+        await refreshStaleVerifiedToken(user);
+        if (active) setAuthState("authenticated");
       }
     });
-    return unsubscribe;
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   // Idle timeout: save timestamp on background, check on foreground
