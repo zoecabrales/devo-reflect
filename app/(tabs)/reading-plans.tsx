@@ -123,12 +123,14 @@ export default function ReadingPlans() {
     setOpenId(null);
   }
 
-  function openChapter(plan: ReadingPlan, c: PlanChapter) {
+  function openChapter(plan: ReadingPlan, c: PlanChapter, day: number) {
     const returnTo = encodeURIComponent(
       `/(tabs)/reading-plans?plan=${plan.id}`,
     );
+    // plan + day: on phones and tablets the reader swipes through that
+    // day's chapters. at: re-opens the chapter even if it was opened last.
     router.push(
-      `/(tabs)/bible-browser?bookId=${c.bookId}&chapter=${c.chapter}&returnTo=${returnTo}`,
+      `/(tabs)/bible-browser?bookId=${c.bookId}&chapter=${c.chapter}&plan=${plan.id}&day=${day}&at=${tapId()}&returnTo=${returnTo}`,
     );
   }
 
@@ -157,7 +159,7 @@ export default function ReadingPlans() {
                     backgroundColor: theme.background,
                   },
                 ]}
-                onPress={() => openChapter(plan, c)}
+                onPress={() => openChapter(plan, c, next)}
                 activeOpacity={0.7}
                 accessibilityRole="link"
                 accessibilityLabel={`Read ${c.bookLabel} ${c.chapter}${read ? " (read)" : ""}`}
@@ -485,7 +487,7 @@ export default function ReadingPlans() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.flex}
-            onPress={() => openChapter(plan, chapters[0])}
+            onPress={() => openChapter(plan, chapters[0], day)}
             activeOpacity={0.6}
           >
             {tile ? (
@@ -854,3 +856,8 @@ const styles = StyleSheet.create({
   },
   modalBtnText: { fontSize: 13, fontWeight: "700" },
 });
+
+/** Changes on every tap, so the Bible re-opens a chapter opened just before. */
+function tapId(): string {
+  return Date.now().toString(36);
+}

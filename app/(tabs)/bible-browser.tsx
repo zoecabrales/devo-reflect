@@ -36,7 +36,20 @@ import {
   ShareTarget,
   ShareWithConnectionsModal,
 } from "@/src/features/connections/ShareWithConnections";
-import { recordChapterRead } from "@/src/services/readingPlans";
+import {
+  chapterKey,
+  formatReading,
+  getPlan,
+  loadPlanProgress,
+  PlanChapter,
+  planSchedule,
+  recordChapterRead,
+} from "@/src/services/readingPlans";
+import { ChapterSwipe } from "@/src/features/bible/ChapterSwipe";
+import {
+  ChapterFooterNav,
+  PlanDayEndCard,
+} from "@/src/features/bible/ChapterNav";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -149,6 +162,19 @@ function HighlightedVerseText({
   );
 }
 
+/** The plan day a chapter was opened from, if the params name a valid one. */
+function planFromParams(
+  at: string | undefined,
+  planId: string | undefined,
+  day: string | undefined,
+): { at: string | undefined; planId: string | null; day: number } {
+  const d = day ? parseInt(day, 10) : NaN;
+  const plan = planId ? getPlan(planId) : undefined;
+  return plan && !isNaN(d) && d >= 0 && d < plan.days
+    ? { at, planId: plan.id, day: d }
+    : { at, planId: null, day: 0 };
+}
+
 export default function BibleBrowser() {
   const router = useRouter();
   const {
@@ -165,6 +191,9 @@ export default function BibleBrowser() {
     forDate: forDateParam,
     forDateId,
     returnTo,
+    plan: planParam,
+    day: dayParam,
+    at: openedAt,
   } = useLocalSearchParams<{
     collectionId?: string;
     bookId?: string;
@@ -179,7 +208,24 @@ export default function BibleBrowser() {
     forDate?: string; // "YYYY-MM-DD" when opened from a Growth calendar day
     forDateId?: string; // changes per calendar tap
     returnTo?: string; // screen to go back to, e.g. a reading plan
+    plan?: string; // reading plan id, when opened from a plan's day
+    day?: string; // that plan day (0-based)
+    at?: string; // changes per tap, so re-opening the same chapter re-fires
   }>();
+
+  // Reading plan day being read: swipes follow its chapters, then show the
+  // day's end. Re-read from the params on every tap from the plan; "Continue
+  // to Day N" moves it on. State derived from params, updated during render.
+  const [planRead, setPlanRead] = useState(() =>
+    planFromParams(openedAt, planParam, dayParam),
+  );
+  if (planRead.at !== openedAt) {
+    setPlanRead(planFromParams(openedAt, planParam, dayParam));
+  }
+  // Past the day's last chapter: the day-end card shows instead of verses
+  const [planEnd, setPlanEnd] = useState(false);
+  // Chapters of the day not opened yet (day-end card); null while loading
+  const [planMissing, setPlanMissing] = useState<PlanChapter[] | null>(null);
 
   // Calendar day the next bookmark is for (set from Growth's calendar).
   // Re-armed whenever a new forDateId arrives; cleared after one bookmark or
@@ -312,6 +358,7 @@ export default function BibleBrowser() {
     contextParam,
     highlightParam,
     underlineParam,
+    openedAt,
   ]);
 
   // Clear underlines when user starts searching
@@ -381,6 +428,7 @@ export default function BibleBrowser() {
     setBook(b);
     setChapter(ch);
     setScreen("verses");
+    setPlanEnd(false);
     setLoading(true);
     setError(false);
     setVerses([]);
@@ -768,6 +816,91 @@ export default function BibleBrowser() {
   const prevChapter = neighbourChapter(-1);
   const nextChapter = neighbourChapter(1);
 
+  // ── Phones / tablets: turning chapters (swipe or the footer buttons) ──
+  // Opened from a reading plan, steps follow that day's chapters (Psalms &
+  // Proverbs jumps between books), then the day-end card. Otherwise they
+  // follow the Bible's order.
+  const readingPlan = planRead.planId ? getPlan(planRead.planId) : undefined;
+  const planDay = readingPlan
+    ? planSchedule(readingPlan.id)[planRead.day]
+    : null;
+  const planIndex =
+    planDay && book && chapter
+      ? planDay.findIndex((c) => c.bookId === book.id && c.chapter === chapter)
+      : -1;
+  const inPlan = planDay !== null && planIndex >= 0;
+
+  function openPlanChapter(c: PlanChapter) {
+    const b = BIBLE_BOOKS.find((x) => x.id === c.bookId);
+    if (b) openChapter(b, c.chapter);
+  }
+
+  function showPlanEnd() {
+    if (!readingPlan || !planDay) return;
+    setPlanEnd(true);
+    setPlanMissing(null);
+    const day = planRead.day;
+    // Waits for the chapter just opened to be recorded
+    loadPlanProgress(uid)
+      .then((all) => {
+        const p = all[readingPlan.id];
+        setPlanMissing(
+          p?.completed[day]
+            ? []
+            : planDay.filter(
+                (c) => !p?.chaptersRead[chapterKey(c.bookId, c.chapter)],
+              ),
+        );
+      })
+      .catch(() => setPlanMissing([]));
+  }
+
+  function continueToNextDay() {
+    if (!readingPlan) return;
+    const day = planRead.day + 1;
+    const chapters = planSchedule(readingPlan.id)[day];
+    if (!chapters?.length) return;
+    setPlanRead((p) => ({ ...p, day }));
+    openPlanChapter(chapters[0]);
+  }
+
+  // Where each direction leads, and its label for the footer buttons
+  const label = (c: { b: BibleBook; ch: number }) => `${c.b.label} ${c.ch}`;
+  const planLabel = (c: PlanChapter) => `${c.bookLabel} ${c.chapter}`;
+  const nextLabel: string | null = inPlan
+    ? planIndex < planDay!.length - 1
+      ? planLabel(planDay![planIndex + 1])
+      : `Finish Day ${planRead.day + 1}`
+    : nextChapter
+      ? label(nextChapter)
+      : null;
+  const prevLabel: string | null = planEnd
+    ? ""
+    : inPlan
+      ? planIndex > 0
+        ? planLabel(planDay![planIndex - 1])
+        : null
+      : prevChapter
+        ? label(prevChapter)
+        : null;
+  const canNext = nextLabel !== null && !planEnd;
+  const canPrev = prevLabel !== null;
+
+  /** Turns to the next (1) or previous (-1) chapter, as labelled above. */
+  function turn(dir: 1 | -1) {
+    if (dir === -1 && planEnd) {
+      // Back from the day-end card to the last chapter (still loaded)
+      setPlanEnd(false);
+    } else if (inPlan) {
+      const i = planIndex + dir;
+      if (i >= 0 && i < planDay!.length) openPlanChapter(planDay![i]);
+      else if (i === planDay!.length) showPlanEnd();
+    } else {
+      const to = dir === 1 ? nextChapter : prevChapter;
+      if (to) openChapter(to.b, to.ch);
+    }
+  }
+
   const contextFrom = contextVerses
     ? Math.max(1, Math.min(...contextVerses) - CONTEXT_SPAN)
     : null;
@@ -920,14 +1053,20 @@ export default function BibleBrowser() {
       ? (activeCollection?.label ?? "Bible")
       : screen === "chapters"
         ? book!.label
-        : `${book!.label} ${chapter}`;
+        : planEnd
+          ? `Day ${planRead.day + 1}`
+          : `${book!.label} ${chapter}`;
 
   const headerSubtitle =
     screen === "books"
       ? activeCollection
         ? activeCollection.subtitle
         : `${version.label} · 66 Books`
-      : null;
+      : screen === "verses" && readingPlan && (inPlan || planEnd)
+        ? planEnd
+          ? readingPlan.title
+          : `Day ${planRead.day + 1} · ${planIndex + 1} of ${planDay!.length}`
+        : null;
 
   const sections = [
     {
@@ -1620,12 +1759,45 @@ export default function BibleBrowser() {
             }
           />
         ) : (
-          <ScrollView
-            ref={scrollViewRef}
-            contentContainerStyle={[styles.versesList, { paddingHorizontal: padH }]}
+          // Phones and tablets: swipe left / right to turn chapters
+          <ChapterSwipe
+            enabled={!selection}
+            onNext={canNext ? () => turn(1) : undefined}
+            onPrev={canPrev ? () => turn(-1) : undefined}
           >
-            {verses.map((v) => renderVerse(v))}
-          </ScrollView>
+            {planEnd && readingPlan ? (
+              <PlanDayEndCard
+                theme={theme}
+                planTitle={readingPlan.title}
+                day={planRead.day}
+                missing={planMissing}
+                nextReading={(() => {
+                  const next = planSchedule(readingPlan.id)[planRead.day + 1];
+                  return next?.length ? formatReading(next) : null;
+                })()}
+                onOpenChapter={openPlanChapter}
+                onBack={goBack}
+                onContinue={continueToNextDay}
+                padH={padH}
+              />
+            ) : (
+              <ScrollView
+                ref={scrollViewRef}
+                contentContainerStyle={[styles.versesList, { paddingHorizontal: padH }]}
+              >
+                {verses.map((v) => renderVerse(v))}
+                {!searchVisible && (
+                  <ChapterFooterNav
+                    theme={theme}
+                    prevLabel={canPrev ? prevLabel : null}
+                    nextLabel={canNext ? nextLabel : null}
+                    onPrev={() => turn(-1)}
+                    onNext={() => turn(1)}
+                  />
+                )}
+              </ScrollView>
+            )}
+          </ChapterSwipe>
         ))}
 
       {/* Select mode: actions for the selected verses */}
