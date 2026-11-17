@@ -192,6 +192,47 @@ export async function refreshReminderSlot(uid: string): Promise<void> {
   }
 }
 
+// ── Test ─────────────────────────────────────────────────────────────────────
+
+export interface TestResult {
+  devices: number;
+  sent: number;
+  failed: { status: number | null; reason: string }[];
+}
+
+/** Sends a test notification to this account's devices; the server's report. */
+export async function sendTestNotification(): Promise<TestResult> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Not signed in.");
+  const res = await fetch(`${API_BASE}/api/notify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${await user.getIdToken()}`,
+    },
+    body: JSON.stringify({ type: "test" }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error ?? `Server error ${res.status}`);
+  return data as TestResult;
+}
+
+/** What a test result means, in words. */
+export function describeTestResult(r: TestResult): string {
+  if (r.devices === 0) {
+    return "No devices are set up for your notifications. Turn on a notification above on this device first.";
+  }
+  if (r.sent === r.devices) {
+    return r.devices === 1
+      ? "Sent to your device. It should appear in a few seconds."
+      : `Sent to your ${r.devices} devices. It should appear in a few seconds.`;
+  }
+  const reasons = r.failed
+    .map((f) => `${f.status ?? "no status"}: ${f.reason}`)
+    .join("\n");
+  return `Sent to ${r.sent} of ${r.devices} devices. The push service refused the rest:\n${reasons}`;
+}
+
 // ── Brethren ─────────────────────────────────────────────────────────────────
 
 /**

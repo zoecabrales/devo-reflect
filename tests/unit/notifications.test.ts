@@ -59,7 +59,7 @@ jest.mock("@/api/_lib/admin", () => ({
 jest.mock("@/api/_lib/push", () => ({
   sendToUser: async (uid: string, m: { title: string; body: string }) => {
     mockSent.push({ uid, title: m.title, body: m.body });
-    return 1;
+    return { devices: 1, sent: 1, failed: [] };
   },
   notificationSettings: async (uid: string) =>
     mockStore.get(`users/${uid}/notifications/settings`) ?? {},
@@ -234,5 +234,30 @@ describe("/api/notify", () => {
     });
     expect((await notify("alice", { type: "request", id: "alice_nobody@example.com" })).status).toBe(200);
     expect(mockSent).toHaveLength(0);
+  });
+});
+
+describe("test notifications", () => {
+  const { POST } = require("@/api/notify") as typeof import("@/api/notify");
+  const { describeTestResult } = require("@/src/services/notifications") as typeof import("@/src/services/notifications");
+
+  it("sends to the caller's own devices and reports back", async () => {
+    const res = await POST(new Request("https://example.com/api/notify", {
+      method: "POST",
+      headers: { authorization: "Bearer alice" },
+      body: JSON.stringify({ type: "test" }),
+    }));
+    expect(await res.json()).toEqual({ devices: 1, sent: 1, failed: [] });
+    expect(mockSent).toEqual([
+      expect.objectContaining({ uid: "alice", title: "Notifications are working" }),
+    ]);
+  });
+
+  it("explains the result in words", () => {
+    expect(describeTestResult({ devices: 0, sent: 0, failed: [] })).toMatch(/No devices/);
+    expect(describeTestResult({ devices: 1, sent: 1, failed: [] })).toMatch(/^Sent to your device/);
+    expect(
+      describeTestResult({ devices: 2, sent: 1, failed: [{ status: 403, reason: "BadJwtToken" }] }),
+    ).toBe("Sent to 1 of 2 devices. The push service refused the rest:\n403: BadJwtToken");
   });
 });

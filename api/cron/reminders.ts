@@ -54,7 +54,7 @@ export async function GET(request: Request): Promise<Response> {
     }
     // Mark it first, so an overlapping run doesn't send it again
     await doc.ref.update({ lastReminderDate: date });
-    if ((await sendToUser(uid, reminderMessage(uid))) > 0) sent++;
+    if ((await sendToUser(uid, reminderMessage(uid))).sent > 0) sent++;
   }
   return json(200, { due: due.size, sent, skipped });
 }

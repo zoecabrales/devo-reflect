@@ -1,4 +1,5 @@
 // POST /api/notify  { type: "request" | "accepted" | "share", id }
+//                   { type: "test" }
 //
 // Called by the app right after a Brethren action, to notify the other
 // person. The server checks the action really happened and was done by the
@@ -6,6 +7,9 @@
 // sends each notification only once, and only to people who turned on
 // Brethren notifications. It always answers { ok: true } so the caller
 // can't tell whether an email address has an account.
+//
+// "test" sends a test notification to the caller's own devices and reports
+// the result (Settings → Notifications → Send a test notification).
 
 import { formatVerseNumbers } from "../src/utils/verseNumbers";
 import { adminAuth, adminDb, callerUid } from "./_lib/admin";
@@ -90,6 +94,25 @@ export async function POST(request: Request): Promise<Response> {
     return fail(400, "bad request");
   }
   const { type, id } = body;
+
+  if (type === "test") {
+    try {
+      const result = await sendToUser(uid, {
+        title: "Notifications are working",
+        body: "This is a test from Devo Reflect. You're all set!",
+        url: "/settings",
+        tag: "test",
+      });
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (e) {
+      console.error(e);
+      return fail(500, String((e as Error).message ?? e).slice(0, 200));
+    }
+  }
+
   if (
     (type !== "request" && type !== "accepted" && type !== "share") ||
     typeof id !== "string" ||
