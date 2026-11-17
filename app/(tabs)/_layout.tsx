@@ -3,12 +3,7 @@ import { DesktopTopBar } from "@/src/components/desktop/DesktopTopBar";
 import { MobileTopBar } from "@/src/components/mobile/MobileTopBar";
 import { TAB_ACTIVE_COLOR } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
-import {
-    isIdleTimeout,
-    refreshStaleVerifiedToken,
-    setLastActiveAt,
-    signOutUser,
-} from "@/src/services/auth";
+import { refreshStaleVerifiedToken } from "@/src/services/auth";
 import { auth } from "@/src/services/firebase";
 import {
     DESKTOP_CONTENT_ZOOM,
@@ -17,10 +12,10 @@ import {
 } from "@/src/utils/responsive";
 import { hideSplashOnce } from "@/src/utils/splashGuard";
 import { Ionicons } from "@expo/vector-icons";
-import { Redirect, Tabs, usePathname, useRouter } from "expo-router";
+import { Redirect, Tabs, usePathname } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
-import { useEffect, useRef, useState } from "react";
-import { AppState, AppStateStatus, Text, View, ViewStyle } from "react-native";
+import { useEffect, useState } from "react";
+import { Text, View, ViewStyle } from "react-native";
 import {
     SafeAreaInsetsContext,
     useSafeAreaInsets,
@@ -44,9 +39,7 @@ type AuthState = "loading" | "unauthenticated" | "unverified" | "authenticated";
 
 export default function TabsLayout() {
   const [authState, setAuthState] = useState<AuthState>("loading");
-  const router = useRouter();
   const pathname = usePathname();
-  const appStateRef = useRef(AppState.currentState);
   const { theme } = useAppTheme();
   // Desktop web: top bar + left sidebar instead of the bottom tab bar
   const isDesktop = useIsDesktop();
@@ -87,38 +80,6 @@ export default function TabsLayout() {
       unsubscribe();
     };
   }, []);
-
-  // Idle timeout: save timestamp on background, check on foreground
-  useEffect(() => {
-    // Cold-start check — handle case where app was left for >10 min then killed and reopened
-    isIdleTimeout().then((timedOut) => {
-      if (timedOut) {
-        signOutUser().then(() => router.replace("/(auth)/sign-in"));
-      }
-    });
-
-    const subscription = AppState.addEventListener(
-      "change",
-      async (nextState: AppStateStatus) => {
-        const prev = appStateRef.current;
-        appStateRef.current = nextState;
-
-        if (nextState === "background" || nextState === "inactive") {
-          // Save the moment the user left the app
-          await setLastActiveAt();
-        } else if (nextState === "active" && prev !== "active") {
-          // User returned — check if they were away for more than 10 minutes
-          const timedOut = await isIdleTimeout();
-          if (timedOut) {
-            await signOutUser();
-            router.replace("/(auth)/sign-in");
-          }
-        }
-      },
-    );
-
-    return () => subscription.remove();
-  }, [router]);
 
   if (authState === "loading") return null;
   if (authState === "unauthenticated")
