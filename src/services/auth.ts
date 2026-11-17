@@ -16,6 +16,7 @@ import {
 import { auth } from "./firebase";
 import { BRETHREN_ENABLED } from "@/src/constants/features";
 import { deleteConnectionData } from "./connections";
+import { turnOffThisDevice } from "./notifications";
 import { createUserProfile, deleteUserData } from "./firestore";
 
 // Left on devices by the old 10-minute idle sign-out (removed: people now
@@ -49,6 +50,10 @@ export async function signInEmail(email: string, password: string) {
 
 export async function signOutUser() {
   await AsyncStorage.removeItem(LAST_ACTIVE_KEY).catch(() => {});
+  // Stop this device getting this account's notifications, so the next
+  // person to use it doesn't
+  const uid = auth.currentUser?.uid;
+  if (uid) await turnOffThisDevice(uid).catch(() => {});
   return signOut(auth);
 }
 
