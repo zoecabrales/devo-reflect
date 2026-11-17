@@ -4,6 +4,7 @@ import { Theme } from "@/src/constants/theme";
 import { auth } from "@/src/services/firebase";
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
+  describeTestResult,
   isThisDeviceOn,
   loadNotificationSettings,
   NotificationSettings as Settings,
@@ -11,6 +12,7 @@ import {
   pushSupport,
   PushSupport,
   saveNotificationSettings,
+  sendTestNotification,
   turnOnThisDevice,
 } from "@/src/services/notifications";
 import { styles } from "@/src/styles/settings.styles";
@@ -42,6 +44,7 @@ export function NotificationSettings({ theme }: { theme: Theme }) {
   const [support, setSupport] = useState<PushSupport>("unsupported");
   const [deviceOn, setDeviceOn] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -82,6 +85,20 @@ export function NotificationSettings({ theme }: { theme: Theme }) {
       showAlert("Couldn't Save", "Please check your connection and try again.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function sendTest() {
+    setTesting(true);
+    try {
+      showAlert("Test Notification", describeTestResult(await sendTestNotification()));
+    } catch (e) {
+      showAlert(
+        "Test Notification",
+        `Couldn't send the test: ${(e as Error).message}`,
+      );
+    } finally {
+      setTesting(false);
     }
   }
 
@@ -165,6 +182,23 @@ export function NotificationSettings({ theme }: { theme: Theme }) {
                   )}
                 </TouchableOpacity>
               )
+            )}
+            {(anyOn || deviceOn) && (
+              <TouchableOpacity
+                style={[local.deviceBtn, { borderColor: theme.border }]}
+                onPress={sendTest}
+                disabled={testing}
+                accessibilityRole="button"
+                activeOpacity={0.7}
+              >
+                {testing ? (
+                  <ActivityIndicator size="small" color={theme.text} />
+                ) : (
+                  <Text style={[local.deviceBtnText, { color: theme.text }]}>
+                    Send a test notification
+                  </Text>
+                )}
+              </TouchableOpacity>
             )}
           </>
         )}

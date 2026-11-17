@@ -29,16 +29,25 @@ function setVapid() {
   vapidSet = true;
 }
 
-/** Sends to all of a person's devices; returns how many accepted it. */
-export async function sendToUser(uid: string, message: PushMessage): Promise<number> {
+export interface SendResult {
+  /** Devices registered for the person */
+  devices: number;
+  /** Devices whose push service accepted the notification */
+  sent: number;
+  /** Refusals: the push service's status code and reason */
+  failed: { status: number | null; reason: string }[];
+}
+
+/** Sends to all of a person's devices. */
+export async function sendToUser(uid: string, message: PushMessage): Promise<SendResult> {
   const devices = await adminDb()
     .collection("users")
     .doc(uid)
     .collection("push-subscriptions")
     .get();
-  if (devices.empty) return 0;
+  const result: SendResult = { devices: devices.size, sent: 0, failed: [] };
+  if (devices.empty) return result;
   setVapid();
-  let sent = 0;
   await Promise.all(
     devices.docs.map(async (device) => {
       const d = device.data();
@@ -47,16 +56,19 @@ export async function sendToUser(uid: string, message: PushMessage): Promise<num
         await webpush.sendNotification(d.subscription, JSON.stringify(message), {
           TTL: 60 * 60 * 12,
         });
-        sent++;
+        result.sent++;
       } catch (e) {
-        const status = (e as { statusCode?: number }).statusCode;
+        const err = e as { statusCode?: number; body?: string; message?: string };
+        const status = err.statusCode ?? null;
+        const reason = String(err.body || err.message || "unknown").slice(0, 200);
+        result.failed.push({ status, reason });
         // The browser unsubscribed or the subscription expired: forget it
         if (status === 404 || status === 410) await device.ref.delete();
-        else console.error("web push failed", status);
+        else console.error("web push failed", status, reason);
       }
     }),
   );
-  return sent;
+  return result;
 }
 
 /** A person's notification settings (users/{uid}/notifications/settings). */
