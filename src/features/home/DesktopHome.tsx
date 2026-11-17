@@ -74,7 +74,8 @@ export function DesktopHome({
             ) : (
               <>
                 <Text style={[styles.verseRef, { color: theme.text }]}>
-                  {verse.bookLabel} {verse.chapter}:{verse.verse}
+                  {verse.bookLabel} {verse.chapter}:{verse.verse} ·{" "}
+                  {verse.version}
                 </Text>
                 <Text style={[styles.verseText, { color: theme.text }]}>
                   {verse.text}

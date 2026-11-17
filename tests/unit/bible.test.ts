@@ -202,3 +202,51 @@ describe("chosen version", () => {
     expect((await freshBible().getChosenVersion()).id).toBe("en-asv");
   });
 });
+
+describe("Verse of the Day version", () => {
+  const bible = require("@/src/services/bible") as typeof import("@/src/services/bible");
+  const byId = (id: string) => bible.BIBLE_VERSIONS.find((v) => v.id === id)!;
+  const fetchMock = jest.fn();
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    fetchMock.mockReset();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    bible.setChosenVersion(byId("en-asv"));
+  });
+
+  afterAll(() => {
+    (auth as { currentUser: unknown }).currentUser = null;
+  });
+
+  it("is in the ASV by default", async () => {
+    expect((await bible.fetchDailyVerse("user-a")).version).toBe("ASV");
+  });
+
+  it("follows the version chosen in the reader", async () => {
+    bible.setChosenVersion(byId("en-kjv"));
+    const verse = await bible.fetchDailyVerse("user-a");
+    expect(verse.version).toBe("KJV");
+    const kjv = await bible.fetchChapter(verse.book, verse.chapter, "en-kjv");
+    expect(verse.text).toBe(kjv.find((v) => v.verse === verse.verse)!.text);
+  });
+
+  it("uses the ASV while the ESV can't be reached, then the ESV next time", async () => {
+    (auth as { currentUser: unknown }).currentUser = {
+      getIdToken: async () => "test-token",
+    };
+    bible.setChosenVersion(byId("esv"));
+
+    fetchMock.mockRejectedValueOnce(new TypeError("Network request failed"));
+    expect((await bible.fetchDailyVerse("user-a")).version).toBe("ASV");
+
+    const ref = bible.getDailyVerseRef("user-a");
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: { get: () => "application/json" },
+      json: async () => ({ verses: [{ verse: ref.verse, text: "ESV text" }] }),
+    });
+    const verse = await bible.fetchDailyVerse("user-a");
+    expect(verse).toMatchObject({ version: "ESV", text: "ESV text" });
+  });
+});

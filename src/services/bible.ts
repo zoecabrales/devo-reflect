@@ -419,31 +419,52 @@ export function getDailyVerseRef(uid: string, date = getPHTDateString()) {
 }
 
 /**
- * Returns the signed-in account's Verse of the Day, cached on the device for
- * the rest of the day (PHT).
+ * Returns the signed-in account's Verse of the Day in the version the reader
+ * last used (ASV if that version can't be reached, e.g. the ESV offline),
+ * cached on the device for the rest of the day (PHT).
  */
 export async function fetchDailyVerse(uid: string): Promise<BibleVerse> {
   const today = getPHTDateString();
+  const chosen = await getChosenVersion();
 
-  // Return the cached verse if it is today's, for this account
+  // Return the cached verse if it is today's, for this account and version
   try {
     const raw = await AsyncStorage.getItem(DAILY_VERSE_KEY);
     if (raw) {
       const cached: CachedDailyVerse = JSON.parse(raw);
-      if (cached.date === today && cached.uid === uid) return cached.verse;
+      if (
+        cached.date === today &&
+        cached.uid === uid &&
+        cached.verse.version === chosen.label
+      ) {
+        return cached.verse;
+      }
     }
   } catch {
     // Cache unreadable — fall through
   }
 
   const ref = getDailyVerseRef(uid, today);
-  const text = loadChapter(BIBLE_VERSION, ref.book, ref.chapter)[ref.verse - 1];
-  if (!text) {
-    throw new Error(`Verse not found: ${ref.bookLabel} ${ref.chapter}:${ref.verse}`);
+  let verse: BibleVerse | null = null;
+  if (chosen.id !== BIBLE_VERSION) {
+    try {
+      const verses = await fetchChapter(ref.book, ref.chapter, chosen.id);
+      const text = verses.find((v) => v.verse === ref.verse)?.text;
+      if (text) verse = { ...ref, text, version: chosen.label };
+    } catch {
+      // Not available right now (e.g. offline): use the ASV below
+    }
   }
-  const verse: BibleVerse = { ...ref, text, version: "ASV" };
+  if (!verse) {
+    const text = loadChapter(BIBLE_VERSION, ref.book, ref.chapter)[ref.verse - 1];
+    if (!text) {
+      throw new Error(`Verse not found: ${ref.bookLabel} ${ref.chapter}:${ref.verse}`);
+    }
+    verse = { ...ref, text, version: "ASV" };
+  }
 
-  // Keep for the rest of today
+  // Keep for the rest of today. An ASV stand-in is replaced by the chosen
+  // version next time, as its version won't match.
   try {
     await AsyncStorage.setItem(
       DAILY_VERSE_KEY,

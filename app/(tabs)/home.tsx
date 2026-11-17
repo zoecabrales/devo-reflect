@@ -6,6 +6,7 @@ import {
     BibleCollection,
     BibleVerse,
     fetchDailyVerse,
+    getChosenVersion,
     loadReadingPosition,
     ReadingPosition,
 } from "@/src/services/bible";
@@ -447,7 +448,13 @@ function BookmarkBadgeCard({ count, theme }: { count: number; theme: Theme }) {
   );
 }
 
-function BrowseBibleCard({ theme }: { theme: Theme }) {
+function BrowseBibleCard({
+  theme,
+  versionLabel,
+}: {
+  theme: Theme;
+  versionLabel: string;
+}) {
   const router = useRouter();
   return (
     <TouchableOpacity
@@ -466,7 +473,7 @@ function BrowseBibleCard({ theme }: { theme: Theme }) {
           Read the Word
         </Text>
         <Text style={[styles.browseSubtitle, { color: theme.textSecondary }]}>
-          66 books · ASV
+          66 books · {versionLabel}
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
@@ -578,6 +585,8 @@ export default function Home() {
   );
 
   const uid = user?.uid ?? "";
+  // The version the reader last used, shown on the "Read the Word" card
+  const [versionLabel, setVersionLabel] = useState("ASV");
 
   const loadVerse = useCallback(
     async (isRefresh = false) => {
@@ -601,6 +610,7 @@ export default function Home() {
   useFocusEffect(
     useCallback(() => {
       loadVerse();
+      getChosenVersion().then((v) => setVersionLabel(v.label));
       loadReadingPosition().then(setReadingPosition);
       loadBookmarks(uid).then((bms) => setBookmarkCount(bms.length));
       // Only the desktop layout shows the weekly journal count
@@ -682,7 +692,7 @@ export default function Home() {
         <Text style={[styles.quickAccessLabel, { color: theme.text }]}>
           Quick Access
         </Text>
-        <BrowseBibleCard theme={theme} />
+        <BrowseBibleCard theme={theme} versionLabel={versionLabel} />
         {readingPosition && (
           <ResumeReadingCard position={readingPosition} theme={theme} />
         )}
