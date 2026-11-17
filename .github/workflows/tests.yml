@@ -28,8 +28,12 @@ jobs:
 
       - run: npm ci
 
+      # Expo writes this file on `expo start` and it isn't committed; it
+      # loads Expo's types (e.g. `hovered` on web Pressables)
       - name: Type check
-        run: npm run typecheck
+        run: |
+          echo '/// <reference types="expo/types" />' > expo-env.d.ts
+          npm run typecheck
 
       - name: Unit tests
         run: npm test
