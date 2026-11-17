@@ -62,7 +62,7 @@ export const BIBLE_VERSIONS: BibleVersion[] = [
   {
     id: "esv",
     label: "ESV",
-    description: "English Standard Version · needs internet",
+    description: "English Standard Version",
     online: true,
     copyright:
       "Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.",
@@ -70,7 +70,7 @@ export const BIBLE_VERSIONS: BibleVersion[] = [
   {
     id: "nasb",
     label: "NASB",
-    description: "New American Standard Bible (1995) · needs internet",
+    description: "New American Standard Bible (1995)",
     online: true,
     viaApiBible: true,
     copyright:
@@ -79,7 +79,7 @@ export const BIBLE_VERSIONS: BibleVersion[] = [
   {
     id: "nkjv",
     label: "NKJV",
-    description: "New King James Version · needs internet",
+    description: "New King James Version",
     online: true,
     viaApiBible: true,
     copyright:
@@ -88,7 +88,7 @@ export const BIBLE_VERSIONS: BibleVersion[] = [
   {
     id: "nlt",
     label: "NLT",
-    description: "New Living Translation · needs internet",
+    description: "New Living Translation",
     online: true,
     viaApiBible: true,
     copyright:

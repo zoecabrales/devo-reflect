@@ -135,6 +135,10 @@ export const styles = StyleSheet.create({
     flex: 1,
     opacity: 0.55,
   },
+  // Space above the second group in the version picker
+  versionGroupSpaced: {
+    marginTop: 18,
+  },
   // Publisher's notice under a licensed version's chapter (e.g. ESV)
   versionCopyright: {
     fontSize: 11,
