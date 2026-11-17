@@ -8,6 +8,7 @@ import {
     BibleVersion,
     ChapterVerse,
     fetchChapter,
+    OnlineChapterError,
     saveReadingPosition,
 } from "@/src/services/bible";
 import {
@@ -259,7 +260,8 @@ export default function BibleBrowser() {
   const [chapter, setChapter] = useState<number | null>(null);
   const [verses, setVerses] = useState<ChapterVerse[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  // false, or why the chapter didn't load ("offline" only for online versions)
+  const [error, setError] = useState<false | "offline" | "unavailable">(false);
   const [version, setVersion] = useState<BibleVersion>(BIBLE_VERSIONS[0]);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [highlights, setHighlights] = useState<Map<string, string>>(new Map());
@@ -489,8 +491,8 @@ export default function BibleBrowser() {
         bookLabel: b.label,
         chapter: ch,
       });
-    } catch {
-      setError(true);
+    } catch (e) {
+      setError(e instanceof OnlineChapterError ? e.reason : "unavailable");
     } finally {
       setLoading(false);
     }
@@ -1710,7 +1712,11 @@ export default function BibleBrowser() {
         ) : error ? (
           <View style={styles.centered}>
             <Text style={[styles.emptyText, { color: theme.text }]}>
-              Could not load this chapter.{"\n"}Check your connection.
+              {!version.online
+                ? "Could not load this chapter.\nCheck your connection."
+                : error === "offline"
+                  ? `The ${version.label} needs an internet connection.\nCheck your connection and try again.`
+                  : `The ${version.label} isn't available right now.\nPlease try again later.`}
             </Text>
             <TouchableOpacity
               style={[styles.retryBtn, { backgroundColor: theme.primary }]}
@@ -1723,6 +1729,7 @@ export default function BibleBrowser() {
             </TouchableOpacity>
           </View>
         ) : isDesktop ? (
+          <View style={{ flex: 1 }}>
           <BookSpread
             items={verses}
             keyOf={(v) => v.verse}
@@ -1758,6 +1765,17 @@ export default function BibleBrowser() {
                 : undefined
             }
           />
+          {version.copyright && (
+            <Text
+              style={[
+                styles.versionCopyright,
+                { color: theme.textSecondary, marginHorizontal: bookInset },
+              ]}
+            >
+              {version.copyright}
+            </Text>
+          )}
+          </View>
         ) : (
           // Phones and tablets: swipe left / right to turn chapters
           <ChapterSwipe
@@ -1786,6 +1804,16 @@ export default function BibleBrowser() {
                 contentContainerStyle={[styles.versesList, { paddingHorizontal: padH }]}
               >
                 {verses.map((v) => renderVerse(v))}
+                {version.copyright && (
+                  <Text
+                    style={[
+                      styles.versionCopyright,
+                      { color: theme.textSecondary },
+                    ]}
+                  >
+                    {version.copyright}
+                  </Text>
+                )}
                 {!searchVisible && (
                   <ChapterFooterNav
                     theme={theme}
