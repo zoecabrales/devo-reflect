@@ -8,8 +8,10 @@ import {
     BibleVersion,
     ChapterVerse,
     fetchChapter,
+    getChosenVersion,
     OnlineChapterError,
     saveReadingPosition,
+    setChosenVersion,
 } from "@/src/services/bible";
 import {
     addBookmark,
@@ -266,6 +268,10 @@ export default function BibleBrowser() {
   // false, or why the chapter didn't load ("offline" only for online versions)
   const [error, setError] = useState<false | "offline" | "unavailable">(false);
   const [version, setVersion] = useState<BibleVersion>(BIBLE_VERSIONS[0]);
+  // Start in the version last used on this device
+  useEffect(() => {
+    getChosenVersion().then(setVersion);
+  }, []);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [highlights, setHighlights] = useState<Map<string, string>>(new Map());
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
@@ -388,7 +394,10 @@ export default function BibleBrowser() {
     try {
       const [data, savedHighlights, savedBookmarks, underlines] =
         await Promise.all([
-          fetchChapter(b.id, ch, (ver ?? version).id),
+          // The version just picked, else the one remembered on this device
+          (ver ? Promise.resolve(ver) : getChosenVersion()).then((v) =>
+            fetchChapter(b.id, ch, v.id),
+          ),
           loadHighlights(),
           loadBookmarks(uid),
           loadUnderlines(),
@@ -1323,6 +1332,7 @@ export default function BibleBrowser() {
               onPress={() => {
                 setPickerVisible(false);
                 setVersion(v);
+                setChosenVersion(v);
                 // Re-fetch current chapter in the new version
                 if (screen === "verses" && book && chapter) {
                   openChapter(book, chapter, v);

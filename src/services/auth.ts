@@ -18,23 +18,10 @@ import { BRETHREN_ENABLED } from "@/src/constants/features";
 import { deleteConnectionData } from "./connections";
 import { createUserProfile, deleteUserData } from "./firestore";
 
+// Left on devices by the old 10-minute idle sign-out (removed: people now
+// stay signed in until they sign out). Cleared on sign-out and account
+// deletion so it doesn't linger.
 const LAST_ACTIVE_KEY = "@last_active_at";
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-
-export async function setLastActiveAt(): Promise<void> {
-  await AsyncStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
-}
-
-export async function clearLastActiveAt(): Promise<void> {
-  await AsyncStorage.removeItem(LAST_ACTIVE_KEY);
-}
-
-/** Returns true if the user has been idle for more than 10 minutes. */
-export async function isIdleTimeout(): Promise<boolean> {
-  const raw = await AsyncStorage.getItem(LAST_ACTIVE_KEY);
-  if (!raw) return false; // no timestamp yet — first launch, don't sign out
-  return Date.now() - Number(raw) > IDLE_TIMEOUT_MS;
-}
 
 export async function signUpEmail(
   email: string,
@@ -61,7 +48,7 @@ export async function signInEmail(email: string, password: string) {
 }
 
 export async function signOutUser() {
-  await clearLastActiveAt();
+  await AsyncStorage.removeItem(LAST_ACTIVE_KEY).catch(() => {});
   return signOut(auth);
 }
 

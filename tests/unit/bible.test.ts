@@ -171,3 +171,34 @@ describe("ESV chapters", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe("chosen version", () => {
+  // The choice is cached in the module, so each test loads a fresh copy
+  const freshBible = () => {
+    let mod!: typeof import("@/src/services/bible");
+    jest.isolateModules(() => {
+      mod = require("@/src/services/bible");
+    });
+    return mod;
+  };
+
+  beforeEach(() => AsyncStorage.clear());
+
+  it("is ASV the first time", async () => {
+    expect((await freshBible().getChosenVersion()).id).toBe("en-asv");
+  });
+
+  it("is remembered after the app restarts", async () => {
+    const first = freshBible();
+    first.setChosenVersion(first.BIBLE_VERSIONS.find((v) => v.id === "esv")!);
+    expect((await first.getChosenVersion()).id).toBe("esv");
+    await new Promise((r) => setTimeout(r, 0)); // let the save finish
+
+    expect((await freshBible().getChosenVersion()).id).toBe("esv");
+  });
+
+  it("falls back to ASV if the saved version no longer exists", async () => {
+    await AsyncStorage.setItem("@bible_version", "en-removed");
+    expect((await freshBible().getChosenVersion()).id).toBe("en-asv");
+  });
+});

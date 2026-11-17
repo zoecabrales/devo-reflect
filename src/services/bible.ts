@@ -66,6 +66,27 @@ export const BIBLE_VERSIONS: BibleVersion[] = [
   },
 ];
 
+// ── Chosen version (remembered on this device) ──────────────────────────────
+
+const VERSION_KEY = "@bible_version";
+let chosenVersion: Promise<BibleVersion> | null = null;
+
+/** The version the reader last used on this device (ASV the first time). */
+export function getChosenVersion(): Promise<BibleVersion> {
+  chosenVersion ??= AsyncStorage.getItem(VERSION_KEY)
+    .then((id) => BIBLE_VERSIONS.find((v) => v.id === id) ?? BIBLE_VERSIONS[0])
+    .catch(() => BIBLE_VERSIONS[0]);
+  return chosenVersion;
+}
+
+/** Remembers the version picked in the reader for next time. */
+export function setChosenVersion(version: BibleVersion): void {
+  chosenVersion = Promise.resolve(version);
+  AsyncStorage.setItem(VERSION_KEY, version.id).catch(() => {
+    // Not remembered next time; the reader still uses it now
+  });
+}
+
 // ── Bible Book Catalogue ────────────────────────────────────────────────────
 
 export { BIBLE_BOOKS } from "@/src/constants/bibleBooks";

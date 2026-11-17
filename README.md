@@ -38,7 +38,7 @@ Controls for appearance (light, dark, or system-matched color mode) and eight co
 
 ## Authentication
 
-Accounts use email and password via Firebase Auth. New accounts require email verification before accessing the app. A 10-minute idle timeout automatically signs the user out when the app is sent to the background for an extended period. Password reset is available from the sign-in screen.
+Accounts use email and password via Firebase Auth. New accounts require email verification before accessing the app. Password reset is available from the sign-in screen.
 
 ---
 
