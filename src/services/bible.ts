@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BIBLE_BOOKS } from "@/src/constants/bibleBooks";
 import { DAILY_VERSES } from "@/src/constants/dailyVerses";
 import { BIBLE_DATA } from "./bibleData";
+import { auth } from "./firebase";
 
 // ── Reading Position ─────────────────────────────────────────────────────────
 
@@ -34,6 +36,10 @@ export interface BibleVersion {
   id: string; // CDN path segment, e.g. "en-asv"
   label: string; // short name shown in the picker, e.g. "ASV"
   description: string; // full name shown beneath the label
+  /** Fetched from the publisher through /api/chapter, not bundled. */
+  online?: boolean;
+  /** Notice the publisher requires shown with its text. */
+  copyright?: string;
 }
 
 export const BIBLE_VERSIONS: BibleVersion[] = [
@@ -50,102 +56,20 @@ export const BIBLE_VERSIONS: BibleVersion[] = [
     label: "YLT",
     description: "Young's Literal Translation (1898)",
   },
+  {
+    id: "esv",
+    label: "ESV",
+    description: "English Standard Version · needs internet",
+    online: true,
+    copyright:
+      "Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.",
+  },
 ];
 
 // ── Bible Book Catalogue ────────────────────────────────────────────────────
 
-export interface BibleBook {
-  id: string; // matches CDN path segment (e.g. "genesis", "1samuel")
-  label: string; // human-readable (e.g. "1 Samuel")
-  chapters: number;
-  testament: "OT" | "NT";
-}
-
-export const BIBLE_BOOKS: BibleBook[] = [
-  // ── Old Testament ──────────────────────────────────────────────────────
-  { id: "genesis", label: "Genesis", chapters: 50, testament: "OT" },
-  { id: "exodus", label: "Exodus", chapters: 40, testament: "OT" },
-  { id: "leviticus", label: "Leviticus", chapters: 27, testament: "OT" },
-  { id: "numbers", label: "Numbers", chapters: 36, testament: "OT" },
-  { id: "deuteronomy", label: "Deuteronomy", chapters: 34, testament: "OT" },
-  { id: "joshua", label: "Joshua", chapters: 24, testament: "OT" },
-  { id: "judges", label: "Judges", chapters: 21, testament: "OT" },
-  { id: "ruth", label: "Ruth", chapters: 4, testament: "OT" },
-  { id: "1samuel", label: "1 Samuel", chapters: 31, testament: "OT" },
-  { id: "2samuel", label: "2 Samuel", chapters: 24, testament: "OT" },
-  { id: "1kings", label: "1 Kings", chapters: 22, testament: "OT" },
-  { id: "2kings", label: "2 Kings", chapters: 25, testament: "OT" },
-  { id: "1chronicles", label: "1 Chronicles", chapters: 29, testament: "OT" },
-  { id: "2chronicles", label: "2 Chronicles", chapters: 36, testament: "OT" },
-  { id: "ezra", label: "Ezra", chapters: 10, testament: "OT" },
-  { id: "nehemiah", label: "Nehemiah", chapters: 13, testament: "OT" },
-  { id: "esther", label: "Esther", chapters: 10, testament: "OT" },
-  { id: "job", label: "Job", chapters: 42, testament: "OT" },
-  { id: "psalms", label: "Psalms", chapters: 150, testament: "OT" },
-  { id: "proverbs", label: "Proverbs", chapters: 31, testament: "OT" },
-  { id: "ecclesiastes", label: "Ecclesiastes", chapters: 12, testament: "OT" },
-  {
-    id: "song-of-solomon",
-    label: "Song of Solomon",
-    chapters: 8,
-    testament: "OT",
-  },
-  { id: "isaiah", label: "Isaiah", chapters: 66, testament: "OT" },
-  { id: "jeremiah", label: "Jeremiah", chapters: 52, testament: "OT" },
-  { id: "lamentations", label: "Lamentations", chapters: 5, testament: "OT" },
-  { id: "ezekiel", label: "Ezekiel", chapters: 48, testament: "OT" },
-  { id: "daniel", label: "Daniel", chapters: 12, testament: "OT" },
-  { id: "hosea", label: "Hosea", chapters: 14, testament: "OT" },
-  { id: "joel", label: "Joel", chapters: 3, testament: "OT" },
-  { id: "amos", label: "Amos", chapters: 9, testament: "OT" },
-  { id: "obadiah", label: "Obadiah", chapters: 1, testament: "OT" },
-  { id: "jonah", label: "Jonah", chapters: 4, testament: "OT" },
-  { id: "micah", label: "Micah", chapters: 7, testament: "OT" },
-  { id: "nahum", label: "Nahum", chapters: 3, testament: "OT" },
-  { id: "habakkuk", label: "Habakkuk", chapters: 3, testament: "OT" },
-  { id: "zephaniah", label: "Zephaniah", chapters: 3, testament: "OT" },
-  { id: "haggai", label: "Haggai", chapters: 2, testament: "OT" },
-  { id: "zechariah", label: "Zechariah", chapters: 14, testament: "OT" },
-  { id: "malachi", label: "Malachi", chapters: 4, testament: "OT" },
-  // ── New Testament ──────────────────────────────────────────────────────
-  { id: "matthew", label: "Matthew", chapters: 28, testament: "NT" },
-  { id: "mark", label: "Mark", chapters: 16, testament: "NT" },
-  { id: "luke", label: "Luke", chapters: 24, testament: "NT" },
-  { id: "john", label: "John", chapters: 21, testament: "NT" },
-  { id: "acts", label: "Acts", chapters: 28, testament: "NT" },
-  { id: "romans", label: "Romans", chapters: 16, testament: "NT" },
-  { id: "1corinthians", label: "1 Corinthians", chapters: 16, testament: "NT" },
-  { id: "2corinthians", label: "2 Corinthians", chapters: 13, testament: "NT" },
-  { id: "galatians", label: "Galatians", chapters: 6, testament: "NT" },
-  { id: "ephesians", label: "Ephesians", chapters: 6, testament: "NT" },
-  { id: "philippians", label: "Philippians", chapters: 4, testament: "NT" },
-  { id: "colossians", label: "Colossians", chapters: 4, testament: "NT" },
-  {
-    id: "1thessalonians",
-    label: "1 Thessalonians",
-    chapters: 5,
-    testament: "NT",
-  },
-  {
-    id: "2thessalonians",
-    label: "2 Thessalonians",
-    chapters: 3,
-    testament: "NT",
-  },
-  { id: "1timothy", label: "1 Timothy", chapters: 6, testament: "NT" },
-  { id: "2timothy", label: "2 Timothy", chapters: 4, testament: "NT" },
-  { id: "titus", label: "Titus", chapters: 3, testament: "NT" },
-  { id: "philemon", label: "Philemon", chapters: 1, testament: "NT" },
-  { id: "hebrews", label: "Hebrews", chapters: 13, testament: "NT" },
-  { id: "james", label: "James", chapters: 5, testament: "NT" },
-  { id: "1peter", label: "1 Peter", chapters: 5, testament: "NT" },
-  { id: "2peter", label: "2 Peter", chapters: 3, testament: "NT" },
-  { id: "1john", label: "1 John", chapters: 5, testament: "NT" },
-  { id: "2john", label: "2 John", chapters: 1, testament: "NT" },
-  { id: "3john", label: "3 John", chapters: 1, testament: "NT" },
-  { id: "jude", label: "Jude", chapters: 1, testament: "NT" },
-  { id: "revelation", label: "Revelation", chapters: 22, testament: "NT" },
-];
+export { BIBLE_BOOKS } from "@/src/constants/bibleBooks";
+export type { BibleBook } from "@/src/constants/bibleBooks";
 
 // ── Chapter Fetch ───────────────────────────────────────────────────────────
 
@@ -163,8 +87,94 @@ export async function fetchChapter(
   chapter: number,
   version: string = BIBLE_VERSION,
 ): Promise<ChapterVerse[]> {
+  if (BIBLE_VERSIONS.find((v) => v.id === version)?.online) {
+    return fetchOnlineChapter(version, bookId, chapter);
+  }
   const verses = loadChapter(version, bookId, chapter);
   return verses.map((text, i) => ({ verse: i + 1, text }));
+}
+
+// ── Online versions (ESV) ───────────────────────────────────────────────────
+
+// Web calls its own site; a native build needs the site's address.
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? "";
+const ONLINE_CACHE_KEY = "@online_chapters";
+/** ESV terms: no more than 500 verses kept on the device. */
+const ONLINE_CACHE_MAX_VERSES = 500;
+
+interface OnlineCacheEntry {
+  key: string; // "esv/john/3"
+  verses: ChapterVerse[];
+}
+
+async function readOnlineCache(): Promise<OnlineCacheEntry[]> {
+  try {
+    const raw = await AsyncStorage.getItem(ONLINE_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Puts a chapter at the front, dropping the oldest past 500 verses. */
+async function writeOnlineCache(entry: OnlineCacheEntry): Promise<void> {
+  const entries = (await readOnlineCache()).filter((e) => e.key !== entry.key);
+  entries.unshift(entry);
+  let total = 0;
+  const kept = entries.filter((e) => {
+    total += e.verses.length;
+    return total <= ONLINE_CACHE_MAX_VERSES;
+  });
+  try {
+    await AsyncStorage.setItem(ONLINE_CACHE_KEY, JSON.stringify(kept));
+  } catch {
+    // Cache write failure is non-fatal
+  }
+}
+
+/** Why an online chapter didn't load, so the reader can say the right thing. */
+export class OnlineChapterError extends Error {
+  constructor(public reason: "offline" | "unavailable") {
+    super(reason);
+  }
+}
+
+/** One chapter of an online version: from the device cache, else the server. */
+async function fetchOnlineChapter(
+  version: string,
+  bookId: string,
+  chapter: number,
+): Promise<ChapterVerse[]> {
+  const key = `${version}/${bookId}/${chapter}`;
+  const cached = (await readOnlineCache()).find((e) => e.key === key);
+  if (cached) return cached.verses;
+
+  const user = auth.currentUser;
+  if (!user) throw new Error("Sign in to read this version");
+  const token = await user.getIdToken();
+  const params = new URLSearchParams({
+    version,
+    book: bookId,
+    chapter: String(chapter),
+  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/chapter?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    // The request never got a reply: no connection
+    throw new OnlineChapterError("offline");
+  }
+  // Not JSON (e.g. the local dev server, which has no /api) or an error reply
+  const isJson = res.headers.get("content-type")?.includes("application/json");
+  if (!res.ok || !isJson) throw new OnlineChapterError("unavailable");
+  const data = (await res.json()) as { verses?: ChapterVerse[] };
+  const verses = data.verses ?? [];
+  if (verses.length === 0) throw new OnlineChapterError("unavailable");
+  await writeOnlineCache({ key, verses });
+  return verses;
 }
 
 /** Reads one chapter (array of verse texts, verse 1 first) from bundled data. */

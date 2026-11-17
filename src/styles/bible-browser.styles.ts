@@ -135,6 +135,15 @@ export const styles = StyleSheet.create({
     flex: 1,
     opacity: 0.55,
   },
+  // Publisher's notice under a licensed version's chapter (e.g. ESV)
+  versionCopyright: {
+    fontSize: 11,
+    lineHeight: 16,
+    opacity: 0.7,
+    textAlign: "center",
+    marginTop: 20,
+    marginBottom: 8,
+  },
 
   // ── Section Header ───────────────────────────────────────
   sectionHeader: {
