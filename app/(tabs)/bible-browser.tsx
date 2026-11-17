@@ -1,4 +1,4 @@
-import { AppModal, ChapterSkeleton, SheetHandle } from "@/src/components";
+import { ChapterSkeleton } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BIBLE_BOOKS,
@@ -29,12 +29,8 @@ import {
   ShareImageSheet,
   ShareImageTarget,
 } from "@/src/features/shareImage/ShareImageSheet";
-import {
-  BookGuideSheet,
-  bookSetting,
-} from "@/src/features/bible/BookGuideSheet";
+import { BookGuideSheet } from "@/src/features/bible/BookGuideSheet";
 import { BOOK_GUIDES } from "@/src/constants/bibleGuide";
-import { BRETHREN_ENABLED } from "@/src/constants/features";
 import {
   ShareTarget,
   ShareWithConnectionsModal,
@@ -62,7 +58,6 @@ import {
     ScrollView,
     SectionList,
     Text,
-    TextInput,
     TouchableOpacity,
     useWindowDimensions,
     View,
@@ -77,8 +72,19 @@ import {
   BOOK_SIDE_PADDING,
   BookSpread,
 } from "@/src/features/bible/BookSpread";
+import { HighlightedVerseText } from "@/src/features/bible/HighlightedVerseText";
+import {
+  CalendarDayBanner,
+  ChapterSearchBar,
+  ContextBanner,
+} from "@/src/features/bible/ReaderBanners";
+import { ReaderHeader } from "@/src/features/bible/ReaderHeader";
+import { HIGHLIGHT_COLORS } from "@/src/features/bible/readerConstants";
+import { SelectionBar } from "@/src/features/bible/SelectionBar";
+import { VersionPicker } from "@/src/features/bible/VersionPicker";
+import { BookmarkConfirm, VerseDrawer } from "@/src/features/bible/VerseDrawer";
 import { styles } from "@/src/styles/bible-browser.styles";
-import { dateKeyOf, formatDateKey } from "@/src/utils/dateKey";
+import { dateKeyOf } from "@/src/utils/dateKey";
 import {
     SIDEBAR_WIDTH,
     useIsDesktop,
@@ -92,78 +98,6 @@ const CONTEXT_SPAN = 3;
 
 /** Two taps on a verse within this many ms open the verse panel. */
 const DOUBLE_TAP_MS = 260;
-
-const HIGHLIGHT_COLORS = [
-  "#FFD966", // yellow
-  "#93C47D", // green
-  "#76A9EA", // blue
-  "#E06666", // red
-  "#C27BA0", // purple
-  "#F9CB9C", // orange
-  "#A0C4FF", // sky blue
-  "#B5EAD7", // mint
-];
-
-function HighlightedVerseText({
-  text,
-  query,
-  bookmarkColor,
-  underline,
-  textStyle,
-}: {
-  text: string;
-  query: string;
-  bookmarkColor?: string;
-  underline?: boolean;
-  textStyle: object;
-}) {
-  const trimmed = query.trim();
-  const bookmarkBg = bookmarkColor
-    ? { backgroundColor: bookmarkColor + "99" }
-    : {};
-  const underlineStyle = underline
-    ? { textDecorationLine: "underline" as const }
-    : {};
-
-  if (!trimmed) {
-    return (
-      <Text style={textStyle}>
-        {bookmarkColor || underline ? (
-          <Text style={[bookmarkBg, underlineStyle]}>{text}</Text>
-        ) : (
-          text
-        )}
-      </Text>
-    );
-  }
-
-  // Split text into alternating [non-match, match, non-match, …] segments
-  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
-
-  return (
-    <Text style={textStyle}>
-      {parts.map((part, i) =>
-        part.toLowerCase() === trimmed.toLowerCase() ? (
-          <Text
-            key={i}
-            style={[
-              bookmarkBg,
-              underlineStyle,
-              { backgroundColor: "#FFD966CC", fontWeight: "700" },
-            ]}
-          >
-            {part}
-          </Text>
-        ) : (
-          <Text key={i} style={[bookmarkBg, underlineStyle]}>
-            {part}
-          </Text>
-        ),
-      )}
-    </Text>
-  );
-}
 
 /** The plan day a chapter was opened from, if the params name a valid one. */
 function planFromParams(
@@ -1097,136 +1031,33 @@ export default function BibleBrowser() {
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { paddingHorizontal: padH },
-          bookAligned && { paddingHorizontal: bookInset },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={goBack}
-          style={[styles.backBtn, { borderColor: theme.border }]}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            {headerTitle}
-          </Text>
-          {headerSubtitle && (
-            <Text
-              style={[styles.headerSubtitle, { color: theme.textSecondary }]}
-            >
-              {headerSubtitle}
-            </Text>
-          )}
-        </View>
-        {screen !== "books" && book && BOOK_GUIDES[book.id] && (
-          <TouchableOpacity
-            style={[styles.searchIconBtn, { borderColor: theme.border }]}
-            onPress={() => setBookGuideOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel={`About ${book.label}`}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="information-circle-outline"
-              size={19}
-              color={theme.text}
-            />
-          </TouchableOpacity>
-        )}
-        {screen === "verses" && (
-          <TouchableOpacity
-            style={[styles.searchIconBtn, { borderColor: theme.border }]}
-            onPress={() => setSearchVisible((v) => !v)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={searchVisible ? "close" : "search"}
-              size={18}
-              color={theme.text}
-            />
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[
-            styles.versionPill,
-            { borderColor: theme.border, backgroundColor: theme.surface },
-          ]}
-          onPress={() => setPickerVisible(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.versionPillText, { color: theme.text }]}>
-            {version.label}
-          </Text>
-          <Ionicons name="chevron-down" size={11} color={theme.textSecondary} />
-        </TouchableOpacity>
-      </View>
+      <ReaderHeader
+        theme={theme}
+        inset={bookAligned ? bookInset : padH}
+        title={headerTitle}
+        subtitle={headerSubtitle}
+        onBack={goBack}
+        aboutLabel={
+          screen !== "books" && book && BOOK_GUIDES[book.id] ? book.label : null
+        }
+        onAbout={() => setBookGuideOpen(true)}
+        searchOpen={screen === "verses" ? searchVisible : null}
+        onToggleSearch={() => setSearchVisible((v) => !v)}
+        versionLabel={version.label}
+        onOpenVersions={() => setPickerVisible(true)}
+      />
 
       {/* Read in context: what this passage is and where it sits */}
       {screen === "verses" && contextVerses && book && chapter && (
-        <View
-          style={[
-            styles.contextBanner,
-            { marginHorizontal: padH },
-            { borderColor: theme.border, backgroundColor: theme.surface },
-            bookAligned && { marginHorizontal: bookInset },
-          ]}
-        >
-          <Ionicons
-            name="reader-outline"
-            size={16}
-            color={theme.textSecondary}
-            style={styles.contextBannerIcon}
-          />
-          <View style={styles.contextBannerBody}>
-            <Text style={[styles.contextBannerTitle, { color: theme.text }]}>
-              {book.label} {chapter}:{formatVerseNumbers(contextVerses)} in
-              context
-            </Text>
-            {bookSetting(book.id) && (
-              <Text
-                style={[
-                  styles.contextBannerText,
-                  { color: theme.textSecondary },
-                ]}
-              >
-                {bookSetting(book.id)}
-              </Text>
-            )}
-            <Text
-              style={[styles.contextBannerText, { color: theme.textSecondary }]}
-            >
-              The shaded verses around it are part of the same passage. Read
-              them together.
-            </Text>
-            {BOOK_GUIDES[book.id] && (
-              <TouchableOpacity
-                onPress={() => setBookGuideOpen(true)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[styles.contextBannerLink, { color: theme.text }]}
-                >
-                  About {book.label} →
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity
-            onPress={() => setContextVerses(null)}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Hide context"
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close" size={16} color={theme.textSecondary} />
-          </TouchableOpacity>
-        </View>
+        <ContextBanner
+          theme={theme}
+          inset={bookAligned ? bookInset : padH}
+          book={book}
+          chapter={chapter}
+          verses={contextVerses}
+          onAbout={() => setBookGuideOpen(true)}
+          onClose={() => setContextVerses(null)}
+        />
       )}
 
       <BookGuideSheet
@@ -1239,135 +1070,40 @@ export default function BibleBrowser() {
 
       {/* Bookmarking / planning for a calendar day (from Growth) */}
       {pendingForDate && (
-        <View
-          style={[
-            styles.planBanner,
-            { marginHorizontal: padH },
-            { borderColor: theme.border, backgroundColor: theme.surface },
-            bookAligned && { marginHorizontal: bookInset },
-          ]}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={15}
-            color={theme.textSecondary}
-          />
-          <Text style={[styles.planBannerText, { color: theme.text }]}>
-            {pendingForDate > todayKey ? "Planning" : "Bookmarking"}{" "}
-            a verse for {formatDateKey(pendingForDate)}
-            <Text style={{ color: theme.textSecondary }}>
-              {" "}
-              · tap a verse, then Bookmark
-            </Text>
-          </Text>
-          <TouchableOpacity
-            onPress={clearPendingForDate}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel"
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close" size={16} color={theme.textSecondary} />
-          </TouchableOpacity>
-        </View>
+        <CalendarDayBanner
+          theme={theme}
+          inset={bookAligned ? bookInset : padH}
+          date={pendingForDate}
+          todayKey={todayKey}
+          onCancel={clearPendingForDate}
+        />
       )}
 
-      {/* Search Bar */}
       {screen === "verses" && searchVisible && (
-        <View
-          style={[
-            styles.searchBar,
-            { marginHorizontal: padH },
-            { borderColor: theme.border, backgroundColor: theme.surface },
-            bookAligned && { marginHorizontal: bookInset },
-          ]}
-        >
-          <Ionicons name="search" size={15} color={theme.textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Search in chapter…"
-            placeholderTextColor={theme.textSecondary}
-            value={searchQuery}
-            onChangeText={handleSearchChange}
-            autoFocus
-            returnKeyType="search"
-            clearButtonMode="never"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearchQuery("")}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="close-circle"
-                size={16}
-                color={theme.textSecondary}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+        <ChapterSearchBar
+          theme={theme}
+          inset={bookAligned ? bookInset : padH}
+          query={searchQuery}
+          onChange={handleSearchChange}
+          onClear={() => setSearchQuery("")}
+        />
       )}
 
-      {/* Version Picker Modal */}
-      <AppModal
+      <VersionPicker
         visible={pickerVisible}
+        current={version}
+        theme={theme}
         onClose={() => setPickerVisible(false)}
-        animationType="slide"
-        overlayStyle={styles.drawerOverlay}
-        cardStyle={[
-          styles.drawerSheet,
-          { backgroundColor: theme.surface, borderColor: theme.border },
-        ]}
-      >
-        <SheetHandle style={styles.drawerHandle} />
-        <Text style={[styles.drawerTitle, { color: theme.text }]}>
-          Bible Version
-        </Text>
-        {BIBLE_VERSIONS.map((v) => {
-          const active = v.id === version.id;
-          return (
-            <TouchableOpacity
-              key={v.id}
-              style={styles.versionOption}
-              activeOpacity={0.7}
-              onPress={() => {
-                setPickerVisible(false);
-                setVersion(v);
-                setChosenVersion(v);
-                // Re-fetch current chapter in the new version
-                if (screen === "verses" && book && chapter) {
-                  openChapter(book, chapter, v);
-                }
-              }}
-            >
-              <Text
-                style={[
-                  styles.versionOptionLabel,
-                  {
-                    color: active ? theme.primary : theme.text,
-                  },
-                ]}
-              >
-                {v.label}
-              </Text>
-              <Text
-                style={[
-                  styles.versionOptionDesc,
-                  { color: theme.textSecondary },
-                ]}
-              >
-                {v.description}
-              </Text>
-              {active && (
-                <Ionicons
-                  name="checkmark"
-                  size={16}
-                  color={theme.primary}
-                />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </AppModal>
+        onPick={(v) => {
+          setPickerVisible(false);
+          setVersion(v);
+          setChosenVersion(v);
+          // Re-fetch current chapter in the new version
+          if (screen === "verses" && book && chapter) {
+            openChapter(book, chapter, v);
+          }
+        }}
+      />
 
       <ShareImageSheet
         target={imageShare}
@@ -1375,235 +1111,52 @@ export default function BibleBrowser() {
         onClose={() => setImageShare(null)}
       />
 
-      {/* Highlight / Bookmark drawer */}
-      <AppModal
+      {/* Panel for one verse (two taps on it) */}
+      <VerseDrawer
         visible={drawerVerse !== null}
-        onClose={() => setDrawerVerse(null)}
-        animationType="slide"
-        overlayStyle={styles.drawerOverlay}
-        cardStyle={[
-          styles.drawerSheet,
-          { backgroundColor: theme.surface, borderColor: theme.border },
-        ]}
-      >
-        <SheetHandle style={styles.drawerHandle} />
-        <Text style={[styles.drawerTitle, { color: theme.text }]}>
-          {drawerVerse
+        theme={theme}
+        title={
+          drawerVerse
             ? `${book?.label ?? ""} ${chapter}:${drawerVerse.verse}`
-            : ""}
-        </Text>
-
-        {/* Color swatches */}
-        <Text
-          style={[styles.drawerLabel, { color: theme.textSecondary }]}
-        >
-          Highlight
-        </Text>
-        <View style={styles.swatchRow}>
-          {HIGHLIGHT_COLORS.map((c) => {
-            const activeKey = drawerVerse
-              ? verseKey(book!.id, chapter!, drawerVerse.verse)
-              : null;
-            const isActive = activeKey
-              ? highlights.get(activeKey) === c
-              : false;
-            return (
-              <TouchableOpacity
-                key={c}
-                style={[
-                  styles.swatch,
-                  { backgroundColor: c },
-                  isActive && styles.swatchActive,
-                ]}
-                onPress={() => handleHighlight(c)}
-                activeOpacity={0.8}
-              />
-            );
-          })}
-        </View>
-
-        {/* Underline: a plain mark, separate from the colour */}
-        {drawerVerse && book && (() => {
-          const on = savedUnderlines.has(
-            verseKey(book.id, chapter!, drawerVerse.verse),
-          );
-          return (
-            <TouchableOpacity
-              style={[
-                styles.underlineChip,
-                styles.underlineChipDrawer,
-                { borderColor: on ? theme.primary : theme.border },
-                on && { backgroundColor: theme.primary + "14" },
-              ]}
-              onPress={() => toggleUnderline([drawerVerse.verse])}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: on }}
-              accessibilityLabel="Underline"
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.underlineChipText, { color: theme.text }]}>
-                Underline
-              </Text>
-              {on && (
-                <Ionicons name="checkmark" size={15} color={theme.primary} />
-              )}
-            </TouchableOpacity>
-          );
-        })()}
-
-        {/* Bookmark button */}
-        <TouchableOpacity
-          style={[
-            styles.drawerBookmarkBtn,
-            { backgroundColor: theme.primary },
-          ]}
-          onPress={handleDrawerBookmark}
-          activeOpacity={0.85}
-        >
-          <Ionicons
-            name="bookmark-outline"
-            size={18}
-            color={theme.primaryText}
-          />
-          <Text
-            style={[styles.drawerBookmarkBtnText, { color: theme.primaryText }]}
-          >
-            Add to Bookmarks
-          </Text>
-        </TouchableOpacity>
-
-        {/* Select mode: pick more verses to bookmark / highlight as one */}
-        <TouchableOpacity
-          style={[
-            styles.drawerBookmarkBtn,
-            {
-              marginTop: 10,
-              backgroundColor: theme.surface,
-              borderWidth: 1,
-              borderColor: theme.border,
-            },
-          ]}
-          onPress={startSelection}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="checkmark-done-outline" size={18} color={theme.text} />
-          <Text
-            style={[
-              styles.drawerBookmarkBtnText,
-              { color: theme.text },
-            ]}
-          >
-            Select More Verses
-          </Text>
-        </TouchableOpacity>
-
-        {/* Add to Journal button */}
-        <TouchableOpacity
-          style={[
-            styles.drawerBookmarkBtn,
-            {
-              marginTop: 10,
-              backgroundColor: theme.surface,
-              borderWidth: 1,
-              borderColor: theme.border,
-            },
-          ]}
-          onPress={handleDrawerJournal}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="book-outline" size={18} color={theme.text} />
-          <Text
-            style={[
-              styles.drawerBookmarkBtnText,
-              { color: theme.text },
-            ]}
-          >
-            Add to Journal
-          </Text>
-        </TouchableOpacity>
-
-        {/* Share to social media as an image */}
-        <TouchableOpacity
-          style={[
-            styles.drawerBookmarkBtn,
-            {
-              marginTop: 10,
-              backgroundColor: theme.surface,
-              borderWidth: 1,
-              borderColor: theme.border,
-            },
-          ]}
-          onPress={() => {
-            if (!drawerVerse) return;
-            const run = highlightedRun(drawerVerse);
-            setDrawerVerse(null);
-            openImageShare(run);
-          }}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="image-outline" size={18} color={theme.text} />
-          <Text style={[styles.drawerBookmarkBtnText, { color: theme.text }]}>
-            {drawerRun.length > 1
-              ? `Share ${chapter}:${formatVerseNumbers(drawerRun.map((x) => x.verse))} as Image`
-              : "Share as Image"}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Share with Brethren */}
-        {BRETHREN_ENABLED && (
-          <TouchableOpacity
-            style={[
-              styles.drawerBookmarkBtn,
-              {
-                marginTop: 10,
-                backgroundColor: theme.surface,
-                borderWidth: 1,
-                borderColor: theme.border,
-              },
-            ]}
-            onPress={() => {
-              if (!drawerVerse) return;
-              const v = drawerVerse;
-              setDrawerVerse(null);
-              openShareWithConnections([v]);
-            }}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="people-outline" size={18} color={theme.text} />
-            <Text
-              style={[styles.drawerBookmarkBtnText, { color: theme.text }]}
-            >
-              Share with Brethren
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Use this Verse — only shown when opened from CalendarWidget */}
-        {isPickMode && (
-          <TouchableOpacity
-            style={[
-              styles.drawerBookmarkBtn,
-              { marginTop: 10, backgroundColor: theme.primary },
-            ]}
-            onPress={handlePickVerse}
-            activeOpacity={0.85}
-          >
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={18}
-              color={theme.primaryText}
-            />
-            <Text
-              style={[
-                styles.drawerBookmarkBtnText,
-                { color: theme.primaryText },
-              ]}
-            >
-              Use this Verse
-            </Text>
-          </TouchableOpacity>
-        )}
-      </AppModal>
+            : ""
+        }
+        activeColor={
+          drawerVerse && book && chapter
+            ? highlights.get(verseKey(book.id, chapter, drawerVerse.verse))
+            : undefined
+        }
+        underlined={
+          drawerVerse && book && chapter
+            ? savedUnderlines.has(verseKey(book.id, chapter, drawerVerse.verse))
+            : null
+        }
+        shareImageLabel={
+          drawerRun.length > 1
+            ? `Share ${chapter}:${formatVerseNumbers(drawerRun.map((x) => x.verse))} as Image`
+            : "Share as Image"
+        }
+        onClose={() => setDrawerVerse(null)}
+        onHighlight={handleHighlight}
+        onToggleUnderline={() => {
+          if (drawerVerse) toggleUnderline([drawerVerse.verse]);
+        }}
+        onBookmark={handleDrawerBookmark}
+        onSelectMore={startSelection}
+        onJournal={handleDrawerJournal}
+        onShareImage={() => {
+          if (!drawerVerse) return;
+          const run = highlightedRun(drawerVerse);
+          setDrawerVerse(null);
+          openImageShare(run);
+        }}
+        onShareBrethren={() => {
+          if (!drawerVerse) return;
+          const v = drawerVerse;
+          setDrawerVerse(null);
+          openShareWithConnections([v]);
+        }}
+        onUseVerse={isPickMode ? handlePickVerse : undefined}
+      />
 
       <ShareWithConnectionsModal
         target={shareTarget}
@@ -1611,29 +1164,11 @@ export default function BibleBrowser() {
         onClose={() => setShareTarget(null)}
       />
 
-      {/* Bookmark confirmation popup */}
-      <AppModal
-        visible={bookmarkConfirm !== null}
+      <BookmarkConfirm
+        label={bookmarkConfirm}
+        theme={theme}
         onClose={() => setBookmarkConfirm(null)}
-        closeOnCardPress
-        overlayStyle={styles.confirmOverlay}
-        cardStyle={[
-          styles.confirmCard,
-          { backgroundColor: theme.surface, borderColor: theme.border },
-        ]}
-      >
-        <Ionicons name="bookmark" size={22} color={theme.primary} />
-        <View style={styles.confirmTextWrap}>
-          <Text style={[styles.confirmTitle, { color: theme.text }]}>
-            {bookmarkConfirm?.includes(",") || bookmarkConfirm?.includes("\u2013")
-              ? "Verses Bookmarked"
-              : "Verse Bookmarked"}
-          </Text>
-          <Text style={[styles.confirmRef, { color: theme.textSecondary }]}>
-            {bookmarkConfirm} saved to Bookmarks
-          </Text>
-        </View>
-      </AppModal>
+      />
 
       {/* Books — desktop: two-column table of contents */}
       {screen === "books" && isDesktop && (
@@ -1841,212 +1376,37 @@ export default function BibleBrowser() {
         ))}
 
       {/* Select mode: actions for the selected verses */}
-      {screen === "verses" && selection && book && (
-        <View
-          style={[
-            styles.selectionBar,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-            isDesktop && {
-              marginHorizontal: bookInset,
-              borderLeftWidth: 1,
-              borderRightWidth: 1,
-            },
-          ]}
-        >
-          <View style={styles.selectionHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.selectionTitle, { color: theme.text }]}>
-                {book.label} {chapter}:{formatVerseNumbers(selection)}
-              </Text>
-              <Text
-                style={[styles.selectionHint, { color: theme.textSecondary }]}
-              >
-                {selection.length} {selection.length === 1 ? "verse" : "verses"}{" "}
-                selected · tap verses to add or remove
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setSelection(null)}
-              accessibilityRole="button"
-              accessibilityLabel="Cancel selection"
-              hitSlop={8}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close" size={20} color={theme.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={[styles.swatchRow, styles.selectionSwatches]}>
-            {HIGHLIGHT_COLORS.map((c) => {
-              const isActive = selection.every(
-                (n) => highlights.get(verseKey(book.id, chapter!, n)) === c,
-              );
-              return (
-                <TouchableOpacity
-                  key={c}
-                  style={[
-                    styles.swatch,
-                    styles.selectionSwatch,
-                    { backgroundColor: c },
-                    isActive && styles.swatchActive,
-                  ]}
-                  onPress={() => handleSelectionHighlight(c)}
-                  accessibilityLabel="Highlight selected verses"
-                  activeOpacity={0.8}
-                />
-              );
-            })}
-            {(() => {
-              const on = selection.every((n) =>
-                savedUnderlines.has(verseKey(book.id, chapter!, n)),
-              );
-              return (
-                <TouchableOpacity
-                  style={[
-                    styles.underlineChip,
-                    { borderColor: on ? theme.primary : theme.border },
-                    on && { backgroundColor: theme.primary + "14" },
-                  ]}
-                  onPress={() => toggleUnderline(selection)}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: on }}
-                  accessibilityLabel="Underline selected verses"
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    style={[styles.underlineChipText, { color: theme.text }]}
-                  >
-                    Underline
-                  </Text>
-                  {on && (
-                    <Ionicons name="checkmark" size={14} color={theme.primary} />
-                  )}
-                </TouchableOpacity>
-              );
-            })()}
-          </View>
-
-          <View style={styles.selectionActions}>
-            <TouchableOpacity
-              style={[
-                styles.drawerBookmarkBtn,
-                styles.selectionBtn,
-                { backgroundColor: theme.primary },
-              ]}
-              onPress={handleSelectionBookmark}
-              activeOpacity={0.85}
-            >
-              <Ionicons
-                name="bookmark-outline"
-                size={17}
-                color={theme.primaryText}
-              />
-              <Text
-                style={[
-                  styles.drawerBookmarkBtnText,
-                  { color: theme.primaryText },
-                ]}
-              >
-                {selection.length > 1 ? "Bookmark as One" : "Bookmark"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.drawerBookmarkBtn,
-                styles.selectionBtn,
-                {
-                  backgroundColor: theme.surface,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                },
-              ]}
-              onPress={handleSelectionJournal}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="book-outline" size={17} color={theme.text} />
-              <Text
-                style={[styles.drawerBookmarkBtnText, { color: theme.text }]}
-              >
-                Journal
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.drawerBookmarkBtn,
-              styles.selectionShareBtn,
-              {
-                backgroundColor: theme.surface,
-                borderWidth: 1,
-                borderColor: theme.border,
-              },
-            ]}
-            onPress={() => {
-              const picked = selectedVerses();
-              setSelection(null);
-              openImageShare(picked);
-            }}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="image-outline" size={17} color={theme.text} />
-            <Text style={[styles.drawerBookmarkBtnText, { color: theme.text }]}>
-              Share as Image
-            </Text>
-          </TouchableOpacity>
-
-          {BRETHREN_ENABLED && (
-            <TouchableOpacity
-              style={[
-                styles.drawerBookmarkBtn,
-                styles.selectionShareBtn,
-                {
-                  backgroundColor: theme.surface,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                },
-              ]}
-              onPress={() => {
-                const picked = selectedVerses();
-                setSelection(null);
-                openShareWithConnections(picked);
-              }}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="people-outline" size={17} color={theme.text} />
-              <Text
-                style={[styles.drawerBookmarkBtnText, { color: theme.text }]}
-              >
-                Share with Brethren
-              </Text>
-            </TouchableOpacity>
+      {screen === "verses" && selection && book && chapter && (
+        <SelectionBar
+          theme={theme}
+          desktopInset={isDesktop ? bookInset : null}
+          title={`${book.label} ${chapter}:${formatVerseNumbers(selection)}`}
+          count={selection.length}
+          isColorActive={(c) =>
+            selection.every(
+              (n) => highlights.get(verseKey(book.id, chapter, n)) === c,
+            )
+          }
+          underlined={selection.every((n) =>
+            savedUnderlines.has(verseKey(book.id, chapter, n)),
           )}
-
-          {isPickMode && (
-            <TouchableOpacity
-              style={[
-                styles.drawerBookmarkBtn,
-                { marginTop: 10, backgroundColor: theme.primary },
-              ]}
-              onPress={handleSelectionPick}
-              activeOpacity={0.85}
-            >
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={17}
-                color={theme.primaryText}
-              />
-              <Text
-                style={[
-                  styles.drawerBookmarkBtnText,
-                  { color: theme.primaryText },
-                ]}
-              >
-                {selection.length > 1 ? "Use these Verses" : "Use this Verse"}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+          onCancel={() => setSelection(null)}
+          onHighlight={handleSelectionHighlight}
+          onToggleUnderline={() => toggleUnderline(selection)}
+          onBookmark={handleSelectionBookmark}
+          onJournal={handleSelectionJournal}
+          onShareImage={() => {
+            const picked = selectedVerses();
+            setSelection(null);
+            openImageShare(picked);
+          }}
+          onShareBrethren={() => {
+            const picked = selectedVerses();
+            setSelection(null);
+            openShareWithConnections(picked);
+          }}
+          onUse={isPickMode ? handleSelectionPick : undefined}
+        />
       )}
     </SafeAreaView>
   );
