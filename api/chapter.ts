@@ -48,7 +48,7 @@ async function isSignedIn(request: Request): Promise<boolean> {
 }
 
 /** ESV plain text "[1] In the beginning… [2] The earth…" → verses. */
-function parseEsv(passage: string): Verse[] {
+export function parseEsv(passage: string): Verse[] {
   const parts = passage.split(/\[(\d+)\]/);
   const verses: Verse[] = [];
   // parts: [before, num, text, num, text, …]
