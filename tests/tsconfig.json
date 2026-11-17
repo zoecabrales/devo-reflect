@@ -1,0 +1,9 @@
+{
+  // Type-checks the tests with Jest's and Node's globals, which the app
+  // itself shouldn't see. Run: npx tsc --noEmit -p tests
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest", "node"]
+  },
+  "include": ["**/*.ts", "../expo-env.d.ts", "../.expo/types/**/*.ts"]
+}

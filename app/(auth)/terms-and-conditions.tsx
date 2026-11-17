@@ -177,7 +177,7 @@ export default function TermsAndConditions() {
 
         <Section title="8. Disclaimer of Warranties">
           <Body>
-            Devo Reflect is provided "as is" and "as available" without
+            Devo Reflect is provided &quot;as is&quot; and &quot;as available&quot; without
             warranties of any kind, either express or implied. We do not warrant
             that the app will be uninterrupted, error-free, or free of viruses
             or other harmful components. Your use of the app is at your sole

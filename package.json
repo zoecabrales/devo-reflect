@@ -10,7 +10,10 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "emulators": "firebase emulators:start --project demo-devo-reflect",
-    "deploy:firestore": "firebase deploy --only firestore:rules,firestore:indexes"
+    "deploy:firestore": "firebase deploy --only firestore:rules,firestore:indexes",
+    "test": "jest --selectProjects unit",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-devo-reflect \"jest --selectProjects rules\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests"
   },
   "dependencies": {
     "@expo-google-fonts/oswald": "^0.4.2",
@@ -42,9 +45,12 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "@types/jest": "29.5.14",
     "@types/react": "~19.2.4",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~57.0.2",
+    "jest": "~29.7.0",
     "typescript": "~6.0.3"
   },
   "private": true

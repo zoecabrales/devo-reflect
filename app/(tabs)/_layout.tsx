@@ -118,7 +118,7 @@ export default function TabsLayout() {
     );
 
     return () => subscription.remove();
-  }, []);
+  }, [router]);
 
   if (authState === "loading") return null;
   if (authState === "unauthenticated")

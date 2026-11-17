@@ -1,14 +1,14 @@
 import { auth } from "@/src/services/firebase";
 import { hideSplashOnce } from "@/src/utils/splashGuard";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Image, Text } from "react-native";
 import { styles } from "./SplashScreen.styles";
 
 export default function SplashScreen() {
-  const router = useRouter();
-  const opacity = useRef(new Animated.Value(0)).current;
+  // Created once and kept for the life of the component
+  const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     // Hide the native splash so the custom animation underneath is visible.
@@ -46,7 +46,7 @@ export default function SplashScreen() {
         router.replace("/(tabs)/home");
       }
     });
-  }, []);
+  }, [opacity]);
 
   return (
     <Animated.View style={[styles.container, { opacity }]}>

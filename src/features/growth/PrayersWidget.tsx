@@ -246,7 +246,7 @@ export function PrayersWidget() {
         ) : prayers.length === 0 ? (
           <View style={styles.empty}>
             <Text style={[styles.emptyPrompt, { color: theme.textSecondary }]}>
-              Not sure what to pray? Here's how Jesus taught us:
+              Not sure what to pray? Here&apos;s how Jesus taught us:
             </Text>
             <View
               style={[
