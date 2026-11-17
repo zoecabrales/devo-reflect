@@ -1,6 +1,6 @@
-# Runs the type check, unit tests and Firestore rules tests on every push to
-# dev or release and on pull requests. A ✕ on GitHub means something broke.
-# Lint isn't run here yet because the code has existing lint errors.
+# Runs the type check, lint, unit tests and Firestore rules tests on every
+# push to dev or release and on pull requests. A ✕ on GitHub means something
+# broke.
 name: Tests
 
 on:
@@ -34,6 +34,9 @@ jobs:
         run: |
           echo '/// <reference types="expo/types" />' > expo-env.d.ts
           npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
       - name: Unit tests
         run: npm test

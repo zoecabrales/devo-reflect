@@ -54,11 +54,16 @@ export default function JournalCompose() {
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
 
-  // Runs every time the screen is visited (id changes between new/edit mode).
-  // Always resets the draft first so stale data from a previous session never
-  // bleeds into a new entry. Then loads the existing entry only in edit mode.
-  useEffect(() => {
-    const empty: JournalEntryDraft = {
+  // When the screen's params change (new entry, another entry to edit, or a
+  // calendar day), reset the draft right away so stale data from a previous
+  // visit never bleeds into this one. Done while rendering, as React
+  // recommends for state that follows props; the entry itself loads below.
+  const paramsKey = `${id ?? ""}|${uid}|${forDate ?? ""}`;
+  const [shownParams, setShownParams] = useState<string | null>(null);
+  if (shownParams !== paramsKey) {
+    setShownParams(paramsKey);
+    const editing = !!id && !!uid;
+    setDraft({
       title: "",
       scripture: [],
       observation: "",
@@ -67,22 +72,20 @@ export default function JournalCompose() {
       tags: [],
       bookId: null,
       chapter: null,
-      forDate: null,
-    };
+      // A new entry keeps the calendar day it was started from, if any
+      forDate: editing ? null : (forDate ?? null),
+    });
+    setLoading(editing);
+  }
 
-    if (!id || !uid) {
-      // New entry — clear everything (keeping the calendar day, if any)
-      setDraft({ ...empty, forDate: forDate ?? null });
-      setLoading(false);
-      return;
-    }
-
-    // Edit mode — reset first, then populate from Firestore
-    setDraft(empty);
-    setLoading(true);
+  // Edit mode: load the entry. A load that finishes after you've moved on to
+  // another entry is ignored.
+  useEffect(() => {
+    if (!id || !uid) return;
+    let cancelled = false;
     loadEntry(uid, id)
       .then((entry) => {
-        if (!entry) return;
+        if (cancelled || !entry) return;
         setDraft({
           title: entry.title ?? "",
           scripture: entry.scripture,
@@ -95,19 +98,29 @@ export default function JournalCompose() {
           forDate: entry.forDate,
         });
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id, uid, forDate]);
 
-  // Prefill scripture from a verse passed via route params (e.g. from bible-browser)
-  useEffect(() => {
-    if (!ref || !text) return;
-    const incoming: ScriptureRef = { ref: String(ref), text: String(text) };
-    setDraft((prev) => {
-      const alreadyAdded = prev.scripture.some((s) => s.ref === incoming.ref);
-      if (alreadyAdded) return prev;
-      return { ...prev, scripture: [...prev.scripture, incoming] };
-    });
-  }, [ref, text]);
+  // Prefill scripture from a verse passed via route params (e.g. from
+  // bible-browser), once per verse. Runs after the reset above.
+  const prefillKey = ref && text ? `${ref}|${text}` : null;
+  const [prefilled, setPrefilled] = useState<string | null>(null);
+  if (prefillKey !== prefilled) {
+    setPrefilled(prefillKey);
+    if (ref && text) {
+      const incoming: ScriptureRef = { ref: String(ref), text: String(text) };
+      setDraft((prev) => {
+        const alreadyAdded = prev.scripture.some((s) => s.ref === incoming.ref);
+        if (alreadyAdded) return prev;
+        return { ...prev, scripture: [...prev.scripture, incoming] };
+      });
+    }
+  }
 
   function updateField<K extends keyof JournalEntryDraft>(
     key: K,

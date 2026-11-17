@@ -88,7 +88,7 @@ export default function VerifyEmail() {
         {checkingVerification ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>I've Verified My Email</Text>
+          <Text style={styles.buttonText}>I&apos;ve Verified My Email</Text>
         )}
       </Pressable>
 

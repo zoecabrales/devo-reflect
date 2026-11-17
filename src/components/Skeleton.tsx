@@ -1,6 +1,6 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { useListPaddingH } from "@/src/utils/responsive";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   Animated,
   DimensionValue,
@@ -25,7 +25,8 @@ export function Skeleton({
   borderRadius = 7,
 }: SkeletonProps) {
   const { theme } = useAppTheme();
-  const opacity = useRef(new Animated.Value(0.08)).current;
+  // Created once and kept for the life of the component
+  const [opacity] = useState(() => new Animated.Value(0.08));
 
   useEffect(() => {
     const anim = Animated.loop(
@@ -44,7 +45,7 @@ export function Skeleton({
     );
     anim.start();
     return () => anim.stop();
-  }, []);
+  }, [opacity]);
 
   return (
     <Animated.View

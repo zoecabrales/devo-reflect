@@ -597,7 +597,7 @@ export default function Journal() {
                     { color: theme.textSecondary },
                   ]}
                 >
-                  "{step.prompt}"
+                  &quot;{step.prompt}&quot;
                 </Text>
               </View>
             </View>

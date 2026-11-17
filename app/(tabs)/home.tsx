@@ -91,7 +91,7 @@ function ErrorCard({ theme, onRetry }: { theme: Theme; onRetry: () => void }) {
       ]}
     >
       <Text style={[styles.errorText, { color: theme.text }]}>
-        Could not load today's verse.{"\n"}Check your connection and try again.
+        Could not load today&apos;s verse.{"\n"}Check your connection and try again.
       </Text>
       <TouchableOpacity
         onPress={onRetry}
@@ -139,7 +139,7 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
         {reference}
       </Text>
       <Text style={[styles.verseText, { color: theme.text }]}>
-        "{verse.text}"
+        &quot;{verse.text}&quot;
       </Text>
       <View style={styles.cardFooter}>
         <View style={[styles.versionBadge, { borderColor: theme.border }]}>
@@ -577,33 +577,36 @@ export default function Home() {
     }, []),
   );
 
-  async function loadVerse(isRefresh = false) {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(false);
-    try {
-      const data = await fetchDailyVerse(user?.uid ?? "");
-      setVerse(data);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
+  const uid = user?.uid ?? "";
+
+  const loadVerse = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(false);
+      try {
+        const data = await fetchDailyVerse(uid);
+        setVerse(data);
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [uid],
+  );
 
   // Refresh both the verse and reading position every time Home comes into focus
   useFocusEffect(
     useCallback(() => {
       loadVerse();
       loadReadingPosition().then(setReadingPosition);
-      loadBookmarks(user?.uid ?? "").then((bms) =>
-        setBookmarkCount(bms.length),
-      );
+      loadBookmarks(uid).then((bms) => setBookmarkCount(bms.length));
       // Only the desktop layout shows the weekly journal count
-      if (isDesktop && user) {
+      if (isDesktop && uid) {
         const since = startOfWeek();
-        loadEntries(user.uid)
+        loadEntries(uid)
           .then((entries) =>
             setJournalThisWeek(
               entries.filter((e) => e.createdAt >= since).length,
@@ -611,7 +614,7 @@ export default function Home() {
           )
           .catch(() => setJournalThisWeek(0));
       }
-    }, [isDesktop]),
+    }, [isDesktop, uid, loadVerse]),
   );
 
   return (
@@ -664,7 +667,7 @@ export default function Home() {
         {loading ? (
           <VerseCardSkeleton />
         ) : error ? (
-          <ErrorCard theme={theme} onRetry={loadVerse} />
+          <ErrorCard theme={theme} onRetry={() => loadVerse()} />
         ) : verse ? (
           <VerseCard verse={verse} theme={theme} />
         ) : null}

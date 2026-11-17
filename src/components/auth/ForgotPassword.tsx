@@ -68,7 +68,7 @@ export default function ForgotPassword() {
               We sent a password reset link to{"\n"}
               <Text style={styles.successEmail}>{email}</Text>
               {"\n\n"}Follow the link in the email to set a new password. Check
-              your spam folder if you don't see it.{"\n\n"}The link expires in 1
+              your spam folder if you don&apos;t see it.{"\n\n"}The link expires in 1
               hour. If it does, just request a new one.
             </Text>
             <Pressable
@@ -94,7 +94,7 @@ export default function ForgotPassword() {
         <Text style={styles.title}>Forgot Password</Text>
 
         <Text style={styles.subtitle}>
-          Enter your email address and we'll send you a link to reset your
+          Enter your email address and we&apos;ll send you a link to reset your
           password.
         </Text>
 

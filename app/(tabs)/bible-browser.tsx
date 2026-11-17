@@ -242,6 +242,9 @@ export default function BibleBrowser() {
     });
   }
   const pendingForDate = planFor.date;
+  // Today's date, to label a calendar-day banner "Planning" (a future day)
+  // or "Bookmarking". Read once rather than on every render.
+  const [todayKey] = useState(() => dateKeyOf(Date.now()));
   const clearPendingForDate = () => setPlanFor((p) => ({ ...p, date: null }));
 
   const isPickMode = pickMode === "verse";
@@ -311,70 +314,13 @@ export default function BibleBrowser() {
   // Desktop: book list, chapter picker and reader all use the book frame
   const bookAligned = isDesktop;
 
-  // Deep-link: auto-open a saved chapter when bookId+chapter params are present.
-  // Depends on the params so it re-fires whenever the user navigates here from
-  // Bookmarks (or any other screen) with a new set of params.
-  useEffect(() => {
-    if (bookId && chapterParam) {
-      const found = BIBLE_BOOKS.find((b) => b.id === bookId);
-      const ch = parseInt(chapterParam, 10);
-      if (found && !isNaN(ch)) {
-        const v = verseParam ? parseInt(verseParam, 10) : NaN;
-        // A multi-verse bookmark highlights every verse it covers
-        const range = (versesParam ?? "")
-          .split(",")
-          .map((n) => parseInt(n, 10))
-          .filter((n) => !isNaN(n));
-        const targets =
-          (highlightParam === "true" || underlineParam === "true") && !isNaN(v)
-            ? range.length > 0
-              ? range
-              : [v]
-            : undefined;
-        // Read in context: mark the verse(s) and shade the passage around
-        const context =
-          contextParam === "1" && !isNaN(v)
-            ? range.length > 0
-              ? range
-              : [v]
-            : null;
-        openChapter(
-          found,
-          ch,
-          undefined,
-          targets,
-          underlineParam === "true",
-          // Desktop book view opens at the page holding the verse (a passage
-          // can cross a page break; the verse itself must be on screen)
-          isNaN(v) ? null : v,
-          context,
-        );
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    bookId,
-    chapterParam,
-    verseParam,
-    versesParam,
-    contextParam,
-    highlightParam,
-    underlineParam,
-    openedAt,
-  ]);
-
-  // Clear underlines when user starts searching
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      setUnderlined(new Set());
-    }
-  }, [searchQuery]);
-
   function handleSearchChange(text: string) {
     setSearchQuery(text);
     // Book view: open the spread holding the first match
     const q = text.trim().toLowerCase();
     if (!q) return;
+    // Searching clears the underlines (e.g. from Concordance)
+    setUnderlined(new Set());
     const hit = verses.find((v) => v.text.toLowerCase().includes(q));
     if (hit) setFocusVerse(hit.verse);
   }
@@ -497,6 +443,62 @@ export default function BibleBrowser() {
       setLoading(false);
     }
   }
+
+  // Deep-link: auto-open a saved chapter when bookId+chapter params are present.
+  // Depends on the params so it re-fires whenever the user navigates here from
+  // Bookmarks (or any other screen) with a new set of params.
+  useEffect(() => {
+    if (bookId && chapterParam) {
+      const found = BIBLE_BOOKS.find((b) => b.id === bookId);
+      const ch = parseInt(chapterParam, 10);
+      if (found && !isNaN(ch)) {
+        const v = verseParam ? parseInt(verseParam, 10) : NaN;
+        // A multi-verse bookmark highlights every verse it covers
+        const range = (versesParam ?? "")
+          .split(",")
+          .map((n) => parseInt(n, 10))
+          .filter((n) => !isNaN(n));
+        const targets =
+          (highlightParam === "true" || underlineParam === "true") && !isNaN(v)
+            ? range.length > 0
+              ? range
+              : [v]
+            : undefined;
+        // Read in context: mark the verse(s) and shade the passage around
+        const context =
+          contextParam === "1" && !isNaN(v)
+            ? range.length > 0
+              ? range
+              : [v]
+            : null;
+        // Following a link (Bookmarks, Concordance, Home…) opens the chapter:
+        // the params come from navigation, and opening loads data, so this
+        // has to happen in an effect.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        openChapter(
+          found,
+          ch,
+          undefined,
+          targets,
+          underlineParam === "true",
+          // Desktop book view opens at the page holding the verse (a passage
+          // can cross a page break; the verse itself must be on screen)
+          isNaN(v) ? null : v,
+          context,
+        );
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    bookId,
+    chapterParam,
+    verseParam,
+    versesParam,
+    contextParam,
+    highlightParam,
+    underlineParam,
+    openedAt,
+  ]);
 
   /** Runs a waiting single tap now (e.g. another verse was tapped). */
   function flushPendingTap() {
@@ -1242,7 +1244,7 @@ export default function BibleBrowser() {
             color={theme.textSecondary}
           />
           <Text style={[styles.planBannerText, { color: theme.text }]}>
-            {pendingForDate > dateKeyOf(Date.now()) ? "Planning" : "Bookmarking"}{" "}
+            {pendingForDate > todayKey ? "Planning" : "Bookmarking"}{" "}
             a verse for {formatDateKey(pendingForDate)}
             <Text style={{ color: theme.textSecondary }}>
               {" "}
