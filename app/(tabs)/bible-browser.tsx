@@ -81,6 +81,7 @@ import {
 import { ReaderHeader } from "@/src/features/bible/ReaderHeader";
 import { HIGHLIGHT_COLORS } from "@/src/features/bible/readerConstants";
 import { SelectionBar } from "@/src/features/bible/SelectionBar";
+import { VersionNotice } from "@/src/features/bible/VersionNotice";
 import { VersionPicker } from "@/src/features/bible/VersionPicker";
 import { BookmarkConfirm, VerseDrawer } from "@/src/features/bible/VerseDrawer";
 import { styles } from "@/src/styles/bible-browser.styles";
@@ -1312,16 +1313,11 @@ export default function BibleBrowser() {
                 : undefined
             }
           />
-          {version.copyright && (
-            <Text
-              style={[
-                styles.versionCopyright,
-                { color: theme.textSecondary, marginHorizontal: bookInset },
-              ]}
-            >
-              {version.copyright}
-            </Text>
-          )}
+          <VersionNotice
+            version={version}
+            theme={theme}
+            marginHorizontal={bookInset}
+          />
           </View>
         ) : (
           // Phones and tablets: swipe left / right to turn chapters
@@ -1351,16 +1347,7 @@ export default function BibleBrowser() {
                 contentContainerStyle={[styles.versesList, { paddingHorizontal: padH }]}
               >
                 {verses.map((v) => renderVerse(v))}
-                {version.copyright && (
-                  <Text
-                    style={[
-                      styles.versionCopyright,
-                      { color: theme.textSecondary },
-                    ]}
-                  >
-                    {version.copyright}
-                  </Text>
-                )}
+                <VersionNotice version={version} theme={theme} />
                 {!searchVisible && (
                   <ChapterFooterNav
                     theme={theme}

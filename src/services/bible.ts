@@ -3,6 +3,7 @@ import { BIBLE_BOOKS } from "@/src/constants/bibleBooks";
 import { DAILY_VERSES } from "@/src/constants/dailyVerses";
 import { BIBLE_DATA } from "./bibleData";
 import { auth } from "./firebase";
+import { reportFumsView } from "./fums";
 
 // ── Reading Position ─────────────────────────────────────────────────────────
 
@@ -38,8 +39,10 @@ export interface BibleVersion {
   description: string; // full name shown beneath the label
   /** Fetched from the publisher through /api/chapter, not bundled. */
   online?: boolean;
-  /** Notice the publisher requires shown with its text. */
+  /** Notice the publisher requires shown with its text, word for word. */
   copyright?: string;
+  /** Served through API.Bible, whose free plan requires a link to it. */
+  viaApiBible?: boolean;
 }
 
 export const BIBLE_VERSIONS: BibleVersion[] = [
@@ -63,6 +66,33 @@ export const BIBLE_VERSIONS: BibleVersion[] = [
     online: true,
     copyright:
       "Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.",
+  },
+  {
+    id: "nasb",
+    label: "NASB",
+    description: "New American Standard Bible (1995) · needs internet",
+    online: true,
+    viaApiBible: true,
+    copyright:
+      "NEW AMERICAN STANDARD BIBLE® NASB® Copyright © 1960,1962,1963,1968,1971,1972,1973,1975,1977,1995 by The Lockman Foundation A Corporation Not for Profit La Habra, CA All Rights Reserved www.lockman.org",
+  },
+  {
+    id: "nkjv",
+    label: "NKJV",
+    description: "New King James Version · needs internet",
+    online: true,
+    viaApiBible: true,
+    copyright:
+      "New King James Version®, Copyright© 1982, Thomas Nelson. All rights reserved.",
+  },
+  {
+    id: "nlt",
+    label: "NLT",
+    description: "New Living Translation · needs internet",
+    online: true,
+    viaApiBible: true,
+    copyright:
+      "Holy Bible, New Living Translation, copyright © 1996, 2004, 2015 by Tyndale House Foundation. All rights reserved. Used by permission of Tyndale House Publishers, Carol Stream, Illinois 60188. All rights reserved.",
   },
 ];
 
@@ -120,19 +150,30 @@ export async function fetchChapter(
 // Web calls its own site; a native build needs the site's address.
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? "";
 const ONLINE_CACHE_KEY = "@online_chapters";
-/** ESV terms: no more than 500 verses kept on the device. */
+/** ESV and API.Bible terms: no more than 500 verses kept on the device. */
 const ONLINE_CACHE_MAX_VERSES = 500;
+/** API.Bible asks that cached text is cleared every 14 days or less. */
+const ONLINE_CACHE_MAX_AGE_MS = 14 * 86_400_000;
 
 interface OnlineCacheEntry {
   key: string; // "esv/john/3"
   verses: ChapterVerse[];
+  /** When it was fetched (Date.now()); older entries have none. */
+  savedAt?: number;
+  /** API.Bible's usage-reporting token for this chapter. */
+  fumsToken?: string;
 }
 
+/** Cached chapters, newest first, without any older than 14 days. */
 async function readOnlineCache(): Promise<OnlineCacheEntry[]> {
   try {
     const raw = await AsyncStorage.getItem(ONLINE_CACHE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed: OnlineCacheEntry[] = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    const now = Date.now();
+    return parsed.filter(
+      (e) => e.savedAt !== undefined && now - e.savedAt < ONLINE_CACHE_MAX_AGE_MS,
+    );
   } catch {
     return [];
   }
@@ -169,7 +210,10 @@ async function fetchOnlineChapter(
 ): Promise<ChapterVerse[]> {
   const key = `${version}/${bookId}/${chapter}`;
   const cached = (await readOnlineCache()).find((e) => e.key === key);
-  if (cached) return cached.verses;
+  if (cached) {
+    reportFumsView(cached.fumsToken);
+    return cached.verses;
+  }
 
   const user = auth.currentUser;
   if (!user) throw new Error("Sign in to read this version");
@@ -191,10 +235,19 @@ async function fetchOnlineChapter(
   // Not JSON (e.g. the local dev server, which has no /api) or an error reply
   const isJson = res.headers.get("content-type")?.includes("application/json");
   if (!res.ok || !isJson) throw new OnlineChapterError("unavailable");
-  const data = (await res.json()) as { verses?: ChapterVerse[] };
+  const data = (await res.json()) as {
+    verses?: ChapterVerse[];
+    fumsToken?: string;
+  };
   const verses = data.verses ?? [];
   if (verses.length === 0) throw new OnlineChapterError("unavailable");
-  await writeOnlineCache({ key, verses });
+  await writeOnlineCache({
+    key,
+    verses,
+    savedAt: Date.now(),
+    fumsToken: data.fumsToken,
+  });
+  reportFumsView(data.fumsToken);
   return verses;
 }
 
