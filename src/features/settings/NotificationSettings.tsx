@@ -183,7 +183,8 @@ export function NotificationSettings({ theme }: { theme: Theme }) {
                 </TouchableOpacity>
               )
             )}
-            {(anyOn || deviceOn) && (
+            {/* For checking delivery while developing; hidden in production */}
+            {__DEV__ && (anyOn || deviceOn) && (
               <TouchableOpacity
                 style={[local.deviceBtn, { borderColor: theme.border }]}
                 onPress={sendTest}
