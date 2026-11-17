@@ -4,6 +4,7 @@ import { MobileTopBar } from "@/src/components/mobile/MobileTopBar";
 import { TAB_ACTIVE_COLOR } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { refreshStaleVerifiedToken } from "@/src/services/auth";
+import { refreshReminderSlot } from "@/src/services/notifications";
 import { auth } from "@/src/services/firebase";
 import {
     DESKTOP_CONTENT_ZOOM,
@@ -73,6 +74,8 @@ export default function TabsLayout() {
         // the email is verified (the Firestore rules check it)
         await refreshStaleVerifiedToken(user);
         if (active) setAuthState("authenticated");
+        // Keep the daily reminder at the same local time (time zone / DST)
+        refreshReminderSlot(user.uid);
       }
     });
     return () => {

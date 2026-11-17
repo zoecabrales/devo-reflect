@@ -13,6 +13,7 @@ import {
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import { notifyBrethren } from "./notifications";
 
 // ── Brethren (Firestore) ───────────────────────────────────────────
 // Top-level collections, guarded by firestore.rules:
@@ -118,13 +119,15 @@ export async function sendConnectionRequest(rawEmail: string): Promise<void> {
     ),
   );
   if (!existing.empty) throw new Error("pending");
-  await setDoc(doc(requestsCol(), `${self.uid}_${toEmail}`), {
+  const id = `${self.uid}_${toEmail}`;
+  await setDoc(doc(requestsCol(), id), {
     fromUid: self.uid,
     fromName: self.name,
     fromEmail: self.email,
     toEmail,
     createdAt: Date.now(),
   });
+  notifyBrethren("request", id);
 }
 
 /** Requests other people sent to your email. */
@@ -175,8 +178,9 @@ export async function acceptRequest(req: ConnectionRequest): Promise<void> {
     return;
   }
   const members = [req.fromUid, self.uid].sort();
+  const connectionId = pairId(req.fromUid, self.uid);
   const batch = writeBatch(db);
-  batch.set(doc(connectionsCol(), pairId(req.fromUid, self.uid)), {
+  batch.set(doc(connectionsCol(), connectionId), {
     members,
     names: { [req.fromUid]: req.fromName, [self.uid]: self.name },
     requesterId: req.fromUid,
@@ -185,6 +189,7 @@ export async function acceptRequest(req: ConnectionRequest): Promise<void> {
   });
   batch.delete(doc(requestsCol(), req.id));
   await batch.commit();
+  notifyBrethren("accepted", connectionId);
 }
 
 /** Declines a request sent to you, or cancels one you sent. */
@@ -266,7 +271,8 @@ export async function shareVerse(input: {
   const self = me();
   const connections = await loadConnections();
   if (connections.length === 0) return 0;
-  await setDoc(doc(sharesCol()), {
+  const shareRef = doc(sharesCol());
+  await setDoc(shareRef, {
     authorId: self.uid,
     authorName: self.name,
     bookId: input.bookId,
@@ -280,6 +286,7 @@ export async function shareVerse(input: {
     visibleTo: connections.map((c) => c.uid),
     createdAt: Date.now(),
   });
+  notifyBrethren("share", shareRef.id);
   return connections.length;
 }
 

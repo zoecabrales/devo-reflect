@@ -184,6 +184,15 @@ export default function PrivacyPolicy() {
             information such as your IP address, but not your name, email, or
             account.
           </Bullet>
+          <Bullet>
+            Notifications — if you turn on notifications, we save a
+            notification address for each device you turn them on for, with
+            your notification settings (reminder time and time zone). They are
+            delivered through your browser&apos;s push service (such as
+            Google, Apple, or Mozilla), which receives the notification text.
+            Signing out stops notifications on that device, and deleting your
+            account removes these settings.
+          </Bullet>
           {BRETHREN_ENABLED && (
             <>
               <Body>

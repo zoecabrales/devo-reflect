@@ -26,6 +26,7 @@ import {
     AccountCard,
     SettingsAside,
 } from "@/src/features/settings/SettingsAside";
+import { NotificationSettings } from "@/src/features/settings/NotificationSettings";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
 import { styles } from "@/src/styles/settings.styles";
 import {
@@ -183,6 +184,8 @@ export default function Settings() {
               </View>
             </>
           )}
+
+          <NotificationSettings theme={theme} />
 
           {/* Appearance section */}
           <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>

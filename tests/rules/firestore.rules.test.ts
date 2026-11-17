@@ -311,3 +311,33 @@ describe("sharedVerses", () => {
     await assertSucceeds(deleteDoc(ref(as(ALICE))));
   });
 });
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+describe("notification settings and devices", () => {
+  const settings = "users/alice/notifications/settings";
+  const device = "users/alice/push-subscriptions/device1";
+
+  it("are yours to read and change", async () => {
+    const db = as(ALICE);
+    await assertSucceeds(setDoc(doc(db, settings), { reminderEnabled: true }));
+    await assertSucceeds(setDoc(doc(db, device), { type: "web" }));
+    await assertSucceeds(getDoc(doc(db, device)));
+    await assertSucceeds(deleteDoc(doc(db, device)));
+  });
+
+  it("are hidden from everyone else", async () => {
+    await seed(device, { type: "web", subscription: { endpoint: "https://push" } });
+    await assertFails(getDoc(doc(as(BOB), device)));
+    await assertFails(setDoc(doc(as(BOB), settings), { reminderEnabled: true }));
+    await assertFails(getDoc(doc(signedOut(), device)));
+  });
+});
+
+describe("sentNotifications (server only)", () => {
+  it("can't be read or written from the app", async () => {
+    await seed("sentNotifications/share_s1", { at: 1 });
+    await assertFails(getDoc(doc(as(ALICE), "sentNotifications/share_s1")));
+    await assertFails(setDoc(doc(as(ALICE), "sentNotifications/share_s2"), { at: 1 }));
+  });
+});

@@ -45,6 +45,8 @@ export const USER_COLLECTIONS = [
   "growth-calendar",
   "reading-plans",
   "memory-verses",
+  "notifications",
+  "push-subscriptions",
 ] as const;
 
 /** Firestore allows at most 500 writes in one batch. */
