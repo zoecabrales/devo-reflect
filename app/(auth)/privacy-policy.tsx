@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 // Update when the policy's wording changes. The Brethren parts only show
 // while that feature is switched on, so update the date again on the day
 // Brethren is switched on in production.
-const EFFECTIVE_DATE = "November 13, 2026";
+const EFFECTIVE_DATE = "November 17, 2026";
 const CONTACT_EMAIL = "jirehzoe@gmail.com";
 
 function Section({
@@ -160,12 +160,29 @@ export default function PrivacyPolicy() {
           <Body>
             We do not sell, trade, or rent your personal information to any
             third party. Your data is shared only with the following service
-            provider solely to operate the app:
+            providers, solely to operate the app:
           </Body>
           <Bullet>
             Google Firebase — for authentication, database, and cloud storage
             services. Google&apos;s privacy policy applies to data processed by
             Firebase.
+          </Bullet>
+          <Bullet>
+            Vercel — hosts the website and the server that fetches the Bible
+            translations below.
+          </Bullet>
+          <Bullet>
+            Crossway and API.Bible (American Bible Society) — receive requests
+            for the chapters you open in the ESV, NASB, NKJV or NLT. These are
+            sent from our server without your personal details.
+          </Bullet>
+          <Bullet>
+            API.Bible usage reporting — when you read the NASB, NKJV or NLT on
+            the website, your browser loads API.Bible&apos;s usage-reporting
+            script so the publishers can count how often their translations are
+            read. It receives which chapter was viewed and standard browser
+            information such as your IP address, but not your name, email, or
+            account.
           </Bullet>
           {BRETHREN_ENABLED && (
             <>

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { parseEsv } from "@/api/chapter";
+import { parseVerses } from "@/api/chapter";
 import { DAILY_VERSES } from "@/src/constants/dailyVerses";
 import {
   fetchChapter,
@@ -68,11 +68,11 @@ describe("bundled versions", () => {
   });
 });
 
-describe("parseEsv", () => {
+describe("parseVerses", () => {
   it("splits ESV text into numbered verses", () => {
     const text =
       "John 3\n\n  [1] Now there was a man of the Pharisees named Nicodemus,\n    a ruler of the Jews. [2] This man came to Jesus by night\n\n";
-    expect(parseEsv(text)).toEqual([
+    expect(parseVerses(text)).toEqual([
       { verse: 1, text: "Now there was a man of the Pharisees named Nicodemus, a ruler of the Jews." },
       { verse: 2, text: "This man came to Jesus by night" },
     ]);
@@ -80,12 +80,12 @@ describe("parseEsv", () => {
 
   it("keeps the real numbers when the ESV leaves a verse out", () => {
     // Matthew 17:21 is not in the ESV text
-    const verses = parseEsv("[20] He said to them… [22] As they were gathering");
+    const verses = parseVerses("[20] He said to them… [22] As they were gathering");
     expect(verses.map((v) => v.verse)).toEqual([20, 22]);
   });
 
   it("returns nothing for text without verse numbers", () => {
-    expect(parseEsv("No passage found")).toEqual([]);
+    expect(parseVerses("No passage found")).toEqual([]);
   });
 });
 
