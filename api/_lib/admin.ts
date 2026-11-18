@@ -9,7 +9,7 @@ import { getFirestore } from "firebase-admin/firestore";
 
 function app() {
   if (getApps().length) return getApps()[0];
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
   if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT is not set");
   return initializeApp({ credential: cert(JSON.parse(raw)) });
 }

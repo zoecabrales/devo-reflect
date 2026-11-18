@@ -1,5 +1,6 @@
-// Push notifications on the website: daily reading reminders and Brethren
-// activity. Phase 1 is web only; the Android app comes later.
+// Push notifications on the website: the Verse of the Day reminder (6 AM and
+// 8 PM Philippine time) and Brethren activity. Phase 1 is web only; the
+// Android app comes later.
 //
 // Firestore (both private to the account, like the rest of users/{uid}):
 //   users/{uid}/notifications/settings     what the person wants, see
@@ -7,7 +8,6 @@
 //   users/{uid}/push-subscriptions/{id}    each device they turned it on for
 // The server (api/notify.ts, api/cron/reminders.ts) reads them to send.
 
-import { reminderSlot } from "@/src/utils/reminderTime";
 import { deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
@@ -15,15 +15,13 @@ const VAPID_PUBLIC_KEY = process.env.EXPO_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? "";
 
 export interface NotificationSettings {
+  /** Verse of the Day at 6 AM and 8 PM (Philippine time). On by default. */
   reminderEnabled: boolean;
-  /** Local "HH:MM", in 15-minute steps */
-  reminderTime: string;
   brethrenEnabled: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
-  reminderEnabled: false,
-  reminderTime: "07:00",
+  reminderEnabled: true,
   brethrenEnabled: false,
 };
 
@@ -31,9 +29,6 @@ const settingsRef = (uid: string) =>
   doc(db, "users", uid, "notifications", "settings");
 const deviceRef = (uid: string, id: string) =>
   doc(db, "users", uid, "push-subscriptions", id);
-
-/** This device's time zone, e.g. "Asia/Manila". */
-const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 // ── What this device can do ──────────────────────────────────────────────────
 
@@ -147,49 +142,17 @@ export async function loadNotificationSettings(
 ): Promise<NotificationSettings> {
   const data = (await getDoc(settingsRef(uid))).data() ?? {};
   return {
-    reminderEnabled: data.reminderEnabled === true,
-    reminderTime:
-      typeof data.reminderTime === "string"
-        ? data.reminderTime
-        : DEFAULT_NOTIFICATION_SETTINGS.reminderTime,
+    // On unless the person switched it off
+    reminderEnabled: data.reminderEnabled !== false,
     brethrenEnabled: data.brethrenEnabled === true,
   };
 }
 
-/** Saves the settings, with the reminder's UTC slot for this time zone. */
 export async function saveNotificationSettings(
   uid: string,
   s: NotificationSettings,
 ): Promise<void> {
-  const tz = timeZone();
-  await setDoc(
-    settingsRef(uid),
-    {
-      ...s,
-      timeZone: tz,
-      reminderSlot: s.reminderEnabled ? reminderSlot(s.reminderTime, tz) : null,
-    },
-    { merge: true },
-  );
-}
-
-/**
- * Keeps the reminder at the same local time after a move to another time
- * zone or a daylight-saving change. Run when the app opens; quiet on failure.
- */
-export async function refreshReminderSlot(uid: string): Promise<void> {
-  try {
-    const snap = await getDoc(settingsRef(uid));
-    const data = snap.data();
-    if (!data?.reminderEnabled || typeof data.reminderTime !== "string") return;
-    const tz = timeZone();
-    const slot = reminderSlot(data.reminderTime, tz);
-    if (data.timeZone !== tz || data.reminderSlot !== slot) {
-      await setDoc(settingsRef(uid), { timeZone: tz, reminderSlot: slot }, { merge: true });
-    }
-  } catch {
-    // Tried again next time the app opens
-  }
+  await setDoc(settingsRef(uid), s, { merge: true });
 }
 
 // ── Test ─────────────────────────────────────────────────────────────────────

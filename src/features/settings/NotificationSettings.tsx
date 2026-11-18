@@ -16,12 +16,6 @@ import {
   turnOnThisDevice,
 } from "@/src/services/notifications";
 import { styles } from "@/src/styles/settings.styles";
-import {
-  formatReminderTime,
-  minutesOf,
-  REMINDER_STEP_MINUTES,
-  timeOf,
-} from "@/src/utils/reminderTime";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { ComponentProps, useCallback, useState } from "react";
@@ -102,11 +96,6 @@ export function NotificationSettings({ theme }: { theme: Theme }) {
     }
   }
 
-  function stepTime(dir: 1 | -1) {
-    const time = timeOf(minutesOf(settings.reminderTime) + dir * REMINDER_STEP_MINUTES);
-    update({ ...settings, reminderTime: time }, false);
-  }
-
   const anyOn = settings.reminderEnabled || settings.brethrenEnabled;
 
   return (
@@ -132,23 +121,11 @@ export function NotificationSettings({ theme }: { theme: Theme }) {
               theme={theme}
               icon="alarm-outline"
               label="Daily reminder"
-              hint="Today's verse, at a time you choose"
+              hint="Today's verse at 6 AM, and a reflection at 8 PM"
               value={settings.reminderEnabled}
               disabled={busy}
               onChange={(v) => update({ ...settings, reminderEnabled: v }, v)}
             />
-            {settings.reminderEnabled && (
-              <View style={local.timeRow}>
-                <Text style={[local.timeLabel, { color: theme.textSecondary }]}>
-                  Remind me at
-                </Text>
-                <StepButton theme={theme} icon="chevron-back" label="Earlier" onPress={() => stepTime(-1)} />
-                <Text style={[local.time, { color: theme.text }]}>
-                  {formatReminderTime(settings.reminderTime)}
-                </Text>
-                <StepButton theme={theme} icon="chevron-forward" label="Later" onPress={() => stepTime(1)} />
-              </View>
-            )}
             {BRETHREN_ENABLED && (
               <>
                 <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -250,30 +227,6 @@ function SwitchRow({
   );
 }
 
-function StepButton({
-  theme,
-  icon,
-  label,
-  onPress,
-}: {
-  theme: Theme;
-  icon: ComponentProps<typeof Ionicons>["name"];
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={[local.stepBtn, { borderColor: theme.border }]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      activeOpacity={0.7}
-    >
-      <Ionicons name={icon} size={16} color={theme.text} />
-    </TouchableOpacity>
-  );
-}
-
 function Note({ theme, children }: { theme: Theme; children: string }) {
   return (
     <Text style={[local.note, { color: theme.textSecondary }]}>{children}</Text>
@@ -283,23 +236,6 @@ function Note({ theme, children }: { theme: Theme; children: string }) {
 const local = StyleSheet.create({
   labelWrap: { flex: 1 },
   hint: { fontSize: 12, marginTop: 2 },
-  timeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-  },
-  timeLabel: { fontSize: 13, flex: 1 },
-  time: { fontSize: 15, fontWeight: "700", minWidth: 76, textAlign: "center" },
-  stepBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   deviceBtn: {
     margin: 14,
     marginTop: 4,

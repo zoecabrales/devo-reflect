@@ -13,16 +13,19 @@ export interface PushMessage {
   url: string;
   /** Notifications with the same tag replace each other. */
   tag?: string;
+  /** Drop it if it can't be delivered within this time (default 12 hours). */
+  ttlSeconds?: number;
 }
 
 let vapidSet = false;
 function setVapid() {
   if (vapidSet) return;
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  // Trimmed: a pasted value with a stray space or line break breaks web push
+  const publicKey = process.env.VAPID_PUBLIC_KEY?.trim();
+  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
   if (!publicKey || !privateKey) throw new Error("VAPID keys are not set");
   webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT ?? "mailto:jirehzoe@gmail.com",
+    process.env.VAPID_SUBJECT?.trim() || "mailto:jirehzoe@gmail.com",
     publicKey,
     privateKey,
   );
@@ -53,8 +56,9 @@ export async function sendToUser(uid: string, message: PushMessage): Promise<Sen
       const d = device.data();
       if (d.type !== "web" || !d.subscription) return;
       try {
-        await webpush.sendNotification(d.subscription, JSON.stringify(message), {
-          TTL: 60 * 60 * 12,
+        const { ttlSeconds, ...payload } = message;
+        await webpush.sendNotification(d.subscription, JSON.stringify(payload), {
+          TTL: ttlSeconds ?? 60 * 60 * 12,
         });
         result.sent++;
       } catch (e) {

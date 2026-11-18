@@ -1,11 +1,3 @@
-import {
-  dueReminderDate,
-  dueSlots,
-  formatReminderTime,
-  reminderSlot,
-  timeOf,
-} from "@/src/utils/reminderTime";
-
 // ── Fakes for the server's Firebase Admin and push sending ───────────────────
 
 type Data = Record<string, unknown>;
@@ -34,14 +26,12 @@ function collection(path: string) {
 const mockDb = {
   collection,
   collectionGroup: (name: string) => ({
-    where: (field: string, _op: string, values: unknown[]) => ({
-      get: async () => {
-        const docs = [...mockStore.entries()]
-          .filter(([p, d]) => p.split("/").at(-2) === name && values.includes(d[field]))
-          .map(([p, d]) => ({ ref: docRef(p), data: () => d }));
-        return { docs, size: docs.length };
-      },
-    }),
+    get: async () => {
+      const docs = [...mockStore.entries()]
+        .filter(([p]) => p.split("/").at(-2) === name)
+        .map(([p, d]) => ({ ref: docRef(p), data: () => d }));
+      return { docs, size: docs.length };
+    },
   }),
 };
 
@@ -71,95 +61,64 @@ beforeEach(() => {
   mockSent.length = 0;
 });
 
-// ── Reminder times ───────────────────────────────────────────────────────────
-
-describe("reminder times", () => {
-  it("turns a local time into its UTC slot", () => {
-    // Manila is UTC+8 all year
-    expect(reminderSlot("07:00", "Asia/Manila")).toBe(23 * 60);
-    // New York: UTC-5 in winter, UTC-4 in summer
-    expect(reminderSlot("07:00", "America/New_York", new Date("2026-01-15T12:00:00Z"))).toBe(12 * 60);
-    expect(reminderSlot("07:00", "America/New_York", new Date("2026-07-15T12:00:00Z"))).toBe(11 * 60);
-    // India is UTC+5:30
-    expect(reminderSlot("06:00", "Asia/Kolkata")).toBe(30);
-  });
-
-  it("checks this quarter hour and the three before it", () => {
-    expect(dueSlots(new Date("2026-11-17T12:07:00Z"))).toEqual([720, 705, 690, 675]);
-    // Across midnight UTC
-    expect(dueSlots(new Date("2026-11-17T00:05:00Z"))).toEqual([0, 1425, 1410, 1395]);
-  });
-
-  it("is due from the chosen time until an hour later", () => {
-    // 07:00 in Manila is 23:00 UTC the day before
-    expect(dueReminderDate("07:00", "Asia/Manila", new Date("2026-11-16T22:55:00Z"))).toBeNull();
-    expect(dueReminderDate("07:00", "Asia/Manila", new Date("2026-11-16T23:05:00Z"))).toBe("2026-11-17");
-    expect(dueReminderDate("07:00", "Asia/Manila", new Date("2026-11-17T00:05:00Z"))).toBeNull();
-  });
-
-  it("counts a late-evening reminder sent after midnight as the day before", () => {
-    // 23:45 Manila reminder, job runs at 00:10 Manila the next day
-    expect(dueReminderDate("23:45", "Asia/Manila", new Date("2026-11-17T16:10:00Z"))).toBe("2026-11-17");
-  });
-
-  it("formats times for people", () => {
-    expect(formatReminderTime("07:00")).toBe("7:00 AM");
-    expect(formatReminderTime("00:15")).toBe("12:15 AM");
-    expect(formatReminderTime("12:30")).toBe("12:30 PM");
-    expect(formatReminderTime("21:45")).toBe("9:45 PM");
-    expect(timeOf(-15)).toBe("23:45");
-    expect(timeOf(24 * 60)).toBe("00:00");
-  });
-});
-
-// ── The reminder job ─────────────────────────────────────────────────────────
+// ── The Verse of the Day reminders ───────────────────────────────────────────
 
 describe("/api/cron/reminders", () => {
   const { GET } = require("@/api/cron/reminders") as typeof import("@/api/cron/reminders");
-  const run = (secret = "cron-secret") =>
-    GET(new Request("https://example.com/api/cron/reminders", {
+  const run = (query: string, secret = "cron-secret") =>
+    GET(new Request(`https://example.com/api/cron/reminders?${query}`, {
       headers: { authorization: `Bearer ${secret}` },
     }));
+  const device = (uid: string) =>
+    mockStore.set(`users/${uid}/push-subscriptions/d1`, { type: "web" });
 
   beforeEach(() => {
     process.env.CRON_SECRET = "cron-secret";
-    jest.useFakeTimers({ now: new Date("2026-11-16T23:05:00Z") }); // 07:05 Manila
-  });
-  afterEach(() => jest.useRealTimers());
-
-  const settings = (extra: Data = {}) => ({
-    reminderEnabled: true,
-    reminderTime: "07:00",
-    timeZone: "Asia/Manila",
-    reminderSlot: 23 * 60,
-    ...extra,
+    mockUsersByEmail["alice@example.com"] = "alice";
   });
 
-  it("only runs with the secret", async () => {
-    expect((await run("wrong")).status).toBe(401);
-    delete process.env.CRON_SECRET;
-    expect((await run("")).status).toBe(401);
+  it("only runs with the secret, for morning or evening", async () => {
+    expect((await run("slot=morning", "wrong")).status).toBe(401);
+    expect((await run("slot=noon")).status).toBe(400);
   });
 
-  it("sends a due reminder once a day, with today's verse", async () => {
-    mockStore.set("users/alice/notifications/settings", settings());
-    mockStore.set("users/bob/notifications/settings", settings({ reminderTime: "09:00", reminderSlot: 60 }));
+  it("is on by default for everyone with a device, once per slot per day", async () => {
+    device("alice");
+    device("bob");
+    mockStore.set("users/bob/notifications/settings", { reminderEnabled: true });
 
-    expect(await (await run()).json()).toMatchObject({ due: 1, sent: 1 });
-    expect(mockSent).toHaveLength(1);
-    expect(mockSent[0]).toMatchObject({ uid: "alice", title: "Time for your devotion" });
-    expect(mockSent[0].body).toMatch(/^Today's verse: .+ \d+:\d+\. Take a moment/);
-    expect(mockStore.get("users/alice/notifications/settings")!.lastReminderDate).toBe("2026-11-17");
+    expect(await (await run("slot=morning")).json()).toMatchObject({ accounts: 2, sent: 2 });
+    expect(mockSent.map((m) => m.uid).sort()).toEqual(["alice", "bob"]);
+    expect(mockSent[0].title).toBe("Today's verse");
+    expect(mockSent[0].body).toMatch(/^.+ \d+:\d+\. Take a moment to read and reflect\.$/);
 
-    // A second run in the same window doesn't send it again
-    await run();
-    expect(mockSent).toHaveLength(1);
+    // Running again sends nothing more; the evening one still goes out
+    await run("slot=morning");
+    expect(mockSent).toHaveLength(2);
+    await run("slot=evening");
+    expect(mockSent).toHaveLength(4);
+    expect(mockSent[3].title).toBe("Evening reflection");
   });
 
-  it("skips reminders that are turned off", async () => {
-    mockStore.set("users/alice/notifications/settings", settings({ reminderEnabled: false }));
-    await run();
+  it("skips people who switched it off, and people without a device", async () => {
+    device("alice");
+    mockStore.set("users/alice/notifications/settings", { reminderEnabled: false });
+    mockStore.set("users/carol/notifications/settings", { brethrenEnabled: true });
+    expect(await (await run("slot=morning")).json()).toMatchObject({ accounts: 1, sent: 0, skipped: 1 });
     expect(mockSent).toHaveLength(0);
+  });
+
+  it("can send to a single account for testing", async () => {
+    device("alice");
+    device("bob");
+    await run("slot=evening&email=alice@example.com");
+    expect(mockSent.map((m) => m.uid)).toEqual(["alice"]);
+    expect((await run("slot=evening&email=nobody@example.com")).status).toBe(404);
+  });
+
+  it("expires the reminder after 2 hours rather than delivering it late", () => {
+    const { reminderMessage } = require("@/api/cron/reminders") as typeof import("@/api/cron/reminders");
+    expect(reminderMessage("alice", "morning", "2026-11-18").ttlSeconds).toBe(7200);
   });
 });
 
