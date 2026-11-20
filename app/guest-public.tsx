@@ -5,10 +5,11 @@
 // an account. ?date=YYYY-MM-DD shows that day's verse (the endpoint's links
 // include it); without it, today's.
 //
-// Three layouts, using the app's breakpoints (src/utils/responsive.ts):
-//   phone   < 768    one column, buttons stacked
-//   tablet  768+     wider column, features in a 2×2 grid, buttons side by side
-//   desktop 1024+    top bar; verse on the left, intro and buttons on the right
+// A bento grid of three tiles (verse, devotional, group question) and a slim
+// sign-up strip, using the app's breakpoints (src/utils/responsive.ts):
+//   phone   < 768    tiles stacked
+//   tablet  768+     verse full width; devotional and group side by side
+//   desktop 1024+    top bar; verse on the left, devotional over group on the right
 
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { auth } from "@/src/services/firebase";
@@ -33,31 +34,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const TABLET_MIN_WIDTH = 768;
+const TOP_BAR_H = 64;
+const GAP = 16;
 
 type Layout = "phone" | "tablet" | "desktop";
-
-const FEATURES: { icon: keyof typeof Ionicons.glyphMap; title: string; body: string }[] = [
-  {
-    icon: "sunny-outline",
-    title: "A verse for every day",
-    body: "Start each morning with Scripture and a moment to reflect.",
-  },
-  {
-    icon: "book-outline",
-    title: "Read the whole Bible",
-    body: "Several translations, reading plans and book guides.",
-  },
-  {
-    icon: "create-outline",
-    title: "Journal and pray",
-    body: "Write what God is teaching you and keep track of your prayers.",
-  },
-  {
-    icon: "bookmark-outline",
-    title: "Hide God's Word in your heart",
-    body: "Bookmark verses and work on memorising them.",
-  },
-];
 
 /** "2026-11-20" → "Friday, November 20" */
 function formatDate(date: string): string {
@@ -82,7 +62,6 @@ export default function GuestPublic() {
   const { theme } = useAppTheme();
   const layout = useLayout();
   const pageScroll = usePageScrollLayout();
-  const { height } = useWindowDimensions();
   const params = useLocalSearchParams<{ date?: string }>();
   const [today] = useState(getPHTDateString);
   const date = isValidDate(params.date) ? params.date : today;
@@ -96,10 +75,18 @@ export default function GuestPublic() {
 
   const isDesktop = layout === "desktop";
   const isTablet = layout === "tablet";
+  const isWide = isDesktop || isTablet;
 
   const openApp = () => router.replace("/");
   const signUp = () => router.push("/(auth)/sign-in?mode=signup");
   const signIn = () => router.push("/(auth)/sign-in");
+
+  const tile = [
+    styles.tile,
+    isWide && styles.tileWide,
+    { backgroundColor: theme.surface, borderColor: theme.border },
+  ];
+  const eyebrow = [styles.eyebrow, { color: theme.textSecondary }];
 
   const brand = (
     <View style={[styles.brand, !isDesktop && styles.brandAboveContent]}>
@@ -112,18 +99,13 @@ export default function GuestPublic() {
     </View>
   );
 
-  const verseBlock = (
-    <View
-      style={[
-        styles.card,
-        isTablet && styles.cardTablet,
-        isDesktop && styles.cardDesktop,
-        !isDesktop && { backgroundColor: theme.surface, borderColor: theme.border },
-      ]}
-    >
-      <Text style={[styles.eyebrow, { color: theme.textSecondary }]}>
-        Verse of the Day · {verse.theme}
-      </Text>
+  // ── Tiles ────────────────────────────────────────────────────────────────
+  const verseTile = (
+    <View style={[tile, isDesktop && styles.verseTileDesktop]}>
+      <View style={styles.tileHeader}>
+        <Ionicons name="sunny-outline" size={16} color={theme.textSecondary} />
+        <Text style={eyebrow}>Verse of the Day · {verse.theme}</Text>
+      </View>
       <Text style={[styles.date, { color: theme.textSecondary }]}>{formatDate(date)}</Text>
       <Text
         style={[
@@ -136,10 +118,8 @@ export default function GuestPublic() {
         {verse.text}
       </Text>
       <View style={styles.referenceRow}>
-        {isDesktop && <View style={[styles.referenceRule, { backgroundColor: theme.text }]} />}
-        <Text
-          style={[styles.reference, isDesktop && styles.referenceDesktop, { color: theme.text }]}
-        >
+        <View style={[styles.referenceRule, { backgroundColor: theme.text }]} />
+        <Text style={[styles.reference, isWide && styles.referenceWide, { color: theme.text }]}>
           {verse.reference}
           <Text style={{ color: theme.textSecondary, fontWeight: "400" }}> · WEB</Text>
         </Text>
@@ -147,27 +127,30 @@ export default function GuestPublic() {
     </View>
   );
 
-  const devotionalBlock = (
-    <View
-      style={[
-        styles.devotional,
-        isTablet && styles.devotionalTablet,
-        isDesktop && [styles.devotionalDesktop, { borderTopColor: theme.border }],
-      ]}
-    >
-      <Text style={[styles.eyebrow, { color: theme.textSecondary }]}>Devotional</Text>
+  const devotionalTile = (
+    <View style={[tile, isWide && styles.flexTile]}>
+      <View style={styles.tileHeader}>
+        <Ionicons name="book-outline" size={16} color={theme.textSecondary} />
+        <Text style={eyebrow}>Devotional</Text>
+      </View>
       <Text style={[styles.devotionalTitle, { color: theme.text }]}>{verse.devotional.title}</Text>
       <Text style={[styles.devotionalBody, { color: theme.text }]}>{verse.devotional.body}</Text>
-      <View style={[styles.question, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-        <View style={styles.questionHeader}>
-          <Ionicons name="people-outline" size={16} color={theme.textSecondary} />
-          <Text style={[styles.questionLabel, { color: theme.textSecondary }]}>For your group</Text>
-        </View>
-        <Text style={[styles.questionText, { color: theme.text }]}>{verse.devotional.question}</Text>
-      </View>
     </View>
   );
 
+  const groupTile = (
+    <View style={[tile, isTablet && styles.flexTile]}>
+      <View style={styles.tileHeader}>
+        <Ionicons name="people-outline" size={16} color={theme.textSecondary} />
+        <Text style={eyebrow}>For your group</Text>
+      </View>
+      <Text style={[styles.questionText, isWide && styles.questionTextWide, { color: theme.text }]}>
+        {verse.devotional.question}
+      </Text>
+    </View>
+  );
+
+  // ── Sign-up strip ────────────────────────────────────────────────────────
   const buttons = signedIn ? (
     <TouchableOpacity
       style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
@@ -177,9 +160,9 @@ export default function GuestPublic() {
       <Text style={[styles.primaryBtnText, { color: theme.primaryText }]}>Open Devo Reflect</Text>
     </TouchableOpacity>
   ) : (
-    <View style={[styles.buttons, isTablet && styles.buttonsRow]}>
+    <View style={[styles.buttons, isWide && styles.buttonsRow]}>
       <TouchableOpacity
-        style={[styles.primaryBtn, isTablet && styles.btnInRow, { backgroundColor: theme.primary }]}
+        style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
         onPress={signUp}
         activeOpacity={0.8}
       >
@@ -188,7 +171,7 @@ export default function GuestPublic() {
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.secondaryBtn, isTablet && styles.btnInRow, { borderColor: theme.border }]}
+        style={[styles.secondaryBtn, { borderColor: theme.border }]}
         onPress={signIn}
         activeOpacity={0.8}
       >
@@ -199,52 +182,57 @@ export default function GuestPublic() {
     </View>
   );
 
-  const intro = (
+  const strip = (
     <View
-      style={
-        isDesktop && [
-          styles.panel,
-          { backgroundColor: theme.surface, borderColor: theme.border },
-        ]
-      }
+      style={[
+        styles.strip,
+        isWide && styles.stripWide,
+        { borderColor: theme.border },
+      ]}
     >
-      <Text
-        style={[styles.heading, (isTablet || isDesktop) && styles.headingLarge, { color: theme.text }]}
-      >
-        Grow in God&apos;s Word, every day
-      </Text>
-      <Text style={[styles.lead, { color: theme.textSecondary }]}>
-        Devo Reflect is a free space for your personal time with God.
-      </Text>
-
-      <View style={[styles.features, isTablet && styles.featuresGrid]}>
-        {FEATURES.map((f) => (
-          <View key={f.title} style={[styles.feature, isTablet && styles.featureGridItem]}>
-            <View
-              style={[
-                styles.featureIcon,
-                { backgroundColor: isDesktop ? theme.background : theme.surface, borderColor: theme.border },
-              ]}
-            >
-              <Ionicons name={f.icon} size={20} color={theme.text} />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={[styles.featureTitle, { color: theme.text }]}>{f.title}</Text>
-              <Text style={[styles.featureBody, { color: theme.textSecondary }]}>{f.body}</Text>
-            </View>
-          </View>
-        ))}
+      <View style={isWide && styles.stripText}>
+        <Text style={[styles.stripHeading, { color: theme.text }]}>
+          Grow in God&apos;s Word, every day
+        </Text>
+        <Text style={[styles.stripLead, { color: theme.textSecondary }]}>
+          A free space for your personal time with God.
+        </Text>
       </View>
-
       {buttons}
     </View>
   );
 
-  const footnote = (
-    <Text style={[styles.footnote, { color: theme.textSecondary }]}>
-      Scripture from the World English Bible (public domain).
-    </Text>
-  );
+  // ── Grid ─────────────────────────────────────────────────────────────────
+  let grid: React.ReactNode;
+  if (isDesktop) {
+    grid = (
+      <View style={styles.row}>
+        <View style={styles.verseColumn}>{verseTile}</View>
+        <View style={styles.sideColumn}>
+          {devotionalTile}
+          {groupTile}
+        </View>
+      </View>
+    );
+  } else if (isTablet) {
+    grid = (
+      <>
+        {verseTile}
+        <View style={styles.row}>
+          {devotionalTile}
+          {groupTile}
+        </View>
+      </>
+    );
+  } else {
+    grid = (
+      <>
+        {verseTile}
+        {devotionalTile}
+        {groupTile}
+      </>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -268,36 +256,24 @@ export default function GuestPublic() {
         contentContainerStyle={[
           styles.scroll,
           isTablet && styles.scrollTablet,
-          isDesktop && [styles.scrollDesktop, { minHeight: height - TOP_BAR_H }],
+          isDesktop && styles.scrollDesktop,
         ]}
         {...pageScrollMarker(pageScroll, "pageScrollList")}
       >
-        {isDesktop ? (
-          <View style={styles.desktopInner}>
-            <View style={styles.columns}>
-              <View style={styles.verseColumn}>
-                {verseBlock}
-                {devotionalBlock}
-              </View>
-              <View style={styles.introColumn}>{intro}</View>
-            </View>
-            {footnote}
+        <View style={[styles.inner, isTablet && styles.innerTablet, isDesktop && styles.innerDesktop]}>
+          {!isDesktop && brand}
+          <View style={styles.grid}>
+            {grid}
+            {strip}
           </View>
-        ) : (
-          <View style={[styles.inner, isTablet && styles.innerTablet]}>
-            {brand}
-            {verseBlock}
-            {devotionalBlock}
-            {intro}
-            {footnote}
-          </View>
-        )}
+          <Text style={[styles.footnote, { color: theme.textSecondary }]}>
+            Scripture from the World English Bible (public domain).
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const TOP_BAR_H = 64;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -307,7 +283,7 @@ const styles = StyleSheet.create({
   topBarInner: {
     width: "100%",
     // The page content's 1120 plus this bar's own 40 + 40 side padding, so the
-    // logo and "Sign in" line up with the columns below
+    // logo and "Sign in" line up with the grid below
     maxWidth: 1120 + 80,
     alignSelf: "center",
     paddingHorizontal: 40,
@@ -317,83 +293,77 @@ const styles = StyleSheet.create({
   },
   topBarLink: { fontSize: 15, fontWeight: "600" },
 
-  // Scroll containers
-  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingVertical: 32 },
-  scrollTablet: { paddingHorizontal: 40, paddingVertical: 48 },
-  scrollDesktop: { paddingHorizontal: 40, paddingVertical: 56, justifyContent: "center" },
+  // Page
+  scroll: { flexGrow: 1, paddingHorizontal: 16, paddingVertical: 28 },
+  scrollTablet: { paddingHorizontal: 40, paddingVertical: 40 },
+  scrollDesktop: { paddingHorizontal: 40, paddingVertical: 40 },
   inner: { width: "100%", maxWidth: 560, alignSelf: "center" },
-  innerTablet: { maxWidth: 720 },
-  desktopInner: { width: "100%", maxWidth: 1120, alignSelf: "center" },
-  columns: { flexDirection: "row", alignItems: "flex-start", gap: 64 },
-  verseColumn: { flex: 1.15 },
-  introColumn: { flex: 1, maxWidth: 460 },
+  innerTablet: { maxWidth: 760 },
+  innerDesktop: { maxWidth: 1120 },
+  grid: { gap: GAP },
+  row: { flexDirection: "row", gap: GAP, alignItems: "stretch" },
+  verseColumn: { flex: 1.5 },
+  sideColumn: { flex: 1, gap: GAP },
 
   // Brand
   brand: { flexDirection: "row", alignItems: "center", gap: 10 },
-  brandAboveContent: { marginBottom: 28 },
+  brandAboveContent: { marginBottom: 24 },
   brandIcon: { width: 32, height: 32 },
   brandName: { fontFamily: "Oswald_700Bold", fontSize: 22, letterSpacing: 0.5 },
 
-  // Verse
-  card: { borderWidth: 1, borderRadius: 16, padding: 24, marginBottom: 36 },
-  cardTablet: { padding: 36, borderRadius: 20, marginBottom: 44 },
-  cardDesktop: { borderWidth: 0, padding: 0, marginBottom: 0 },
+  // Tiles
+  tile: { borderWidth: 1, borderRadius: 20, padding: 22 },
+  tileWide: { padding: 28 },
+  flexTile: { flex: 1 },
+  verseTileDesktop: { flex: 1, padding: 40, justifyContent: "center" },
+  tileHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
   eyebrow: { fontSize: 12, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase" },
-  date: { fontSize: 13, marginTop: 4, marginBottom: 18 },
-  verseText: { fontSize: 20, lineHeight: 31, fontFamily: "Georgia" },
-  verseTextTablet: { fontSize: 24, lineHeight: 37 },
-  verseTextDesktop: { fontSize: 34, lineHeight: 50, marginTop: 8 },
-  referenceRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
-  referenceRule: { width: 28, height: 2 },
+
+  // Verse
+  date: { fontSize: 13, marginTop: 6, marginBottom: 18 },
+  verseText: { fontSize: 21, lineHeight: 32, fontFamily: "Georgia" },
+  verseTextTablet: { fontSize: 26, lineHeight: 39 },
+  verseTextDesktop: { fontSize: 32, lineHeight: 47 },
+  referenceRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 20 },
+  referenceRule: { width: 24, height: 2 },
   reference: { fontSize: 15, fontWeight: "700" },
-  referenceDesktop: { fontSize: 17 },
+  referenceWide: { fontSize: 17 },
 
   // Devotional
-  devotional: { marginBottom: 40 },
-  devotionalTablet: { marginBottom: 48 },
-  devotionalDesktop: { marginTop: 36, paddingTop: 32, borderTopWidth: 1, marginBottom: 0 },
-  devotionalTitle: { fontFamily: "Oswald_700Bold", fontSize: 22, marginTop: 6, marginBottom: 10 },
-  devotionalBody: { fontSize: 16, lineHeight: 26 },
-  question: { borderWidth: 1, borderRadius: 12, padding: 16, marginTop: 20 },
-  questionHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
-  questionLabel: { fontSize: 12, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase" },
-  questionText: { fontSize: 15, lineHeight: 23, fontWeight: "600" },
+  devotionalTitle: { fontFamily: "Oswald_700Bold", fontSize: 22, marginTop: 12, marginBottom: 8 },
+  devotionalBody: { fontSize: 15, lineHeight: 24 },
 
-  // Intro
-  panel: { borderWidth: 1, borderRadius: 20, padding: 32 },
-  heading: { fontFamily: "Oswald_700Bold", fontSize: 24, marginBottom: 6 },
-  headingLarge: { fontSize: 28 },
-  lead: { fontSize: 15, lineHeight: 22, marginBottom: 22 },
-  features: { gap: 18, marginBottom: 32 },
-  featuresGrid: { flexDirection: "row", flexWrap: "wrap", columnGap: 24, rowGap: 22 },
-  feature: { flexDirection: "row", gap: 14, alignItems: "flex-start" },
-  featureGridItem: { width: "47%" },
-  featureIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
+  // Group question
+  questionText: { fontSize: 17, lineHeight: 26, fontWeight: "600", marginTop: 12 },
+  questionTextWide: { fontSize: 19, lineHeight: 29 },
+
+  // Sign-up strip
+  strip: { borderWidth: 1, borderRadius: 20, padding: 22, gap: 16 },
+  stripWide: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    paddingVertical: 20,
+    paddingHorizontal: 28,
+    gap: 24,
   },
-  featureText: { flex: 1 },
-  featureTitle: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
-  featureBody: { fontSize: 14, lineHeight: 20 },
+  stripText: { flexShrink: 1 },
+  stripHeading: { fontFamily: "Oswald_700Bold", fontSize: 20 },
+  stripLead: { fontSize: 14, lineHeight: 20, marginTop: 2 },
 
   // Buttons
-  buttons: { gap: 12 },
+  buttons: { gap: 10 },
   buttonsRow: { flexDirection: "row" },
-  btnInRow: { flex: 1 },
-  primaryBtn: { borderRadius: 12, paddingVertical: 15, paddingHorizontal: 16, alignItems: "center" },
-  primaryBtnText: { fontSize: 16, fontWeight: "700" },
+  primaryBtn: { borderRadius: 12, paddingVertical: 13, paddingHorizontal: 20, alignItems: "center" },
+  primaryBtnText: { fontSize: 15, fontWeight: "700" },
   secondaryBtn: {
     borderRadius: 12,
     borderWidth: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     alignItems: "center",
   },
   secondaryBtnText: { fontSize: 15, fontWeight: "600" },
 
-  footnote: { fontSize: 12, textAlign: "center", marginTop: 28 },
+  footnote: { fontSize: 12, textAlign: "center", marginTop: 24 },
 });
