@@ -13,7 +13,7 @@ export function getPHTDateString(): string {
 }
 
 /** 32-bit string hash (FNV-1a). */
-function hashString(text: string): number {
+export function hashString(text: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
@@ -23,7 +23,7 @@ function hashString(text: string): number {
 }
 
 /** Small seeded random number generator (mulberry32), returns 0 ≤ n < 1. */
-function seededRandom(seed: number): () => number {
+export function seededRandom(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
