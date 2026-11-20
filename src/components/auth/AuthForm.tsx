@@ -1,6 +1,6 @@
 import { signInEmail, signUpEmail } from "@/src/services/auth";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
     ActivityIndicator,
@@ -35,7 +35,9 @@ export default function AuthForm() {
   const emailRef = useRef<import("react-native").TextInput>(null);
   const passwordRef = useRef<import("react-native").TextInput>(null);
   const confirmPasswordRef = useRef<import("react-native").TextInput>(null);
-  const [isLogin, setIsLogin] = useState(true);
+  // /sign-in?mode=signup opens on "Create your account" (used by /guest-public)
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const [isLogin, setIsLogin] = useState(mode !== "signup");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
