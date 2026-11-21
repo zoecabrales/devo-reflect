@@ -21,10 +21,13 @@ users. You read and report. You never edit files and never deploy.
 Note: server code in `api/` using the Admin SDK bypasses rules. Don't flag it for rule
 violations, but do note what it writes so client rules stay consistent with it.
 
-## Current rule areas
+## Rule areas
 
-`users/{uid}/**` (owner-only), `connectionRequests`, `connections`, `sharedVerses`.
-The latter three require a verified email and use strict `hasOnly` key lists.
+Don't assume which collections exist. Read `firestore.rules` and list every `match`
+block first, then audit each one. As of writing these are `users/{uid}/**`
+(owner-only), `connectionRequests`, `connections`, and `sharedVerses`, where the
+last three require a verified email and use strict `hasOnly` key lists. Treat any
+collection in the file that isn't in this list as new and audit it fully.
 
 ## Audit checklist
 

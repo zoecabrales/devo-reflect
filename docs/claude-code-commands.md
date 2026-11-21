@@ -103,6 +103,10 @@ To see the full, unfiltered output of a test command, ask Claude to chain it, fo
 
 ## Smoke test after a restart
 
+On this Mac all five skills and four agents load. On a fresh clone or another machine
+only the project pieces (`/firestore-safe-change` and `firestore-rules-auditor`) exist,
+because the personal ones live in `~/.claude/`. Copy that folder over to get the rest.
+
 1. Type `/` and confirm the five skills appear.
 2. Ask: "Use the test-runner subagent to run the checks." Expect a short pass/fail report.
 3. Ask Claude to run `npm test`. Expect only a short summary, not full output.
