@@ -179,14 +179,38 @@ async function fetchPlanProgress(
     )) {
       completed[Number(k)] = v;
     }
-    result[d.id] = {
+    result[d.id] = withRecoveredDays({
       planId: d.id,
       startedOn: data.startedOn as string,
       completed,
       chaptersRead: (data.chaptersRead as Record<string, string>) ?? {},
-    };
+    });
   }
   return result;
+}
+
+/**
+ * Counts every day whose chapters have all been opened as read, dated by the
+ * last of them, even when `completed` doesn't say so. An earlier version wiped
+ * `completed` whenever a chapter was opened that didn't finish its day (see
+ * chapterReadUpdate), while `chaptersRead` stayed intact; this restores those
+ * days without touching the stored data. Days marked read by hand are kept,
+ * and "unmark" removes a day's chapters, so it stays unmarked.
+ */
+export function withRecoveredDays(progress: PlanProgress): PlanProgress {
+  let completed = progress.completed;
+  planSchedule(progress.planId).forEach((chapters, day) => {
+    if (progress.completed[day] || chapters.length === 0) return;
+    let lastRead = "";
+    for (const c of chapters) {
+      const readOn = progress.chaptersRead[chapterKey(c.bookId, c.chapter)];
+      if (!readOn) return;
+      if (readOn > lastRead) lastRead = readOn;
+    }
+    if (completed === progress.completed) completed = { ...progress.completed };
+    completed[day] = lastRead;
+  });
+  return completed === progress.completed ? progress : { ...progress, completed };
 }
 
 export async function startPlan(
@@ -234,6 +258,53 @@ export async function setDayComplete(
   return readOn;
 }
 
+/** What to merge into a plan's document when a chapter is opened. */
+export interface ChapterReadUpdate {
+  chaptersRead: Record<string, string>;
+  /** Only present when this chapter finished a day. */
+  completed?: Record<number, string>;
+}
+
+/**
+ * The write for opening a chapter, or null when there is nothing to record:
+ * the chapter isn't in an unfinished day of this plan, or it was already
+ * recorded and finishes nothing new.
+ *
+ * `completed` is left out unless a day was finished. Firestore treats an empty
+ * map in a merge write as "replace this map with nothing", so sending
+ * `completed: {}` used to erase every day the user had already finished.
+ */
+export function chapterReadUpdate(
+  p: PlanProgress,
+  bookId: string,
+  chapter: number,
+  today: string,
+): ChapterReadUpdate | null {
+  const key = chapterKey(bookId, chapter);
+  const days = planSchedule(p.planId)
+    .map((chapters, day) => ({ chapters, day }))
+    .filter(
+      ({ chapters, day }) =>
+        !p.completed[day] &&
+        chapters.some((c) => c.bookId === bookId && c.chapter === chapter),
+    );
+  if (days.length === 0) return null;
+  const readOn = p.chaptersRead[key] ?? today;
+  const read = { ...p.chaptersRead, [key]: readOn };
+  const completed: Record<number, string> = {};
+  for (const { chapters, day } of days) {
+    if (chapters.every((c) => read[chapterKey(c.bookId, c.chapter)])) {
+      completed[day] = today;
+    }
+  }
+  const finishedADay = Object.keys(completed).length > 0;
+  if (p.chaptersRead[key] && !finishedADay) return null;
+  return {
+    chaptersRead: { [key]: readOn },
+    ...(finishedADay ? { completed } : {}),
+  };
+}
+
 /**
  * Records that a chapter was opened in the Bible. In every started plan where
  * it's part of an unfinished day, the chapter is ticked off, and the day is
@@ -247,32 +318,15 @@ export function recordChapterRead(
   if (!uid) return Promise.resolve();
   const run = async () => {
     const all = await fetchPlanProgress(uid);
-    const key = chapterKey(bookId, chapter);
     const today = dateKeyOf(Date.now());
     await Promise.all(
       Object.values(all).map(async (p) => {
-        const schedule = planSchedule(p.planId);
-        const days = schedule
-          .map((chapters, day) => ({ chapters, day }))
-          .filter(
-            ({ chapters, day }) =>
-              !p.completed[day] &&
-              chapters.some((c) => c.bookId === bookId && c.chapter === chapter),
-          );
-        if (days.length === 0) return;
-        const read = { ...p.chaptersRead, [key]: p.chaptersRead[key] ?? today };
-        const completed: Record<number, string> = {};
-        for (const { chapters, day } of days) {
-          if (chapters.every((c) => read[chapterKey(c.bookId, c.chapter)])) {
-            completed[day] = today;
-          }
-        }
-        if (p.chaptersRead[key] && Object.keys(completed).length === 0) return;
+        const update = chapterReadUpdate(p, bookId, chapter, today);
+        if (!update) return;
         await setDoc(
           doc(plansCol(uid), p.planId),
           {
-            chaptersRead: { [key]: read[key] },
-            completed,
+            ...update,
             updatedAt: Date.now(),
             updatedAtServer: serverTimestamp(),
           },
