@@ -1,4 +1,4 @@
-import { ChapterSkeleton } from "@/src/components";
+import { BentoGrid, ChapterSkeleton } from "@/src/components";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     BIBLE_BOOKS,
@@ -89,6 +89,7 @@ import { dateKeyOf } from "@/src/utils/dateKey";
 import {
     SIDEBAR_WIDTH,
     useIsDesktop,
+    useIsTablet,
     useListPaddingH,
 } from "@/src/utils/responsive";
 
@@ -245,6 +246,7 @@ export default function BibleBrowser() {
   // Desktop book view: verse to open the spread at ("end" = last spread)
   const [focusVerse, setFocusVerse] = useState<number | "end" | null>(null);
   const isDesktop = useIsDesktop();
+  const isTablet = useIsTablet();
   const padH = useListPaddingH();
   const { width: windowWidth } = useWindowDimensions();
   // Desktop chapter view: left/right inset of the book, so the header and
@@ -1182,7 +1184,53 @@ export default function BibleBrowser() {
           }}
         />
       )}
-      {screen === "books" && !isDesktop && (
+      {/* Books — tablets: a grid, so every book is a short scroll away */}
+      {screen === "books" && isTablet && (
+        <ScrollView
+          contentContainerStyle={[styles.bookGrid, { paddingHorizontal: padH }]}
+        >
+          {sections.map((section) => (
+            <View key={section.title}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionHeaderText, { color: theme.text }]}>
+                  {section.title}
+                </Text>
+              </View>
+              <BentoGrid
+                data={section.data}
+                keyExtractor={(item) => item.id}
+                gap={8}
+                minColumnWidth={150}
+                maxColumns={4}
+                fillRows={false}
+                spanFor={() => 1}
+                renderItem={(item) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.bookTile,
+                      {
+                        borderColor: theme.border,
+                        backgroundColor: theme.surface,
+                      },
+                    ]}
+                    onPress={() => {
+                      setBook(item);
+                      setScreen("chapters");
+                    }}
+                    accessibilityRole="button"
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.bookLabel, { color: theme.text }]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          ))}
+        </ScrollView>
+      )}
+      {screen === "books" && !isDesktop && !isTablet && (
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}

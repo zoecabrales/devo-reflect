@@ -1,4 +1,4 @@
-import { LIST_PADDING_H, MODAL_MAX_WIDTH } from "@/src/utils/responsive";
+import { TOUCH_TARGET, LIST_PADDING_H, MODAL_MAX_WIDTH } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -154,6 +154,24 @@ export const styles = StyleSheet.create({
   deleteBtn: {
     padding: 4,
     marginTop: 2,
+  },
+
+  // Tablets: easier to read and to tap
+  cardPreviewTablet: {
+    fontSize: 14,
+    lineHeight: 21,
+    opacity: 0.85,
+  },
+  groupTextTablet: {
+    fontSize: 12,
+    opacity: 0.75,
+  },
+  deleteBtnTablet: {
+    width: TOUCH_TARGET,
+    height: TOUCH_TARGET,
+    margin: -8,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   // ── Verse Chip ────────────────────────────────────────────

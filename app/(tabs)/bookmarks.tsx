@@ -24,6 +24,7 @@ import { desktopPage } from "@/src/styles/desktopPage.styles";
 import {
   pageScrollMarker,
   useIsDesktop,
+  useIsTablet,
   useListPaddingH,
   usePageScroll,
 } from "@/src/utils/responsive";
@@ -40,6 +41,7 @@ export default function Bookmarks() {
   const [bookmarks, setBookmarks] = useState<BookmarkedVerse[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const isDesktop = useIsDesktop();
+  const isTablet = useIsTablet();
   // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
   const pageScroll = usePageScroll();
 
@@ -102,7 +104,11 @@ export default function Bookmarks() {
             {item.text}
           </Text>
           <Text
-            style={[styles.rowVersion, { color: theme.textSecondary }]}
+            style={[
+              styles.rowVersion,
+              isTablet && styles.rowVersionTablet,
+              { color: theme.textSecondary },
+            ]}
           >
             {item.version} · Saved{" "}
             {new Date(item.createdAt).toLocaleDateString("en-US", {
@@ -112,7 +118,7 @@ export default function Bookmarks() {
           </Text>
         </View>
         <TouchableOpacity
-          style={styles.deleteBtn}
+          style={[styles.deleteBtn, isTablet && styles.deleteBtnTablet]}
           onPress={() => setDeleteTargetId(item.id)}
           activeOpacity={0.7}
         >
@@ -172,6 +178,23 @@ export default function Bookmarks() {
             renderItem={(item, { index }) =>
               renderBookmark(item, { tile: true, featured: index === 0 })
             }
+          />
+        </ScrollView>
+      ) : isTablet ? (
+        /* Tablets: two columns of cards */
+        <ScrollView
+          {...pageScrollMarker(pageScroll, "pageScrollList")}
+          contentContainerStyle={[styles.list, { paddingHorizontal: padH }]}
+        >
+          <BentoGrid
+            data={bookmarks}
+            keyExtractor={(item) => item.id}
+            gap={12}
+            minColumnWidth={300}
+            maxColumns={2}
+            fillRows={false}
+            spanFor={() => 1}
+            renderItem={(item) => renderBookmark(item, { tile: true })}
           />
         </ScrollView>
       ) : (

@@ -1,5 +1,6 @@
 import { Theme } from "@/src/constants/theme";
 import { styles } from "@/src/styles/bible-browser.styles";
+import { useIsTablet } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
 
@@ -35,11 +36,13 @@ export function ReaderHeader({
   versionLabel: string;
   onOpenVersions: () => void;
 }) {
+  const isTablet = useIsTablet();
+  const roundBtn = isTablet && styles.headerBtnTablet;
   return (
     <View style={[styles.header, { paddingHorizontal: inset }]}>
       <TouchableOpacity
         onPress={onBack}
-        style={[styles.backBtn, { borderColor: theme.border }]}
+        style={[styles.backBtn, roundBtn, { borderColor: theme.border }]}
         activeOpacity={0.7}
       >
         <Ionicons name="chevron-back" size={20} color={theme.text} />
@@ -54,7 +57,7 @@ export function ReaderHeader({
       </View>
       {aboutLabel && (
         <TouchableOpacity
-          style={[styles.searchIconBtn, { borderColor: theme.border }]}
+          style={[styles.searchIconBtn, roundBtn, { borderColor: theme.border }]}
           onPress={onAbout}
           accessibilityRole="button"
           accessibilityLabel={`About ${aboutLabel}`}
@@ -69,7 +72,7 @@ export function ReaderHeader({
       )}
       {searchOpen !== null && (
         <TouchableOpacity
-          style={[styles.searchIconBtn, { borderColor: theme.border }]}
+          style={[styles.searchIconBtn, roundBtn, { borderColor: theme.border }]}
           onPress={onToggleSearch}
           activeOpacity={0.7}
         >
@@ -83,6 +86,7 @@ export function ReaderHeader({
       <TouchableOpacity
         style={[
           styles.versionPill,
+          isTablet && styles.versionPillTablet,
           { borderColor: theme.border, backgroundColor: theme.surface },
         ]}
         onPress={onOpenVersions}

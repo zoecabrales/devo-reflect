@@ -9,7 +9,7 @@ import {
     toggleAnswered,
     updatePrayer,
 } from "@/src/services/prayers";
-import { MODAL_MAX_WIDTH } from "@/src/utils/responsive";
+import { MODAL_MAX_WIDTH, useIsTablet } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -78,6 +78,7 @@ function friendlyDate(ts: number): string {
 
 export function PrayersWidget() {
   const { theme } = useAppTheme();
+  const isTablet = useIsTablet();
   const uid = auth.currentUser?.uid ?? "";
 
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
@@ -358,17 +359,7 @@ export function PrayersWidget() {
                       ]}
                     >
                       <TouchableOpacity
-                        style={[
-                          styles.checkBtn,
-                          {
-                            borderColor: isAnswered
-                              ? ANSWERED
-                              : theme.textSecondary,
-                            backgroundColor: isAnswered
-                              ? ANSWERED
-                              : "transparent",
-                          },
-                        ]}
+                        style={isTablet && styles.checkTouchTablet}
                         onPress={() => handleToggle(item)}
                         activeOpacity={0.7}
                         hitSlop={8}
@@ -378,9 +369,23 @@ export function PrayersWidget() {
                           isAnswered ? "Mark as still praying" : "Mark as answered"
                         }
                       >
-                        {isAnswered && (
-                          <Ionicons name="checkmark" size={13} color="#fff" />
-                        )}
+                        <View
+                          style={[
+                            styles.checkBtn,
+                            {
+                              borderColor: isAnswered
+                                ? ANSWERED
+                                : theme.textSecondary,
+                              backgroundColor: isAnswered
+                                ? ANSWERED
+                                : "transparent",
+                            },
+                          ]}
+                        >
+                          {isAnswered && (
+                            <Ionicons name="checkmark" size={13} color="#fff" />
+                          )}
+                        </View>
                       </TouchableOpacity>
                       <View style={styles.rowBody}>
                         <Text style={[styles.rowText, { color: theme.text }]}>
@@ -402,7 +407,7 @@ export function PrayersWidget() {
                         </Text>
                       </View>
                       <TouchableOpacity
-                        style={styles.iconBtn}
+                        style={[styles.iconBtn, isTablet && styles.iconBtnTablet]}
                         onPress={() => openEdit(item)}
                         activeOpacity={0.6}
                         accessibilityRole="button"
@@ -415,7 +420,7 @@ export function PrayersWidget() {
                         />
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.iconBtn}
+                        style={[styles.iconBtn, isTablet && styles.iconBtnTablet]}
                         onPress={() => setDeleteTargetId(item.id)}
                         activeOpacity={0.6}
                         accessibilityRole="button"
@@ -692,6 +697,20 @@ const styles = StyleSheet.create({
   rowText: { fontSize: 15, lineHeight: 21 },
   rowMeta: { fontSize: 12 },
   iconBtn: { padding: 6, opacity: 0.7 },
+  // Tablets: finger-sized targets. The negative margin keeps the circle in place
+  checkTouchTablet: {
+    width: 44,
+    height: 44,
+    margin: -12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconBtnTablet: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   empty: { alignItems: "center", gap: 10, paddingVertical: 6 },
   emptyPrompt: {
     fontSize: 14,

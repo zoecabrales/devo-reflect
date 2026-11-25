@@ -23,6 +23,7 @@ import {
   MODAL_MAX_WIDTH,
   pageScrollMarker,
   useIsDesktop,
+  useIsTablet,
   useListPaddingH,
   usePageScroll,
 } from "@/src/utils/responsive";
@@ -44,6 +45,7 @@ export default function ReadingPlans() {
   const { theme } = useAppTheme();
   const router = useRouter();
   const isDesktop = useIsDesktop();
+  const isTablet = useIsTablet();
   const padH = useListPaddingH();
   // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
   const pageScroll = usePageScroll();
@@ -289,21 +291,23 @@ export default function ReadingPlans() {
                     <Text style={[styles.label, { color: theme.textSecondary }]}>
                       YOUR READING
                     </Text>
-                    <Stat
-                      icon="flame-outline"
-                      value={readingStreak(progress)}
-                      label="Day streak"
-                    />
-                    <Stat
-                      icon="checkmark-done-outline"
-                      value={daysRead}
-                      label={daysRead === 1 ? "Day read" : "Days read"}
-                    />
-                    <Stat
-                      icon="library-outline"
-                      value={active.length}
-                      label={active.length === 1 ? "Active plan" : "Active plans"}
-                    />
+                    <View style={isTablet ? styles.statsRow : styles.statsStack}>
+                      <Stat
+                        icon="flame-outline"
+                        value={readingStreak(progress)}
+                        label="Day streak"
+                      />
+                      <Stat
+                        icon="checkmark-done-outline"
+                        value={daysRead}
+                        label={daysRead === 1 ? "Day read" : "Days read"}
+                      />
+                      <Stat
+                        icon="library-outline"
+                        value={active.length}
+                        label={active.length === 1 ? "Active plan" : "Active plans"}
+                      />
+                    </View>
                   </View>
                 )
             }
@@ -742,6 +746,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     lineHeight: 48,
   },
+  statsStack: { gap: 8 },
+  statsRow: { flexDirection: "row", flexWrap: "wrap", columnGap: 40, rowGap: 8 },
   stat: { flexDirection: "row", alignItems: "center", gap: 10 },
   statValue: {
     fontSize: 22,

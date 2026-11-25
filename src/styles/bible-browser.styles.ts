@@ -100,6 +100,18 @@ export const styles = StyleSheet.create({
     padding: 0,
   },
 
+  // Tablets: finger-sized header buttons
+  headerBtnTablet: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  versionPillTablet: {
+    minHeight: 44,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+  },
+
   // ── Version Pill ─────────────────────────────────────────
   versionPill: {
     flexDirection: "row",
@@ -171,6 +183,19 @@ export const styles = StyleSheet.create({
     paddingHorizontal: LIST_PADDING_H,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  // Tablets: books as tiles
+  bookGrid: {
+    paddingBottom: 48,
+  },
+  bookTile: {
+    flex: 1,
+    minHeight: 48,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   bookLabel: {
     fontSize: 16,

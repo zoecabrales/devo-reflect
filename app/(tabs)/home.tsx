@@ -1,4 +1,4 @@
-import { AppModal, SheetHandle, VerseCardSkeleton } from "@/src/components";
+import { BentoGrid, AppModal, SheetHandle, VerseCardSkeleton } from "@/src/components";
 import { Theme } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
@@ -23,6 +23,7 @@ import { loadEntries } from "@/src/services/journal";
 import {
   pageScrollMarker,
   useIsDesktop,
+  useIsTablet,
   usePageScroll,
   useScrollPaddingH,
 } from "@/src/utils/responsive";
@@ -555,6 +556,7 @@ export default function Home() {
   const [showVerseGreeting, setShowVerseGreeting] = useState(false);
   const [journalThisWeek, setJournalThisWeek] = useState<number | null>(null);
   const isDesktop = useIsDesktop();
+  const isTablet = useIsTablet();
   const padH = useScrollPaddingH();
   // Phone / tablet web: the page scrolls, not an inner box (responsive.ts)
   const pageScroll = usePageScroll();
@@ -627,6 +629,32 @@ export default function Home() {
     }, [isDesktop, uid, loadVerse]),
   );
 
+  // Quick Access: a stack on phones, two columns on tablets
+  const quickLinks = [
+    <BrowseBibleCard key="bible" theme={theme} versionLabel={versionLabel} />,
+    readingPosition && (
+      <ResumeReadingCard key="resume" position={readingPosition} theme={theme} />
+    ),
+    <QuickLinkCard
+      key="plans"
+      theme={theme}
+      icon="calendar-outline"
+      title="Reading Plans"
+      subtitle="Read the Bible a little each day"
+      href="/(tabs)/reading-plans"
+    />,
+    <QuickLinkCard
+      key="memory"
+      theme={theme}
+      icon="albums-outline"
+      title="Memory Verses"
+      subtitle="Practise verses with flashcards"
+      href="/(tabs)/memory-verses"
+    />,
+    <BookmarkBadgeCard key="bookmarks" count={bookmarkCount} theme={theme} />,
+    <ConcordanceCard key="concordance" theme={theme} />,
+  ].filter((link) => !!link);
+
   return (
     <View
       {...pageScrollMarker(pageScroll)}
@@ -692,26 +720,18 @@ export default function Home() {
         <Text style={[styles.quickAccessLabel, { color: theme.text }]}>
           Quick Access
         </Text>
-        <BrowseBibleCard theme={theme} versionLabel={versionLabel} />
-        {readingPosition && (
-          <ResumeReadingCard position={readingPosition} theme={theme} />
+        {isTablet ? (
+          <BentoGrid
+            data={quickLinks}
+            keyExtractor={(link) => link.key as string}
+            gap={12}
+            maxColumns={2}
+            spanFor={() => 1}
+            renderItem={(link) => link}
+          />
+        ) : (
+          quickLinks
         )}
-        <QuickLinkCard
-          theme={theme}
-          icon="calendar-outline"
-          title="Reading Plans"
-          subtitle="Read the Bible a little each day"
-          href="/(tabs)/reading-plans"
-        />
-        <QuickLinkCard
-          theme={theme}
-          icon="albums-outline"
-          title="Memory Verses"
-          subtitle="Practise verses with flashcards"
-          href="/(tabs)/memory-verses"
-        />
-        <BookmarkBadgeCard count={bookmarkCount} theme={theme} />
-        <ConcordanceCard theme={theme} />
       </ScrollView>
       )}
 

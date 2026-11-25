@@ -1,6 +1,6 @@
 import { BentoGrid, ConcordanceSkeleton, PageHeader } from "@/src/components";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
-import { useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
+import { useIsDesktop, useIsTablet, useListPaddingH } from "@/src/utils/responsive";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import {
     ConcordanceResult,
@@ -59,6 +59,7 @@ export default function Concordance() {
   const { theme } = useAppTheme();
   const padH = useListPaddingH();
   const isDesktop = useIsDesktop();
+  const isTablet = useIsTablet();
   const { width } = useWindowDimensions();
   // Phones keep the plain list; tablets and desktop get sections of cards
   const wide = isDesktop || width >= WIDE_MIN_WIDTH;
@@ -269,6 +270,7 @@ export default function Concordance() {
             onPress={close}
             accessibilityRole="button"
             accessibilityLabel="Close Concordance"
+            style={isTablet && styles.closeTablet}
             hitSlop={10}
             activeOpacity={0.7}
           >

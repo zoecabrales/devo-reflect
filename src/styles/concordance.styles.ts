@@ -2,6 +2,14 @@ import { LIST_PADDING_H } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
+  // Tablets: a finger-sized close button
+  closeTablet: {
+    width: 44,
+    height: 44,
+    margin: -11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   container: {
     flex: 1,
   },
