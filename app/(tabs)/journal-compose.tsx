@@ -10,7 +10,7 @@ import {
   updateEntry,
 } from "@/src/services/journal";
 import { formatDateKey } from "@/src/utils/dateKey";
-import { useListPaddingH } from "@/src/utils/responsive";
+import { useIsTablet, useListPaddingH } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -35,6 +35,7 @@ type Params = {
 export default function JournalCompose() {
   const { theme } = useAppTheme();
   const padH = useListPaddingH();
+  const isTablet = useIsTablet();
   const router = useRouter();
   const { id, ref, text, forDate } = useLocalSearchParams<Params>();
 
@@ -193,6 +194,17 @@ export default function JournalCompose() {
         <TouchableOpacity
           onPress={() => router.replace("/(tabs)/journal")}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Back to Journal"
+          style={
+            isTablet && {
+              width: 44,
+              height: 44,
+              margin: -11,
+              alignItems: "center",
+              justifyContent: "center",
+            }
+          }
         >
           <Ionicons name="chevron-back" size={22} color={theme.textSecondary} />
         </TouchableOpacity>
@@ -215,6 +227,8 @@ export default function JournalCompose() {
             paddingVertical: 6,
             borderRadius: 999,
             backgroundColor: saving ? theme.border : theme.primary,
+            // Tablets: a finger-sized button
+            ...(isTablet && { minHeight: 44, minWidth: 80, justifyContent: "center", alignItems: "center" }),
           }}
         >
           {saving ? (

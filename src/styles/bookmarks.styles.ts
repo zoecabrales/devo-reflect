@@ -1,4 +1,4 @@
-import { LIST_PADDING_H } from "@/src/utils/responsive";
+import { LIST_PADDING_H, TOUCH_TARGET } from "@/src/utils/responsive";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -55,6 +55,19 @@ export const styles = StyleSheet.create({
   deleteBtn: {
     padding: 4,
     marginTop: 2,
+  },
+
+  // Tablets: easier to read and to tap
+  rowVersionTablet: {
+    fontSize: 11,
+    opacity: 0.7,
+  },
+  deleteBtnTablet: {
+    width: TOUCH_TARGET,
+    height: TOUCH_TARGET,
+    margin: -8,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   // ── Empty State ──────────────────────────────────────────

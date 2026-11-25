@@ -29,6 +29,22 @@ export function useIsDesktop(): boolean {
   return isDesktopWidth(width);
 }
 
+// ── Tablets ────────────────────────────────────────────────────────────────
+/** Windows at least this wide (and narrower than desktop) get tablet layouts. */
+export const TABLET_MIN_WIDTH = 768;
+
+export const isTabletWidth = (width: number) =>
+  width >= TABLET_MIN_WIDTH && !isDesktopWidth(width);
+
+/** True while the window is tablet sized; updates on resize and rotation. */
+export function useIsTablet(): boolean {
+  const { width } = useWindowDimensions();
+  return isTabletWidth(width);
+}
+
+/** Smallest comfortable size for something tapped with a finger. */
+export const TOUCH_TARGET = 44;
+
 // ── Page-scroll mode (mobile web) ──────────────────────────────────────────
 // On phone / tablet web the main tabs scroll the whole page instead of an
 // inner box, so mobile browsers can collapse their toolbars as the user

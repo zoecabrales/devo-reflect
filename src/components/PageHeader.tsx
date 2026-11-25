@@ -1,6 +1,11 @@
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { desktopPage } from "@/src/styles/desktopPage.styles";
-import { LIST_PADDING_H, useIsDesktop, useListPaddingH } from "@/src/utils/responsive";
+import { 
+  LIST_PADDING_H,
+  useIsDesktop,
+  useIsTablet,
+  useListPaddingH,
+ } from "@/src/utils/responsive";
 import { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -20,6 +25,7 @@ export function PageHeader({ title, subtitle, right }: Props) {
   const { theme } = useAppTheme();
   const isDesktop = useIsDesktop();
   const padH = useListPaddingH();
+  const isTablet = useIsTablet();
 
   return (
     <View
@@ -44,6 +50,7 @@ export function PageHeader({ title, subtitle, right }: Props) {
             <Text
               style={[
                 styles.subtitle,
+                isTablet && styles.subtitleTablet,
                 isDesktop && styles.subtitleDesktop,
                 { color: theme.textSecondary },
               ]}
@@ -92,6 +99,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     letterSpacing: 0.3,
     marginTop: 2,
+  },
+  subtitleTablet: {
+    fontSize: 15,
+    opacity: 0.85,
   },
   subtitleDesktop: {
     fontSize: 15,

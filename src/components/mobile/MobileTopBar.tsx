@@ -8,6 +8,7 @@ import {
 import { TAB_ACTIVE_COLOR } from "@/src/constants/theme";
 import { useAppTheme } from "@/src/contexts/ThemeContext";
 import { NotificationBell } from "@/src/features/connections/NotificationBell";
+import { useIsTablet } from "@/src/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
@@ -21,6 +22,8 @@ import {
 
 /** Height of the bar itself, below the status-bar inset. */
 export const MOBILE_TOP_BAR_HEIGHT = 56;
+/** Home, Journal, Growth and Bookmarks; the rest stay in the menu. */
+const INLINE_NAV_COUNT = 4;
 
 type Props = TabBarProps & {
   /** Status-bar inset; the screens below are given a top inset of 0. */
@@ -37,6 +40,8 @@ type Props = TabBarProps & {
 export function MobileTopBar({ state, navigation, topInset }: Props) {
   const { theme } = useAppTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Tablets have room to show the main sections in the bar itself
+  const isTablet = useIsTablet();
   const currentName = state.routes[state.index].name;
   const activeName = PARENT_ITEM[currentName] ?? currentName;
 
@@ -119,6 +124,38 @@ export function MobileTopBar({ state, navigation, topInset }: Props) {
             Devo Reflect
           </Text>
         </Pressable>
+
+        {isTablet && (
+          <View style={styles.inlineNav}>
+            {MAIN_ITEMS.slice(0, INLINE_NAV_COUNT).map((item) => {
+              const active = item.name === activeName;
+              const color = active ? TAB_ACTIVE_COLOR : theme.text;
+              return (
+                <Pressable
+                  key={item.name}
+                  onPress={() => go(item.name)}
+                  style={[
+                    styles.inlineItem,
+                    active && { backgroundColor: theme.surface },
+                  ]}
+                  accessibilityRole="link"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text
+                    style={[
+                      styles.menuLabel,
+                      { color },
+                      active && styles.menuLabelActive,
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
 
         <View style={styles.actions}>
           <Pressable
@@ -224,6 +261,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.3,
+  },
+  inlineNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  inlineItem: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   actions: {
     flexDirection: "row",

@@ -23,6 +23,7 @@ import { desktopPage } from "@/src/styles/desktopPage.styles";
 import {
   pageScrollMarker,
   useIsDesktop,
+  useIsTablet,
   useListPaddingH,
   usePageScroll,
 } from "@/src/utils/responsive";
@@ -53,6 +54,7 @@ function Brethren() {
   const router = useRouter();
   const { theme } = useAppTheme();
   const isDesktop = useIsDesktop();
+  const isTablet = useIsTablet();
   const pageScroll = usePageScroll();
   const padH = useListPaddingH();
 
@@ -244,18 +246,20 @@ function Brethren() {
       <Text style={[styles.label, { color: theme.textSecondary }]}>
         OVERVIEW
       </Text>
-      <Text
-        style={[
-          styles.bigNumber,
-          compact && styles.bigNumberCompact,
-          { color: theme.text },
-        ]}
-      >
-        {connections.length}
-      </Text>
-      <Text style={[styles.body, { color: theme.textSecondary }]}>
-        {connections.length === 1 ? "brother or sister" : "brethren"}
-      </Text>
+      <View style={isTablet && styles.countRow}>
+        <Text
+          style={[
+            styles.bigNumber,
+            compact && styles.bigNumberCompact,
+            { color: theme.text },
+          ]}
+        >
+          {connections.length}
+        </Text>
+        <Text style={[styles.body, { color: theme.textSecondary }]}>
+          {connections.length === 1 ? "brother or sister" : "brethren"}
+        </Text>
+      </View>
       <View style={styles.grow} />
       <View style={styles.statRow}>
         <Text style={[styles.statText, { color: theme.textSecondary }]}>
@@ -294,6 +298,7 @@ function Brethren() {
             onPress={() => router.navigate("/(tabs)/settings")}
             accessibilityRole="button"
             accessibilityLabel="Back to Settings"
+            style={isTablet && styles.closeTablet}
             hitSlop={10}
             activeOpacity={0.7}
           >
@@ -732,6 +737,14 @@ const styles = StyleSheet.create({
     fontFamily: "Oswald_700Bold",
     letterSpacing: 0.3,
     lineHeight: 48,
+  },
+  countRow: { flexDirection: "row", alignItems: "baseline", gap: 10 },
+  closeTablet: {
+    width: 44,
+    height: 44,
+    margin: -11,
+    alignItems: "center",
+    justifyContent: "center",
   },
   statRow: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
   statText: { fontSize: 13 },

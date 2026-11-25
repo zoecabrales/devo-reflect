@@ -1,4 +1,5 @@
 import {
+  BentoGrid,
   AppModal,
   JournalListSkeleton,
   PageHeader,
@@ -27,6 +28,7 @@ import { styles } from "@/src/styles/journal.styles";
 import {
     pageScrollMarker,
     useIsDesktop,
+  useIsTablet,
     useListPaddingH,
     usePageScroll,
 } from "@/src/utils/responsive";
@@ -74,6 +76,7 @@ export default function Journal() {
   const [guideVisible, setGuideVisible] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const isDesktop = useIsDesktop();
+  const isTablet = useIsTablet();
   // Phone / tablet web: the page scrolls, not the list (see responsive.ts)
   const pageScroll = usePageScroll();
   // Page scroll: keep the last entry clear of the home indicator
@@ -112,7 +115,10 @@ export default function Journal() {
    * One entry card. Phones: tap opens the editor. Desktop: click selects it
    * for the reading pane (`selected` highlights it; delete lives in the pane).
    */
-  function renderEntry(item: JournalEntry, { selected = false } = {}) {
+  function renderEntry(
+    item: JournalEntry,
+    { selected = false, fill = false } = {},
+  ) {
     const d = new Date(item.createdAt);
     const mon = new Intl.DateTimeFormat("en-US", {
       month: "short",
@@ -138,6 +144,7 @@ export default function Journal() {
             borderLeftWidth: 3,
           },
           selected && { borderColor: theme.text, borderLeftColor: theme.text },
+          fill && desktopPage.tileFill,
         ]}
         onPress={() =>
           isDesktop ? setSelectedId(item.id) : openEditor(item.id)
@@ -180,6 +187,7 @@ export default function Journal() {
               <Text
                 style={[
                   styles.cardPreview,
+                  isTablet && styles.cardPreviewTablet,
                   { color: theme.textSecondary },
                 ]}
                 numberOfLines={2}
@@ -192,7 +200,7 @@ export default function Journal() {
           {/* Delete (desktop: in the reading pane instead) */}
           {!isDesktop && (
             <TouchableOpacity
-              style={styles.deleteBtn}
+              style={[styles.deleteBtn, isTablet && styles.deleteBtnTablet]}
               onPress={() => setDeleteTargetId(item.id)}
               activeOpacity={0.7}
             >
@@ -419,6 +427,51 @@ export default function Journal() {
             )}
           </View>
         </View>
+      ) : isTablet ? (
+        /* ── Tablets: two columns of entries under each month ── */
+        <ScrollView
+          {...pageScrollMarker(pageScroll, "pageScrollList")}
+          contentContainerStyle={[
+            styles.list,
+            { paddingHorizontal: padH },
+            pageScroll && { paddingBottom: bottomInset + 32 },
+          ]}
+        >
+          {sections.map((section) => (
+            <View key={section.title}>
+              <View style={styles.groupHeader}>
+                <Text
+                  style={[
+                    styles.groupLabel,
+                    styles.groupTextTablet,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  {section.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.groupCount,
+                    styles.groupTextTablet,
+                    { color: theme.textSecondary },
+                  ]}
+                >
+                  {section.count} {section.count === 1 ? "entry" : "entries"}
+                </Text>
+              </View>
+              <BentoGrid
+                data={section.data}
+                keyExtractor={(item) => item.id}
+                gap={12}
+                minColumnWidth={300}
+                maxColumns={2}
+                fillRows={false}
+                spanFor={() => 1}
+                renderItem={(item) => renderEntry(item, { fill: true })}
+              />
+            </View>
+          ))}
+        </ScrollView>
       ) : (
         /* ── Entry list ── */
         <SectionList
