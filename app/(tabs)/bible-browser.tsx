@@ -85,6 +85,7 @@ import { VersionNotice } from "@/src/features/bible/VersionNotice";
 import { VersionPicker } from "@/src/features/bible/VersionPicker";
 import { BookmarkConfirm, VerseDrawer } from "@/src/features/bible/VerseDrawer";
 import { styles } from "@/src/styles/bible-browser.styles";
+import { isDarkColor } from "@/src/utils/highlightStyle";
 import { dateKeyOf } from "@/src/utils/dateKey";
 import {
     SIDEBAR_WIDTH,
@@ -987,6 +988,7 @@ export default function BibleBrowser() {
           text={v.text}
           query={searchQuery}
           bookmarkColor={highlightColor}
+          darkPage={isDarkColor(theme.background)}
           underline={isUnderlined}
           textStyle={[
             styles.verseText,

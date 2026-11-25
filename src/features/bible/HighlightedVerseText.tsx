@@ -1,4 +1,22 @@
-import { Text } from "react-native";
+import {
+  highlightShades,
+  highlightTextShadow,
+} from "@/src/utils/highlightStyle";
+import { Platform, Text, TextStyle } from "react-native";
+
+/** The highlight on the letters themselves (see utils/highlightStyle). */
+function letterHighlight(color: string, darkPage: boolean): TextStyle {
+  if (Platform.OS === "web") {
+    // `textShadow` with several shadows is web-only, so it isn't in TextStyle
+    return { textShadow: highlightTextShadow(color, darkPage) } as object;
+  }
+  // The phone apps allow one text shadow: show the coloured side only
+  return {
+    textShadowColor: highlightShades(color, darkPage).edge,
+    textShadowOffset: { width: 0, height: 1.5 },
+    textShadowRadius: 1,
+  };
+}
 
 /**
  * A verse's text with its highlight colour and underline, and any matches
@@ -8,18 +26,21 @@ export function HighlightedVerseText({
   text,
   query,
   bookmarkColor,
+  darkPage,
   underline,
   textStyle,
 }: {
   text: string;
   query: string;
   bookmarkColor?: string;
+  /** The reader's background is dark, which changes the highlight shades. */
+  darkPage: boolean;
   underline?: boolean;
   textStyle: object;
 }) {
   const trimmed = query.trim();
-  const bookmarkBg = bookmarkColor
-    ? { backgroundColor: bookmarkColor + "99" }
+  const highlight = bookmarkColor
+    ? letterHighlight(bookmarkColor, darkPage)
     : {};
   const underlineStyle = underline
     ? { textDecorationLine: "underline" as const }
@@ -29,7 +50,7 @@ export function HighlightedVerseText({
     return (
       <Text style={textStyle}>
         {bookmarkColor || underline ? (
-          <Text style={[bookmarkBg, underlineStyle]}>{text}</Text>
+          <Text style={[highlight, underlineStyle]}>{text}</Text>
         ) : (
           text
         )}
@@ -48,7 +69,7 @@ export function HighlightedVerseText({
           <Text
             key={i}
             style={[
-              bookmarkBg,
+              highlight,
               underlineStyle,
               { backgroundColor: "#FFD966CC", fontWeight: "700" },
             ]}
@@ -56,7 +77,7 @@ export function HighlightedVerseText({
             {part}
           </Text>
         ) : (
-          <Text key={i} style={[bookmarkBg, underlineStyle]}>
+          <Text key={i} style={[highlight, underlineStyle]}>
             {part}
           </Text>
         ),
