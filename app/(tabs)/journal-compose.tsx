@@ -309,9 +309,7 @@ export default function JournalCompose() {
                 key={s.ref}
                 style={{
                   borderWidth: 1,
-                  borderLeftWidth: 3,
                   borderColor: theme.border,
-                  borderLeftColor: theme.primary,
                   backgroundColor: theme.surface,
                   borderRadius: 10,
                   paddingHorizontal: 12,

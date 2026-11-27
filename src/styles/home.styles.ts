@@ -33,7 +33,6 @@ export const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
     borderWidth: 1,
-    borderLeftWidth: 4,
     // iOS shadow
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },

@@ -114,7 +114,6 @@ export function JournalListSkeleton() {
             {
               backgroundColor: theme.surface,
               borderColor: theme.border,
-              borderLeftColor: theme.primary,
             },
           ]}
         >
@@ -291,7 +290,6 @@ const sk = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderLeftWidth: 3,
   },
   row: {
     flexDirection: "row",

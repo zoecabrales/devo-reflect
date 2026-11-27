@@ -140,10 +140,8 @@ export default function Journal() {
           {
             backgroundColor: theme.surface,
             borderColor: theme.border,
-            borderLeftColor: theme.primary,
-            borderLeftWidth: 3,
           },
-          selected && { borderColor: theme.text, borderLeftColor: theme.text },
+          selected && { borderColor: theme.text },
           fill && desktopPage.tileFill,
         ]}
         onPress={() =>
@@ -349,7 +347,6 @@ export default function Journal() {
               {
                 backgroundColor: theme.surface,
                 borderColor: theme.border,
-                borderLeftColor: theme.primary,
               },
             ]}
           >

@@ -120,7 +120,6 @@ function VerseCard({ verse, theme }: { verse: BibleVerse; theme: Theme }) {
         {
           backgroundColor: theme.surface,
           borderColor: theme.border,
-          borderLeftColor: theme.primary,
         },
       ]}
       onPress={() =>
