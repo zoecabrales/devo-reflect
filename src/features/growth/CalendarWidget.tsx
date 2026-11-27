@@ -370,7 +370,6 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
                     {
                       borderColor: theme.border,
                       backgroundColor: theme.background,
-                      borderLeftColor: theme.primary,
                     },
                   ]}
                   onPress={() => {
@@ -431,7 +430,6 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
                     {
                       borderColor: theme.border,
                       backgroundColor: theme.background,
-                      borderLeftColor: theme.primary,
                     },
                   ]}
                 >
@@ -476,7 +474,6 @@ export function CalendarWidget({ inline = false }: { inline?: boolean } = {}) {
                     {
                       borderColor: theme.border,
                       backgroundColor: theme.background,
-                      borderLeftColor: "#4CAF50",
                     },
                   ]}
                 >
@@ -772,7 +769,6 @@ const styles = StyleSheet.create({
   },
   entryCard: {
     borderWidth: 1,
-    borderLeftWidth: 3,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
