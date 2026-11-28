@@ -5,6 +5,7 @@ const mockStore = new Map<string, Data>();
 const created = new Set<string>();
 const mockSent: { uid: string; title: string; body: string }[] = [];
 const mockUsersByEmail: Record<string, string> = {};
+const mockBroken = new Set<string>(); // accounts whose send throws
 
 function docRef(path: string) {
   return {
@@ -48,6 +49,7 @@ jest.mock("@/api/_lib/admin", () => ({
 }));
 jest.mock("@/api/_lib/push", () => ({
   sendToUser: async (uid: string, m: { title: string; body: string }) => {
+    if (mockBroken.has(uid)) throw new Error("send failed");
     mockSent.push({ uid, title: m.title, body: m.body });
     return { devices: 1, sent: 1, failed: [] };
   },
@@ -59,6 +61,7 @@ beforeEach(() => {
   mockStore.clear();
   created.clear();
   mockSent.length = 0;
+  mockBroken.clear();
 });
 
 // ── The Verse of the Day reminders ───────────────────────────────────────────
@@ -106,6 +109,26 @@ describe("/api/cron/reminders", () => {
     mockStore.set("users/carol/notifications/settings", { brethrenEnabled: true });
     expect(await (await run("slot=morning")).json()).toMatchObject({ accounts: 1, sent: 0, skipped: 1 });
     expect(mockSent).toHaveLength(0);
+  });
+
+  it("carries on to everyone else when one account fails", async () => {
+    const log = jest.spyOn(console, "error").mockImplementation(() => {});
+    device("alice");
+    device("bob");
+    mockBroken.add("alice");
+    const res = await run("slot=morning");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ accounts: 2, sent: 1, failed: 1 });
+    expect(mockSent.map((m) => m.uid)).toEqual(["bob"]);
+    log.mockRestore();
+  });
+
+  it("answers 500 when nothing could be sent", async () => {
+    const log = jest.spyOn(console, "error").mockImplementation(() => {});
+    device("alice");
+    mockBroken.add("alice");
+    expect((await run("slot=morning")).status).toBe(500);
+    log.mockRestore();
   });
 
   it("can send to a single account for testing", async () => {
