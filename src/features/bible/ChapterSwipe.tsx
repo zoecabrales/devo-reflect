@@ -1,3 +1,4 @@
+import { isChapterSwipe, isZoomedIn } from "@/src/utils/swipe";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -22,18 +23,19 @@ type Props = {
 
 /**
  * Phones and tablets: swipe left / right across the chapter to turn to the
- * next / previous one. The text follows the finger; vertical scrolling is
- * left alone. Built on PanResponder so it works on iOS, Android and mobile
- * web without a gesture-handler root.
+ * next / previous one. The text follows the finger; vertical scrolling and
+ * pinch zoom are left alone. Built on PanResponder so it works on iOS,
+ * Android and mobile web without a gesture-handler root.
  */
 export function ChapterSwipe({ enabled, onNext, onPrev, children }: Props) {
   const { width } = useWindowDimensions();
+  const zoomed = usePageZoomed();
 
   // The responder is created once; its handlers read the latest props
   // through a ref, kept current after each render
-  const latest = useRef({ enabled, onNext, onPrev, width });
+  const latest = useRef({ enabled, onNext, onPrev, width, zoomed });
   useEffect(() => {
-    latest.current = { enabled, onNext, onPrev, width };
+    latest.current = { enabled, onNext, onPrev, width, zoomed };
   });
 
   // The handlers read `latest` only while a drag is under way, never during
@@ -54,8 +56,12 @@ export function ChapterSwipe({ enabled, onNext, onPrev, children }: Props) {
       // verse's tap handler does; anything else stays a scroll or a tap
       onMoveShouldSetPanResponderCapture: (_, g) =>
         latest.current.enabled &&
-        Math.abs(g.dx) > 14 &&
-        Math.abs(g.dx) > Math.abs(g.dy) * 2,
+        isChapterSwipe({
+          dx: g.dx,
+          dy: g.dy,
+          touches: g.numberActiveTouches,
+          zoomed: latest.current.zoomed,
+        }),
       onPanResponderMove: (_, g) => {
         const { onNext, onPrev } = latest.current;
         const can = g.dx < 0 ? onNext : onPrev;
@@ -93,17 +99,37 @@ export function ChapterSwipe({ enabled, onNext, onPrev, children }: Props) {
   return (
     <Animated.View
       {...responder.panHandlers}
-      style={[styles.fill, webPanY, { transform: [{ translateX: x }] }]}
+      style={[
+        styles.fill,
+        !zoomed && webTouchAction,
+        { transform: [{ translateX: x }] },
+      ]}
     >
       {children}
     </Animated.View>
   );
 }
 
-// Mobile web: the browser keeps vertical scrolling and leaves horizontal
-// drags to the app (`touchAction` is web-only, so not in ViewStyle's type)
-const webPanY = (
-  Platform.OS === "web" ? { touchAction: "pan-y" } : null
+/** Mobile web: whether the page is pinch zoomed in. Always false elsewhere. */
+function usePageZoomed(): boolean {
+  const [zoomed, setZoomed] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const view = window.visualViewport;
+    if (!view) return;
+    const update = () => setZoomed(isZoomedIn(view.scale));
+    update();
+    view.addEventListener("resize", update);
+    return () => view.removeEventListener("resize", update);
+  }, []);
+  return zoomed;
+}
+
+// Mobile web: the browser keeps vertical scrolling and pinch zoom and leaves
+// horizontal drags to the app. Once zoomed in, the browser takes those too.
+// (`touchAction` is web-only, so not in ViewStyle's type)
+const webTouchAction = (
+  Platform.OS === "web" ? { touchAction: "pan-y pinch-zoom" } : null
 ) as ViewStyle | null;
 
 const styles = StyleSheet.create({

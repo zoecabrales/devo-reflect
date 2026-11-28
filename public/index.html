@@ -3,14 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-    <!--
-      This viewport works for phones with notches.
-      It's optimized for gestures by disabling global zoom.
-     -->
+    <!-- This viewport works for phones with notches, and allows pinch zoom -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1.00001, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover"
     />
+    <script>
+      // iPhone and iPad zoom in by themselves when a small text field is
+      // focused. A maximum scale stops that there, and Safari still lets
+      // people pinch zoom. Other browsers would block pinch zoom, so they
+      // don't get it. (iPads call themselves "Macintosh" but have touch.)
+      if (
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
+      ) {
+        document.querySelector('meta[name="viewport"]').content +=
+          ", maximum-scale=1";
+      }
+    </script>
     <title>Devo Reflect</title>
 
     <!--

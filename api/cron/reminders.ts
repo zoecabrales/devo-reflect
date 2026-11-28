@@ -12,7 +12,9 @@
 // they switched the Daily reminder off (it's on by default). Each person gets
 // each reminder at most once a day: the send is claimed first
 // (sentNotifications/reminder_{uid}_{date}_{slot}, created only if it doesn't
-// exist), so overlapping or repeated runs can't send it twice.
+// exist), so overlapping or repeated runs can't send it twice. A problem with
+// one account is logged and counted as failed; everyone else still gets
+// theirs. The run answers 500 only if something failed and nothing was sent.
 //
 // For testing, ?email=someone@example.com sends to that one account only.
 
@@ -67,6 +69,29 @@ async function accountsWithDevices(): Promise<string[]> {
   return [...uids];
 }
 
+/**
+ * Sends one account its reminder. "undelivered" means no device accepted it
+ * (sendToUser logs why).
+ */
+async function remind(
+  uid: string,
+  slot: ReminderSlot,
+  date: string,
+): Promise<"sent" | "skipped" | "undelivered"> {
+  if ((await notificationSettings(uid)).reminderEnabled === false) return "skipped";
+  // Claim this reminder first; if it's already claimed, it was sent
+  try {
+    await adminDb()
+      .collection("sentNotifications")
+      .doc(`reminder_${uid}_${date}_${slot}`)
+      .create({ at: Date.now() });
+  } catch {
+    return "skipped";
+  }
+  const result = await sendToUser(uid, reminderMessage(uid, slot, date));
+  return result.sent > 0 ? "sent" : "undelivered";
+}
+
 export async function GET(request: Request): Promise<Response> {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
@@ -93,23 +118,20 @@ export async function GET(request: Request): Promise<Response> {
   const date = getPHTDateString();
   let sent = 0;
   let skipped = 0;
+  let failed = 0;
   for (const uid of uids) {
-    if ((await notificationSettings(uid)).reminderEnabled === false) {
-      skipped++;
-      continue;
-    }
-    // Claim this reminder first; if it's already claimed, it was sent
     try {
-      await adminDb()
-        .collection("sentNotifications")
-        .doc(`reminder_${uid}_${date}_${slot}`)
-        .create({ at: Date.now() });
-    } catch {
-      skipped++;
-      continue;
+      const outcome = await remind(uid, slot, date);
+      if (outcome === "sent") sent++;
+      else if (outcome === "skipped") skipped++;
+    } catch (e) {
+      failed++;
+      console.error(`reminders ${slot} ${date}: failed for ${uid}`, e);
     }
-    if ((await sendToUser(uid, reminderMessage(uid, slot, date))).sent > 0) sent++;
   }
-  console.log(`reminders ${slot} ${date}: ${uids.length} accounts, ${sent} sent, ${skipped} skipped`);
-  return json(200, { slot, date, accounts: uids.length, sent, skipped });
+  console.log(
+    `reminders ${slot} ${date}: ${uids.length} accounts, ${sent} sent, ${skipped} skipped, ${failed} failed`,
+  );
+  const status = failed > 0 && sent === 0 ? 500 : 200;
+  return json(status, { slot, date, accounts: uids.length, sent, skipped, failed });
 }
